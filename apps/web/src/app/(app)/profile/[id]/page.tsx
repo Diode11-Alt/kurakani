@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { getUserById, updateProfile } from '../../../../lib/api';
 import { useAppStore } from '../../../../store/appStore';
 import { PostCard } from '../../../../components/PostCard';
