@@ -62,7 +62,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
     };
   }, [pathname]);
 
-  const loadConversations = async (userId: string) => {
+  async function loadConversations(userId: string) {
     try {
       const { data, error } = await supabase
         .from('conversations')

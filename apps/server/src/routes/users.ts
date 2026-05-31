@@ -24,7 +24,6 @@ router.get('/me', requireAuth, async (req: AuthRequest, res) => {
       bio: user.bio,
       avatarUrl: user.avatarUrl,
       email: user.email,
-      phoneNumber: user.phoneNumber,
       createdAt: user.createdAt,
       lastSeenAt: user.lastSeenAt,
     });

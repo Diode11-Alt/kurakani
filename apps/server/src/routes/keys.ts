@@ -3,6 +3,7 @@ import { db, schema } from '@signal/db';
 import { eq, and, sql } from 'drizzle-orm';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { keyBundleSchema, additionalPreKeysSchema } from '../lib/validation';
+import nacl from 'tweetnacl';
 
 const router = Router();
 
@@ -20,6 +21,20 @@ router.post('/register', requireAuth, async (req: AuthRequest, res) => {
 
     const { identityKey, signedPreKey, oneTimePreKeys } = parsed.data;
 
+    // Verify the signedPreKey signature using the identityKey
+    try {
+      const spkPub = Buffer.from(signedPreKey.publicKey, 'base64');
+      const sig = Buffer.from(signedPreKey.signature, 'base64');
+      const idPub = Buffer.from(identityKey, 'base64');
+
+      const isValid = nacl.sign.detached.verify(spkPub, sig, idPub);
+      if (!isValid) {
+        return res.status(400).json({ error: 'Invalid signed pre-key signature' });
+      }
+    } catch (err) {
+      return res.status(400).json({ error: 'Malformed keys or signature' });
+    }
+
     // Upsert identity key
     await db.delete(schema.identityKeys).where(
       and(eq(schema.identityKeys.userId, userId), eq(schema.identityKeys.deviceId, deviceId))
@@ -28,7 +43,17 @@ router.post('/register', requireAuth, async (req: AuthRequest, res) => {
       userId,
       deviceId,
       identityKey,
-      signedPreKey,
+    });
+
+    await db.delete(schema.signedPreKeys).where(
+      and(eq(schema.signedPreKeys.userId, userId), eq(schema.signedPreKeys.deviceId, deviceId))
+    );
+    await db.insert(schema.signedPreKeys).values({
+      userId,
+      deviceId,
+      keyId: signedPreKey.keyId,
+      publicKey: signedPreKey.publicKey,
+      signature: signedPreKey.signature,
     });
 
     // Bulk insert OTPKs
@@ -68,36 +93,26 @@ router.get('/:userId', requireAuth, async (req: AuthRequest, res) => {
     });
     if (!idKey) return res.status(404).json({ error: 'Keys not found for user' });
 
-    // Atomically consume one OTPK using a subquery to find unused key
-    const unusedKeys = await db.select()
-      .from(schema.oneTimePreKeys)
-      .where(
-        and(
-          eq(schema.oneTimePreKeys.userId, targetUserId),
-          eq(schema.oneTimePreKeys.used, false)
-        )
-      )
-      .limit(1);
+    // Atomically consume one OTPK using a subquery with FOR UPDATE SKIP LOCKED
+    const result = await db.execute(sql`
+      UPDATE one_time_pre_keys 
+      SET used = true, used_at = NOW() 
+      WHERE id = (
+        SELECT id FROM one_time_pre_keys 
+        WHERE user_id = ${targetUserId} AND used = false 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+      ) 
+      RETURNING key_id, public_key
+    `);
 
     let oneTimePreKey = null;
-    if (unusedKeys.length > 0) {
-      // Mark it as used atomically
-      const [updated] = await db.update(schema.oneTimePreKeys)
-        .set({ used: true, usedAt: new Date() })
-        .where(
-          and(
-            eq(schema.oneTimePreKeys.id, unusedKeys[0].id),
-            eq(schema.oneTimePreKeys.used, false) // Double-check to prevent race condition
-          )
-        )
-        .returning();
-
-      if (updated) {
-        oneTimePreKey = {
-          keyId: updated.keyId,
-          publicKey: updated.publicKey,
-        };
-      }
+    const rows = result as unknown as any[];
+    if (rows.length > 0) {
+      oneTimePreKey = {
+        keyId: rows[0].key_id as number,
+        publicKey: rows[0].public_key as string,
+      };
 
       // Check if OTPK count is low — notify user's device
       const remainingCount = await db.select({ count: sql<number>`count(*)` })
@@ -114,10 +129,18 @@ router.get('/:userId', requireAuth, async (req: AuthRequest, res) => {
       }
     }
 
+    const spk = await db.query.signedPreKeys.findFirst({
+      where: and(eq(schema.signedPreKeys.userId, targetUserId), eq(schema.signedPreKeys.deviceId, 1))
+    });
+
     res.json({
       identityKey: idKey.identityKey,
       registrationId: targetUser.registrationId,
-      signedPreKey: idKey.signedPreKey,
+      signedPreKey: spk ? {
+        keyId: spk.keyId,
+        publicKey: spk.publicKey,
+        signature: spk.signature
+      } : null,
       oneTimePreKey,
     });
   } catch (error) {

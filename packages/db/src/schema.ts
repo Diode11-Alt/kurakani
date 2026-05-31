@@ -8,8 +8,7 @@ export const users = pgTable('users', {
   id:              uuid('id').defaultRandom().primaryKey(),
   email:           varchar('email', { length: 255 }).unique().notNull(),
   passwordHash:    varchar('password_hash', { length: 255 }).notNull(),
-  phoneNumber:     varchar('phone_number', { length: 20 }).unique(),
-  phoneHash:       varchar('phone_hash', { length: 128 }),  // SHA-256 hash of phone + pepper
+  phoneHash:       varchar('phone_hash', { length: 128 }).unique(),  // SHA-256 hash of phone + pepper
   username:        varchar('username', { length: 50 }).unique(),
   displayName:     varchar('display_name', { length: 100 }),
   bio:             text('bio'),
@@ -22,7 +21,7 @@ export const users = pgTable('users', {
   deletionScheduledAt: timestamp('deletion_scheduled_at'), // 30-day grace period
 }, t => ({
   emailIdx: index('users_email_idx').on(t.email),
-  phoneIdx: index('users_phone_idx').on(t.phoneNumber),
+  phoneHashIdx: index('users_phone_hash_idx').on(t.phoneHash),
   usernameIdx: index('users_username_idx').on(t.username),
 }));
 
@@ -32,10 +31,22 @@ export const identityKeys = pgTable('identity_keys', {
   userId:          uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   deviceId:        integer('device_id').notNull(),
   identityKey:     text('identity_key').notNull(),       // IK public (base64)
-  signedPreKey:    jsonb('signed_pre_key').notNull(),    // { keyId, publicKey, signature }
   createdAt:       timestamp('created_at').defaultNow(),
 }, t => ({
   userDeviceIdx: uniqueIndex('identity_keys_user_device_idx').on(t.userId, t.deviceId),
+}));
+
+// ─── SIGNED PRE-KEYS ────────────────────────────────────────
+export const signedPreKeys = pgTable('signed_pre_keys', {
+  id:              uuid('id').defaultRandom().primaryKey(),
+  userId:          uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  deviceId:        integer('device_id').notNull(),
+  keyId:           integer('key_id').notNull(),
+  publicKey:       text('public_key').notNull(),
+  signature:       text('signature').notNull(),
+  createdAt:       timestamp('created_at').defaultNow(),
+}, t => ({
+  userDeviceIdx: uniqueIndex('signed_pre_keys_user_device_idx').on(t.userId, t.deviceId),
 }));
 
 // ─── ONE-TIME PREKEYS ──────────────────────────────────────
@@ -100,7 +111,7 @@ export const conversationMembers = pgTable('conversation_members', {
 export const messages = pgTable('messages', {
   id:              uuid('id').defaultRandom().primaryKey(),
   conversationId:  uuid('conversation_id').references(() => conversations.id, { onDelete: 'cascade' }).notNull(),
-  senderId:        uuid('sender_id').references(() => users.id).notNull(),
+  senderId:        uuid('sender_id').references(() => users.id), // Nullable for Sealed Sender
   // Ciphertext only — server NEVER stores plaintext
   ciphertext:      text('ciphertext').notNull(),         // base64 Signal ciphertext
   ciphertextType:  integer('ciphertext_type').notNull(), // 1=PreKey 3=Whisper

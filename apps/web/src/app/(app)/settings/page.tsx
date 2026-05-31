@@ -32,7 +32,7 @@ export default function SettingsPage() {
 
   async function loadSettings() {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await getAccessToken();
       if (!token) return;
 
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
@@ -67,7 +67,7 @@ export default function SettingsPage() {
   async function saveSettings(section: string) {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await getAccessToken();
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
       const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 

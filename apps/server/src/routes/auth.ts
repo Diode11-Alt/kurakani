@@ -6,8 +6,15 @@ import bcrypt from 'bcryptjs';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { registerSchema, loginSchema, refreshSchema } from '../lib/validation';
 import { redis } from '../lib/redis';
+import crypto from 'crypto';
 
 const router = Router();
+
+const PHONE_PEPPER = process.env.PHONE_PEPPER || 'kurakani-secure-pepper';
+
+function hashPhoneNumber(phone: string): string {
+  return crypto.createHash('sha256').update(phone + PHONE_PEPPER).digest('hex');
+}
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || JWT_SECRET + '_refresh';
@@ -49,9 +56,11 @@ router.post('/register', async (req, res) => {
     }
 
     // Check phone if provided
+    let phoneHash: string | null = null;
     if (phoneNumber) {
+      phoneHash = hashPhoneNumber(phoneNumber);
       const existingPhone = await db.query.users.findFirst({
-        where: eq(schema.users.phoneNumber, phoneNumber),
+        where: eq(schema.users.phoneHash, phoneHash),
       });
       if (existingPhone) {
         return res.status(409).json({ error: 'Phone number already registered' });
@@ -66,7 +75,7 @@ router.post('/register', async (req, res) => {
       email,
       passwordHash,
       username,
-      phoneNumber: phoneNumber || null,
+      phoneHash,
       registrationId: serverPayload.registrationId,
     }).returning();
 
@@ -75,8 +84,17 @@ router.post('/register', async (req, res) => {
       userId: user.id,
       deviceId: 1,
       identityKey: serverPayload.identityKey,
-      signedPreKey: serverPayload.signedPreKey,
     });
+
+    if (serverPayload.signedPreKey) {
+      await db.insert(schema.signedPreKeys).values({
+        userId: user.id,
+        deviceId: 1,
+        keyId: serverPayload.signedPreKey.keyId,
+        publicKey: serverPayload.signedPreKey.publicKey,
+        signature: serverPayload.signedPreKey.signature,
+      });
+    }
 
     // Store one-time pre-keys
     const preKeysArray = serverPayload.preKeys || serverPayload.oneTimePreKeys;
@@ -168,8 +186,22 @@ router.post('/login', async (req, res) => {
       userId: user.id,
       deviceId: 1,
       identityKey: serverPayload.identityKey,
-      signedPreKey: serverPayload.signedPreKey,
     });
+
+    // Update signed pre-key
+    await db.delete(schema.signedPreKeys).where(and(
+      eq(schema.signedPreKeys.userId, user.id),
+      eq(schema.signedPreKeys.deviceId, 1)
+    ));
+    if (serverPayload.signedPreKey) {
+      await db.insert(schema.signedPreKeys).values({
+        userId: user.id,
+        deviceId: 1,
+        keyId: serverPayload.signedPreKey.keyId,
+        publicKey: serverPayload.signedPreKey.publicKey,
+        signature: serverPayload.signedPreKey.signature,
+      });
+    }
 
     // Update one-time pre-keys
     await db.delete(schema.oneTimePreKeys).where(and(
@@ -273,13 +305,15 @@ router.get('/search', requireAuth, async (req, res) => {
     const { phone } = req.query;
     if (!phone || typeof phone !== 'string') return res.status(400).json({ error: 'Phone number required' });
 
+    const phoneHash = hashPhoneNumber(phone);
     const targetUser = await db.query.users.findFirst({
-      where: eq(schema.users.phoneNumber, phone),
+      where: eq(schema.users.phoneHash, phoneHash),
     });
 
     if (!targetUser) return res.status(404).json({ error: 'User not found' });
     
-    res.json({ id: targetUser.id, username: targetUser.username, phoneNumber: targetUser.phoneNumber });
+    // We intentionally do not return the phone number hash
+    res.json({ id: targetUser.id, username: targetUser.username });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -291,8 +325,9 @@ router.get('/keys/:phoneNumber', requireAuth, async (req, res) => {
   try {
     const { phoneNumber } = req.params;
     
+    const phoneHash = hashPhoneNumber(phoneNumber);
     const targetUser = await db.query.users.findFirst({
-      where: eq(schema.users.phoneNumber, phoneNumber),
+      where: eq(schema.users.phoneHash, phoneHash),
     });
 
     if (!targetUser) return res.status(404).json({ error: 'User not found' });
@@ -312,10 +347,21 @@ router.get('/keys/:phoneNumber', requireAuth, async (req, res) => {
       ))
       .returning();
 
+    const signedPreKeyResult = await db.query.signedPreKeys.findFirst({
+      where: and(
+        eq(schema.signedPreKeys.userId, targetUser.id),
+        eq(schema.signedPreKeys.deviceId, 1)
+      )
+    });
+
     res.json({
       registrationId: targetUser.registrationId,
       identityKey: idKey.identityKey,
-      signedPreKey: idKey.signedPreKey,
+      signedPreKey: signedPreKeyResult ? {
+        keyId: signedPreKeyResult.keyId,
+        publicKey: signedPreKeyResult.publicKey,
+        signature: signedPreKeyResult.signature
+      } : null,
       preKey: otp ? { keyId: otp.keyId, publicKey: otp.publicKey } : null,
     });
   } catch (error) {

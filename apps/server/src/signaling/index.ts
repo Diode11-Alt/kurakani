@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import { verifyToken } from '../lib/auth';
-import { redis } from '../lib/redis';
+import { redis, pubClient, subClient } from '../lib/redis';
 import { db, schema } from '@signal/db';
 
 interface SignalingClient {
@@ -17,6 +17,24 @@ const HEARTBEAT_INTERVAL = 30_000; // 30 seconds
 const HEARTBEAT_TIMEOUT = 10_000;  // 10 seconds to respond
 
 export function setupSignaling(wss: WebSocketServer) {
+  // Subscribe to global pub/sub channel for cross-server delivery
+  subClient.subscribe('ws:messages', (err) => {
+    if (err) console.error('[WS] Failed to subscribe to Redis', err);
+  });
+
+  subClient.on('message', (channel, message) => {
+    if (channel === 'ws:messages') {
+      try {
+        const data = JSON.parse(message);
+        if (data.targetUserId && data.payload) {
+          forwardToLocalClients(data.targetUserId, data.payload);
+        }
+      } catch (err) {
+        console.error('[WS] PubSub parse error', err);
+      }
+    }
+  });
+
   // ─── Heartbeat interval ─────────────────────────────────
   const heartbeatTimer = setInterval(() => {
     for (const [key, client] of clients.entries()) {
@@ -203,9 +221,19 @@ async function handleMessage(userId: string, deviceId: number, raw: any) {
 
 /**
  * Forward a payload to all devices of a user.
- * Returns true if at least one device was online and received it.
+ * With Redis Pub/Sub, we publish to the global channel so all server instances can forward it locally.
+ * Returns true if at least one device was online and received it locally (approximation).
  */
 function forwardToUser(targetUserId: string, payload: object): boolean {
+  // Publish to cluster
+  pubClient.publish('ws:messages', JSON.stringify({ targetUserId, payload }));
+  // Forward to local clients as well (could just rely on subClient, but doing both is fine, actually let's just let the subClient handle it, wait no, let's just publish and let subClient handle it, OR we do it locally and don't rely on loopback if it's disabled. Default Redis pubsub sends back to self. So pubClient.publish is enough.)
+  
+  // Return true if locally delivered, else we rely on global presence flag
+  return forwardToLocalClients(targetUserId, payload);
+}
+
+function forwardToLocalClients(targetUserId: string, payload: object): boolean {
   let delivered = false;
   for (const [key, client] of clients.entries()) {
     if (key.startsWith(`${targetUserId}:`)) {

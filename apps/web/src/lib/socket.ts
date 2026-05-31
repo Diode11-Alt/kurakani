@@ -1,6 +1,6 @@
 import { getAccessToken } from './api';
 
-type EventHandler = (data: any) => void;
+type EventHandler = (data: unknown) => void;
 
 class SocketManager {
   private ws: WebSocket | null = null;
@@ -72,7 +72,7 @@ class SocketManager {
     }
   }
 
-  send(type: string, payload: Record<string, any>) {
+  send(type: string, payload: Record<string, unknown>) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ type, ...payload }));
     }
@@ -90,7 +90,7 @@ class SocketManager {
     this.handlers.get(event)?.delete(handler);
   }
 
-  private emit(event: string, data: any) {
+  private emit(event: string, data: unknown) {
     this.handlers.get(event)?.forEach(handler => {
       try { handler(data); } catch {}
     });

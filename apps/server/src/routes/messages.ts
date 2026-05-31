@@ -29,6 +29,10 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
     // Find or create conversation
     let convId = conversationId;
     if (!convId) {
+      if (sealedSender) {
+        return res.status(400).json({ error: 'conversationId is required for sealed sender messages' });
+      }
+
       // Check if a direct conversation already exists between these users
       const existingConvs = await db.select({ conversationId: schema.conversationMembers.conversationId })
         .from(schema.conversationMembers)
@@ -68,9 +72,12 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
     }
 
     // Store message (ciphertext only — no decryption)
+    // If sealedSender is present, we enforce zero-knowledge of the sender
+    const dbSenderId = sealedSender ? null : senderId;
+
     const [message] = await db.insert(schema.messages).values({
       conversationId: convId,
-      senderId,
+      senderId: dbSenderId,
       ciphertext,
       ciphertextType,
       contentType: contentType || 'text',
@@ -89,7 +96,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       await redis.lpush(`messages:pending:${recipientId}`, JSON.stringify({
         messageId: message.id,
         conversationId: convId,
-        senderId,
+        senderId: dbSenderId,
         ciphertext,
         ciphertextType,
         contentType,

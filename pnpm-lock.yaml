@@ -144,6 +144,12 @@ importers:
       socket.io:
         specifier: ^4.7.5
         version: 4.8.3
+      tweetnacl:
+        specifier: ^1.0.3
+        version: 1.0.3
+      tweetnacl-util:
+        specifier: ^0.15.1
+        version: 0.15.1
       ws:
         specifier: ^8.21.0
         version: 8.21.0
@@ -235,6 +241,9 @@ importers:
       idb:
         specifier: ^8.0.0
         version: 8.0.3
+      idb-keyval:
+        specifier: ^6.2.4
+        version: 6.2.4
       lucide-react:
         specifier: ^0.378.0
         version: 0.378.0(react@19.2.4)
@@ -4903,6 +4912,9 @@ packages:
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
+
+  idb-keyval@6.2.4:
+    resolution: {integrity: sha512-D/NzHWUmYJGXi++z67aMSrnisb9A3621CyRK5G89JyTlN13C8xf0g04DLxUKMufPem3e3L2JAXR6Z00OWy183Q==}
 
   idb@8.0.3:
     resolution: {integrity: sha512-LtwtVyVYO5BqRvcsKuB2iUMnHwPVByPCXFXOpuU96IZPPoPN6xjOGxZQ74pgSVVLQWtUOYgyeL4GE98BY5D3wg==}
@@ -13017,6 +13029,8 @@ snapshots:
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
+
+  idb-keyval@6.2.4: {}
 
   idb@8.0.3: {}
 

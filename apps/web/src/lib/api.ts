@@ -3,38 +3,40 @@
  * Wraps fetch with auth headers and error handling.
  */
 
+import { get, set, del } from 'idb-keyval';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-export function setTokens(access: string, refresh: string) {
+export async function setTokens(access: string, refresh: string) {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('accessToken', access);
-    localStorage.setItem('refreshToken', refresh);
+    await set('accessToken', access);
+    await set('refreshToken', refresh);
   }
 }
 
-export function getAccessToken(): string | null {
+export async function getAccessToken(): Promise<string | null> {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('accessToken');
-  }
-  return null;
-}
-
-export function getRefreshToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('refreshToken');
+    return await get<string>('accessToken') || null;
   }
   return null;
 }
 
-export function clearTokens() {
+export async function getRefreshToken(): Promise<string | null> {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    return await get<string>('refreshToken') || null;
+  }
+  return null;
+}
+
+export async function clearTokens() {
+  if (typeof window !== 'undefined') {
+    await del('accessToken');
+    await del('refreshToken');
   }
 }
 
-async function refreshAccessToken(): Promise<boolean> {
-  const rt = refreshToken || (typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null);
+async function refreshAccessToken(refreshToken?: string): Promise<boolean> {
+  const rt = refreshToken || (await getRefreshToken());
   if (!rt) return false;
 
   try {
@@ -47,15 +49,15 @@ async function refreshAccessToken(): Promise<boolean> {
     if (!res.ok) return false;
 
     const data = await res.json();
-    setTokens(data.accessToken, data.refreshToken);
+    await setTokens(data.accessToken, data.refreshToken);
     return true;
   } catch {
     return false;
   }
 }
 
-async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getAccessToken();
+async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = await getAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((options.headers as Record<string, string>) || {}),
@@ -71,7 +73,8 @@ async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promi
   if (res.status === 401 && token) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
-      headers['Authorization'] = `Bearer ${getAccessToken()}`;
+      const newToken = await getAccessToken();
+      headers['Authorization'] = `Bearer ${newToken}`;
       res = await fetch(`${API_BASE}${path}`, { ...options, headers });
     }
   }
@@ -91,7 +94,7 @@ export async function register(data: {
   password: string;
   username: string;
   phoneNumber?: string;
-  serverPayload: any;
+  serverPayload: Record<string, unknown>;
 }) {
   const result = await apiFetch<{
     success: boolean;
@@ -102,14 +105,14 @@ export async function register(data: {
     method: 'POST',
     body: JSON.stringify(data),
   });
-  setTokens(result.accessToken, result.refreshToken);
+  await setTokens(result.accessToken, result.refreshToken);
   return result;
 }
 
 export async function login(data: {
   email: string;
   password: string;
-  serverPayload: any;
+  serverPayload: Record<string, unknown>;
 }) {
   const result = await apiFetch<{
     success: boolean;
@@ -120,7 +123,7 @@ export async function login(data: {
     method: 'POST',
     body: JSON.stringify(data),
   });
-  setTokens(result.accessToken, result.refreshToken);
+  await setTokens(result.accessToken, result.refreshToken);
   return result;
 }
 
@@ -128,7 +131,7 @@ export async function logout() {
   try {
     await apiFetch('/auth/logout', { method: 'POST' });
   } finally {
-    clearTokens();
+    await clearTokens();
   }
 }
 
@@ -215,7 +218,7 @@ export async function getMessages(conversationId: string, before?: string, limit
 }
 
 export async function getPendingMessages() {
-  return apiFetch<{ messages: any[]; count: number }>('/messages/pending');
+  return apiFetch<{ messages: Record<string, unknown>[]; count: number }>('/messages/pending');
 }
 
 export async function markAsRead(messageId: string) {

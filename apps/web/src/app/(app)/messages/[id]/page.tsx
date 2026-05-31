@@ -240,7 +240,7 @@ export default function ChatThreadPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const loadMessages = async (userId: string) => {
+  async function loadMessages(userId: string) {
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -255,7 +255,7 @@ export default function ChatThreadPage() {
     }
   };
 
-  const markAsRead = async (userId: string) => {
+  async function markAsRead(userId: string) {
     try {
       await supabase
         .from('messages')

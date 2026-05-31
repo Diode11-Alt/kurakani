@@ -31,7 +31,7 @@ export default function FeedPage() {
     init();
   }, []);
 
-  const fetchPosts = async () => {
+  async function fetchPosts() {
     setLoading(true);
     const { data, error } = await supabase
       .from('posts')

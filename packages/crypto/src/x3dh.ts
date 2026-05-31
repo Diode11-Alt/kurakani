@@ -104,13 +104,13 @@ export function establishSessionAsInitiator(
   const ek_sk = new Uint8Array(ephemeralKeyPair.privKey);
   const spk_pk = decodeBase64(bobSignedPreKeyPublicBase64);
 
-  const dh1 = nacl.box.before(spk_pk, ek_sk);
+  const dh1 = nacl.scalarMult(ek_sk, spk_pk);
 
   let sharedMaterial = dh1;
 
   if (bobOneTimePreKeyPublicBase64) {
     const opk_pk = decodeBase64(bobOneTimePreKeyPublicBase64);
-    const dh2 = nacl.box.before(opk_pk, ek_sk);
+    const dh2 = nacl.scalarMult(ek_sk, opk_pk);
     const combined = new Uint8Array(dh1.length + dh2.length);
     combined.set(dh1);
     combined.set(dh2, dh1.length);
@@ -128,13 +128,13 @@ export function establishSessionAsReceiver(
   const ek_pk = decodeBase64(ephemeralPublicKeyBase64);
   const spk_sk = decodeBase64(mySignedPreKeyPrivateBase64);
 
-  const dh1 = nacl.box.before(ek_pk, spk_sk);
+  const dh1 = nacl.scalarMult(spk_sk, ek_pk);
 
   let sharedMaterial = dh1;
 
   if (myOneTimePreKeyPrivateBase64) {
     const opk_sk = decodeBase64(myOneTimePreKeyPrivateBase64);
-    const dh2 = nacl.box.before(ek_pk, opk_sk);
+    const dh2 = nacl.scalarMult(opk_sk, ek_pk);
     const combined = new Uint8Array(dh1.length + dh2.length);
     combined.set(dh1);
     combined.set(dh2, dh1.length);
