@@ -42,25 +42,30 @@ export default function ProfilePage() {
   const loadProfileData = async () => {
     try {
       // Fetch profile
-      const { data: profileData } = await supabase
-        .from('profiles')
+      const { data: profileData, error: profileError } = await supabase
+        .from('users')
         .select('*')
         .eq('id', profileId)
         .single();
+        
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+      }
       
       if (profileData) {
         setProfile(profileData);
-        setEditDisplayName(profileData.display_name || '');
+        setEditDisplayName(profileData.displayName || profileData.display_name || '');
         setEditBio(profileData.bio || '');
         setEditWebsite(profileData.website || '');
       }
 
-      // Fetch posts
-      const { data: postsData } = await supabase
+      // Fetch posts (mocking or catching error if table doesn't exist)
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*, profiles:author_id(id, username, display_name, avatar_url)')
         .eq('author_id', profileId)
         .order('created_at', { ascending: false });
+      if (postsError) console.error("Error fetching posts:", postsError);
       setPosts(postsData || []);
 
       // Fetch follow counts
@@ -134,11 +139,11 @@ export default function ProfilePage() {
     setSavingSettings(true);
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('users')
         .update({
-          display_name: editDisplayName.trim(),
+          displayName: editDisplayName.trim(),
           bio: editBio.trim(),
-          website: editWebsite.trim(),
+          // website: editWebsite.trim(), // users table doesn't have website
         })
         .eq('id', session.user.id);
 
@@ -147,9 +152,8 @@ export default function ProfilePage() {
       // Update local state
       setProfile((prev: any) => ({
         ...prev,
-        display_name: editDisplayName.trim(),
+        displayName: editDisplayName.trim(),
         bio: editBio.trim(),
-        website: editWebsite.trim(),
       }));
 
       setShowSettings(false);
@@ -222,7 +226,7 @@ export default function ProfilePage() {
         <div className="mb-4 sm:px-2">
           <div className="flex items-center gap-1.5 mb-1">
             <h1 className="text-sm sm:text-base font-bold text-content leading-tight">
-              {profile.display_name || profile.username}
+              {profile.displayName || profile.display_name || profile.username}
             </h1>
             <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-brand" />
           </div>
