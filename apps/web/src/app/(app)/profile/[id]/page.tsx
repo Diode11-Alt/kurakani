@@ -180,194 +180,223 @@ export default function ProfilePage() {
   const isOwnProfile = session?.user?.id === profileId;
 
   return (
-    <div className="max-w-[1000px] mx-auto py-6 px-4 md:py-8 select-none relative">
-      {/* Profile Header Card */}
-      <section className="card-ember rounded-2xl overflow-hidden relative mb-6">
-        {/* Cover Photo */}
-        <div className="h-[200px] w-full bg-gradient-to-r from-[var(--color-guff-primary)] to-[var(--color-guff-tertiary)] relative overflow-hidden">
-          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
-          {profile.cover_url && (
-            <img src={profile.cover_url} alt="" className="w-full h-full object-cover" />
-          )}
-        </div>
-
-        {/* Profile Info Overlay */}
-        <div className="px-6 pb-6">
-          <div className="relative flex flex-col sm:flex-row sm:items-end -mt-14 sm:gap-6 mb-4">
-            {/* Avatar */}
-            <div className="relative inline-block self-start sm:self-auto">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-[#1C1816] bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-md ember-glow">
+    <div className="max-w-[935px] mx-auto sm:py-6 sm:px-4 select-none relative pb-10">
+      {/* Profile Header (Insta-style) */}
+      <div className="px-4 pt-4 pb-6 border-b border-[#4A3D33]/40">
+        
+        {/* Top Info Row: Avatar + Stats */}
+        <div className="flex items-center justify-between mb-4">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            <div className="w-20 h-20 sm:w-[150px] sm:h-[150px] rounded-full p-[3px] bg-gradient-to-tr from-yellow-400 via-brand to-red-600">
+              <div className="w-full h-full rounded-full border-[3px] border-[#171311] overflow-hidden bg-[#262220] flex items-center justify-center">
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  profile.username?.[0]?.toUpperCase() || '?'
+                  <span className="text-2xl sm:text-5xl font-bold text-white">{profile.username?.[0]?.toUpperCase() || '?'}</span>
                 )}
               </div>
-              <span className="absolute bottom-1 right-1 w-5 h-5 bg-spark border-2 border-[#1C1816] rounded-full"></span>
             </div>
-
-            {/* Profile actions */}
-            <div className="mt-4 sm:mt-0 flex-grow flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-[var(--color-guff-text)]">
-                    {profile.display_name || profile.username}
-                  </h1>
-                  <ShieldCheck className="w-5 h-5 text-[var(--color-guff-primary)]" />
-                </div>
-                <p className="text-xs text-[var(--color-guff-text-muted)] mt-0.5">@{profile.username}</p>
-              </div>
-
-              <div className="flex gap-2">
-                {!isOwnProfile && session ? (
-                  <>
-                    <button
-                      onClick={handleMessage}
-                      className="px-5 py-2.5 rounded-xl text-xs font-bold border border-[#4A3D33] bg-[#262220] text-content-secondary hover:bg-[#2e2a27] active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                      <MessageSquare className="w-4 h-4" /> Message
-                    </button>
-                    <button
-                      onClick={toggleFollow}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
-                        isFollowing
-                          ? 'bg-[#262220] text-content border border-[#4A3D33] hover:bg-blaze/10 hover:text-blaze hover:border-blaze/30'
-                          : 'bg-brand text-white hover:bg-brand-hover ember-glow-sm'
-                      }`}
-                    >
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </button>
-                  </>
-                ) : isOwnProfile ? (
-                  <button
-                    onClick={() => setShowSettings(true)}
-                    className="p-2.5 bg-[#262220] border border-[#4A3D33] rounded-xl hover:bg-[#2e2a27] text-content-secondary active:scale-95 transition-all cursor-pointer"
-                  >
-                    <Settings className="w-5 h-5" />
-                  </button>
-                ) : null}
-              </div>
-            </div>
+            {/* Active Status */}
+            <span className="absolute bottom-1 right-1 sm:bottom-4 sm:right-4 w-4 h-4 sm:w-6 sm:h-6 bg-spark border-2 sm:border-4 border-[#171311] rounded-full"></span>
           </div>
 
-          {profile.bio && (
-            <p className="text-sm text-[var(--color-guff-text-secondary)] mt-4 leading-relaxed max-w-xl">{profile.bio}</p>
-          )}
-
-          {/* Links and Metadata */}
-          <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-[var(--color-guff-text-muted)]">
-            {profile.website && (
-              <span className="flex items-center gap-1.5">
-                <LinkIcon className="w-3.5 h-3.5" />
-                <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-[var(--color-guff-primary)] hover:underline font-semibold">
-                  {profile.website.replace(/^https?:\/\//, '')}
-                </a>
-              </span>
-            )}
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Joined {profile.created_at ? format(new Date(profile.created_at), 'MMMM yyyy') : ''}</span>
-            </span>
-          </div>
-
-          {/* Stats count */}
-          <div className="flex gap-8 mt-5 pt-5 border-t border-[var(--color-guff-border)]/40">
-            <div className="text-center sm:text-left">
-              <span className="block text-lg font-bold text-[var(--color-guff-text)] leading-none">{posts.length}</span>
-              <span className="text-[9px] font-extrabold text-[var(--color-guff-text-muted)] uppercase tracking-wider mt-1 block">Posts</span>
+          {/* Stats */}
+          <div className="flex flex-1 justify-center gap-6 sm:gap-12 px-4 sm:ml-10">
+            <div className="flex flex-col items-center justify-center cursor-pointer">
+              <span className="text-lg sm:text-xl font-bold text-content">{posts.length}</span>
+              <span className="text-[13px] sm:text-sm text-content-muted">posts</span>
             </div>
-            <div className="text-center sm:text-left">
-              <span className="block text-lg font-bold text-[var(--color-guff-text)] leading-none">{followersCount}</span>
-              <span className="text-[9px] font-extrabold text-[var(--color-guff-text-muted)] uppercase tracking-wider mt-1 block">Followers</span>
+            <div className="flex flex-col items-center justify-center cursor-pointer">
+              <span className="text-lg sm:text-xl font-bold text-content">{followersCount}</span>
+              <span className="text-[13px] sm:text-sm text-content-muted">followers</span>
             </div>
-            <div className="text-center sm:text-left">
-              <span className="block text-lg font-bold text-[var(--color-guff-text)] leading-none">{followingCount}</span>
-              <span className="text-[9px] font-extrabold text-[var(--color-guff-text-muted)] uppercase tracking-wider mt-1 block">Following</span>
+            <div className="flex flex-col items-center justify-center cursor-pointer">
+              <span className="text-lg sm:text-xl font-bold text-content">{followingCount}</span>
+              <span className="text-[13px] sm:text-sm text-content-muted">following</span>
             </div>
           </div>
         </div>
-      </section>
+
+        {/* Bio Section */}
+        <div className="mb-4 sm:px-2">
+          <div className="flex items-center gap-1.5 mb-1">
+            <h1 className="text-sm sm:text-base font-bold text-content leading-tight">
+              {profile.display_name || profile.username}
+            </h1>
+            <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-brand" />
+          </div>
+          
+          <div className="text-[13px] sm:text-sm text-content-muted mb-1">
+            <span className="text-[#A3A3A3]">@{profile.username}</span> • <span className="text-[#A3A3A3]">Digital Creator</span>
+          </div>
+          
+          {profile.bio && (
+            <p className="text-[13px] sm:text-sm text-content whitespace-pre-wrap leading-snug mb-1">{profile.bio}</p>
+          )}
+
+          {profile.website && (
+            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[13px] sm:text-sm font-semibold text-[#E0F2FE] hover:underline mt-1">
+              <LinkIcon className="w-3 h-3" />
+              {profile.website.replace(/^https?:\/\//, '')}
+            </a>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 w-full sm:px-2">
+          {!isOwnProfile && session ? (
+            <>
+              <button
+                onClick={toggleFollow}
+                className={`flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold active:scale-95 transition-all ${
+                  isFollowing
+                    ? 'bg-[#262220] text-content hover:bg-[#2e2a27]'
+                    : 'bg-brand text-white hover:bg-brand-hover'
+                }`}
+              >
+                {isFollowing ? 'Following' : 'Follow'}
+              </button>
+              <button
+                onClick={handleMessage}
+                className="flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold bg-[#262220] text-content hover:bg-[#2e2a27] active:scale-95 transition-all"
+              >
+                Message
+              </button>
+            </>
+          ) : isOwnProfile ? (
+            <>
+              <button
+                onClick={() => setShowSettings(true)}
+                className="flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold bg-[#262220] text-content hover:bg-[#2e2a27] active:scale-95 transition-all"
+              >
+                Edit profile
+              </button>
+              <button
+                className="flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold bg-[#262220] text-content hover:bg-[#2e2a27] active:scale-95 transition-all"
+              >
+                Share profile
+              </button>
+            </>
+          ) : null}
+        </div>
+
+        {/* Story Highlights Mockup */}
+        <div className="flex gap-4 mt-6 overflow-x-auto no-scrollbar pb-2 sm:px-2">
+          {['Security', 'Travel', 'Work', 'Life'].map((highlight, idx) => (
+            <div key={idx} className="flex flex-col items-center gap-1 cursor-pointer min-w-max group">
+              <div className="w-16 h-16 rounded-full border border-[#4A3D33] p-[2px] group-hover:border-content-muted transition-colors">
+                <div className="w-full h-full rounded-full bg-[#262220] flex items-center justify-center overflow-hidden">
+                  <span className="material-symbols-outlined text-content-muted">add</span>
+                </div>
+              </div>
+              <span className="text-[11px] text-content">{highlight}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Tabs Menu */}
-      <div className="sticky top-0 z-20 bg-[var(--color-guff-surface-bright)]/90 backdrop-blur-md border-b border-[var(--color-guff-outline-variant)]/30 flex gap-6 mb-6">
+      <div className="flex items-center justify-around border-b border-[#4A3D33]/40 mt-1 mb-1">
         <button
           onClick={() => setActiveTab('posts')}
-          className={`py-3.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === 'posts'
-              ? 'border-[var(--color-guff-primary)] text-[var(--color-guff-primary)] font-bold'
-              : 'border-transparent text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-text)]'
+          className={`flex-1 flex items-center justify-center py-3 border-t-2 -mt-[2px] transition-all ${
+            activeTab === 'posts' ? 'border-content text-content' : 'border-transparent text-content-muted'
           }`}
         >
-          Posts
+          <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'posts' ? "'FILL' 1" : "'FILL' 0" }}>
+            grid_on
+          </span>
         </button>
         <button
           onClick={() => setActiveTab('media')}
-          className={`py-3.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === 'media'
-              ? 'border-[var(--color-guff-primary)] text-[var(--color-guff-primary)] font-bold'
-              : 'border-transparent text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-text)]'
+          className={`flex-1 flex items-center justify-center py-3 border-t-2 -mt-[2px] transition-all ${
+            activeTab === 'media' ? 'border-content text-content' : 'border-transparent text-content-muted'
           }`}
         >
-          Media
+          <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'media' ? "'FILL' 1" : "'FILL' 0" }}>
+            movie
+          </span>
         </button>
         <button
           onClick={() => setActiveTab('saved')}
-          className={`py-3.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === 'saved'
-              ? 'border-[var(--color-guff-primary)] text-[var(--color-guff-primary)] font-bold'
-              : 'border-transparent text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-text)]'
+          className={`flex-1 flex items-center justify-center py-3 border-t-2 -mt-[2px] transition-all ${
+            activeTab === 'saved' ? 'border-content text-content' : 'border-transparent text-content-muted'
           }`}
         >
-          Saved
+          <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'saved' ? "'FILL' 1" : "'FILL' 0" }}>
+            bookmark_border
+          </span>
         </button>
       </div>
 
       {/* Grid Content */}
-      <div className="space-y-6">
+      <div className="pb-10 w-full max-w-full">
         {activeTab === 'posts' && (
           posts.length === 0 ? (
-            <div className="text-center py-16 card-ember rounded-xl">
-              <p className="text-[var(--color-guff-text-muted)] text-sm font-semibold">No posts yet</p>
+            <div className="flex flex-col items-center justify-center py-20 text-content-muted">
+              <div className="w-20 h-20 rounded-full border-2 border-content-muted flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-4xl">photo_camera</span>
+              </div>
+              <h3 className="text-xl font-bold text-content mb-2">No Posts Yet</h3>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
               {posts.map(post => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  currentUserId={session?.user?.id}
-                  onDelete={() => setPosts(prev => prev.filter(p => p.id !== post.id))}
-                />
+                <div 
+                  key={post.id} 
+                  className="aspect-square relative group bg-[#1C1816] overflow-hidden"
+                >
+                  {post.media_urls?.[0] ? (
+                    <img src={post.media_urls[0]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col p-2 text-[8px] sm:text-xs text-content break-words overflow-hidden bg-gradient-to-br from-[#262220] to-[#1C1816]">
+                      {post.content}
+                    </div>
+                  )}
+                  {/* Hover overlay stats */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-white text-xs sm:text-sm font-bold cursor-pointer">
+                    <div className="flex items-center gap-1.5"><Heart className="w-4 h-4 fill-white" /> {post.likes_count || 0}</div>
+                    <div className="flex items-center gap-1.5"><MessageSquare className="w-4 h-4 fill-white" /> {post.comments_count || 0}</div>
+                  </div>
+                </div>
               ))}
             </div>
           )
         )}
 
         {activeTab === 'media' && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
             {posts.filter(p => p.media_urls && p.media_urls.length > 0).map(post => (
               <div 
                 key={post.id} 
-                className="aspect-square relative rounded-xl overflow-hidden cursor-pointer group bg-[#171311] border border-[#4A3D33] shadow-sm"
+                className="aspect-square relative overflow-hidden cursor-pointer group bg-[#171311]"
               >
-                <img src={post.media_urls[0]} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-[var(--color-guff-primary)]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white text-xs font-bold">
-                  <div className="flex items-center gap-1"><Heart className="w-4 h-4 fill-current" /> {post.likes_count || 0}</div>
-                  <div className="flex items-center gap-1"><MessageSquare className="w-4 h-4 fill-current" /> {post.comments_count || 0}</div>
+                <img src={post.media_urls[0]} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white text-xs sm:text-sm font-bold">
+                  <div className="flex items-center gap-1"><Heart className="w-4 h-4 fill-white" /> {post.likes_count || 0}</div>
+                  <div className="flex items-center gap-1"><MessageSquare className="w-4 h-4 fill-white" /> {post.comments_count || 0}</div>
                 </div>
               </div>
             ))}
             {posts.filter(p => p.media_urls && p.media_urls.length > 0).length === 0 && (
-              <div className="col-span-full text-center py-16 card-ember rounded-xl">
-                <p className="text-[var(--color-guff-text-muted)] text-sm font-semibold">No media posts found</p>
+              <div className="col-span-full flex flex-col items-center justify-center py-20 text-content-muted">
+                <div className="w-20 h-20 rounded-full border-2 border-content-muted flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-4xl">movie</span>
+                </div>
+                <h3 className="text-xl font-bold text-content mb-2">No Media Yet</h3>
               </div>
             )}
           </div>
         )}
 
         {activeTab === 'saved' && (
-          <div className="text-center py-16 card-ember rounded-xl">
-            <p className="text-[var(--color-guff-text-muted)] text-sm font-semibold">No saved posts yet</p>
+          <div className="flex flex-col items-center justify-center py-20 text-content-muted">
+            <div className="w-20 h-20 rounded-full border-2 border-content-muted flex items-center justify-center mb-4">
+              <span className="material-symbols-outlined text-4xl">bookmark_border</span>
+            </div>
+            <h3 className="text-xl font-bold text-content mb-2">Only you can see what you've saved</h3>
+            <p className="text-sm">Save photos and videos that you want to see again.</p>
           </div>
         )}
       </div>
