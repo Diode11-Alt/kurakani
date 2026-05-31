@@ -2,7 +2,8 @@
 
 import { useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { ImagePlus, Loader2, X } from 'lucide-react';
+import { Image, Video, Smile, Loader2, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export function CreatePost({ userId, userProfile, onPostCreated }: {
   userId: string;
@@ -13,6 +14,7 @@ export function CreatePost({ userId, userProfile, onPostCreated }: {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [posting, setPosting] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,19 +70,20 @@ export function CreatePost({ userId, userProfile, onPostCreated }: {
       mediaPreviews.forEach(URL.revokeObjectURL);
       setMediaPreviews([]);
       onPostCreated();
+      setIsFocused(false);
     } catch (err) {
       console.error('Post error:', err);
-      alert('Failed to create post');
+      toast.error('Failed to create post');
     } finally {
       setPosting(false);
     }
   };
 
   return (
-    <div className="card p-5">
-      <div className="flex gap-3">
+    <div className="card p-4 shadow-[0_1px_3px_rgba(15,23,42,0.08)] bg-[var(--color-guff-surface-container-lowest)] rounded-xl transition-all duration-300">
+      <div className="flex gap-4">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden bg-gradient-to-br from-indigo-400 to-purple-400">
           {userProfile?.avatar_url ? (
             <img src={userProfile.avatar_url} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -93,20 +96,24 @@ export function CreatePost({ userId, userProfile, onPostCreated }: {
           <textarea
             value={content}
             onChange={e => setContent(e.target.value)}
+            onFocus={() => setIsFocused(true)}
             placeholder="What's on your mind?"
-            className="w-full resize-none outline-none text-[var(--color-guff-text)] placeholder-[var(--color-guff-text-muted)] text-[15px] leading-relaxed bg-transparent min-h-[60px]"
-            rows={2}
+            aria-label="Post content"
+            className={`w-full bg-transparent border-none outline-none focus:ring-0 text-sm leading-relaxed text-[var(--color-guff-text)] placeholder-[var(--color-guff-text-muted)] resize-none pt-2 transition-all duration-300 ${
+              isFocused || content ? 'min-h-[80px]' : 'min-h-[48px]'
+            }`}
+            rows={1}
           />
 
           {/* Media Previews */}
           {mediaPreviews.length > 0 && (
-            <div className="flex gap-2 mt-2 flex-wrap">
+            <div className="flex gap-2 mt-3 flex-wrap">
               {mediaPreviews.map((url, i) => (
-                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden bg-slate-100">
+                <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden bg-[var(--color-guff-surface-container-low)] border border-[var(--color-guff-border)]/30">
                   <img src={url} alt="" className="w-full h-full object-cover" />
                   <button
                     onClick={() => removeMedia(i)}
-                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                    className="absolute top-1.5 right-1.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80 transition-colors cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -115,15 +122,34 @@ export function CreatePost({ userId, userProfile, onPostCreated }: {
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--color-guff-border)]">
-            <div className="flex items-center gap-1">
+          {/* Actions Bar */}
+          <div className="mt-3 pt-3 border-t border-[var(--color-guff-border)]/20 flex items-center justify-between">
+            <div className="flex items-center gap-1 select-none">
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="p-2 rounded-lg text-[var(--color-guff-text-muted)] hover:bg-[var(--color-guff-primary-light)] hover:text-[var(--color-guff-primary)] transition-colors"
+                aria-label="Upload Image"
+                className="p-2 text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-primary)] hover:bg-[var(--color-guff-primary-light)] rounded-xl transition-all flex items-center gap-1.5 cursor-pointer text-xs font-semibold"
               >
-                <ImagePlus className="w-5 h-5" />
+                <Image className="w-4 h-4" />
+                <span className="hidden sm:inline">Image</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                aria-label="Upload Video"
+                className="p-2 text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-primary)] hover:bg-[var(--color-guff-primary-light)] rounded-xl transition-all flex items-center gap-1.5 cursor-pointer text-xs font-semibold"
+              >
+                <Video className="w-4 h-4" />
+                <span className="hidden sm:inline">Video</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Add Emoji"
+                className="p-2 text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-primary)] hover:bg-[var(--color-guff-primary-light)] rounded-xl transition-all flex items-center gap-1.5 cursor-pointer text-xs font-semibold"
+              >
+                <Smile className="w-4 h-4" />
+                <span className="hidden sm:inline">Emoji</span>
               </button>
               <input
                 ref={fileRef}
@@ -132,13 +158,14 @@ export function CreatePost({ userId, userProfile, onPostCreated }: {
                 multiple
                 onChange={handleFileSelect}
                 className="hidden"
+                disabled={posting}
               />
             </div>
 
             <button
               onClick={handlePost}
               disabled={posting || (!content.trim() && mediaFiles.length === 0)}
-              className="btn-primary px-5 py-2 text-sm"
+              className="px-5 py-2 bg-[var(--color-guff-primary)] text-white rounded-xl text-xs font-bold shadow-md hover:bg-[var(--color-guff-primary-hover)] active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Post'}
             </button>

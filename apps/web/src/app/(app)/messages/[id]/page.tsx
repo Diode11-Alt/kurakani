@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, Send, Paperclip, Image as ImageIcon, Loader2, Check, CheckCheck, Phone, Video, Mic, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, Paperclip, Image as ImageIcon, Loader2, Check, CheckCheck, Phone, Video, Mic, Trash2, ShieldCheck, MoreVertical } from 'lucide-react';
 
 export default function ChatThreadPage() {
   const params = useParams();
@@ -103,7 +103,7 @@ export default function ChatThreadPage() {
       const filename = `${session.user.id}-${Date.now()}.webm`;
       const file = new File([blob], filename, { type: 'audio/webm' });
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('chat-media')
         .upload(filename, file, {
           cacheControl: '3600',
@@ -345,63 +345,78 @@ export default function ChatThreadPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 relative overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[var(--color-guff-surface)] relative overflow-hidden select-none">
       {/* Header */}
-      <div className="bg-white px-4 py-3 border-b border-[var(--color-guff-border)] flex items-center gap-3 z-10">
-        <button
-          onClick={() => router.push('/messages')}
-          className="md:hidden p-1.5 rounded-lg text-[var(--color-guff-text-secondary)] hover:bg-slate-100 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+      <div className="bg-white px-4 py-3 border-b border-[var(--color-guff-border)]/40 flex items-center justify-between z-10 shadow-sm">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/messages')}
+            className="md:hidden p-1.5 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
 
-        {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
-          {otherUser?.avatar_url ? (
-            <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
-          ) : (
-            otherUser?.username?.[0]?.toUpperCase() || '?'
-          )}
-        </div>
-
-        {/* User Info */}
-        <div className="flex-grow">
-          <div className="font-bold text-sm text-[var(--color-guff-text)]">
-            {otherUser?.display_name || otherUser?.username}
+          {/* Avatar with Squircle wrapper */}
+          <div className="relative">
+            <div className="w-10 h-10 squircle bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+              {otherUser?.avatar_url ? (
+                <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                otherUser?.username?.[0]?.toUpperCase() || '?'
+              )}
+            </div>
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
           </div>
-          <div className="text-[11px] text-[var(--color-guff-text-muted)]">
-            {isTyping ? 'typing...' : `@${otherUser?.username}`}
+
+          {/* User Info */}
+          <div className="flex flex-col select-none">
+            <div className="font-bold text-sm text-[var(--color-guff-text)] leading-tight">
+              {otherUser?.display_name || otherUser?.username}
+            </div>
+            <div className="text-[10px] font-bold text-[var(--color-guff-text-muted)] mt-0.5 flex items-center gap-1">
+              {isTyping ? (
+                <span className="text-[var(--color-guff-primary)] animate-pulse">typing...</span>
+              ) : (
+                <>
+                  <ShieldCheck className="w-3 h-3 text-[var(--color-guff-success)]" />
+                  <span>Encrypted Connection</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Call Controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('guff-start-call', {
               detail: { conversationId, callType: 'audio', otherUser }
             }))}
-            className="p-2 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-100 transition-colors"
+            className="p-2.5 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-50 hover:text-[var(--color-guff-primary)] transition-all cursor-pointer"
           >
-            <Phone className="w-5 h-5" />
+            <Phone className="w-4.5 h-4.5" />
           </button>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('guff-start-call', {
               detail: { conversationId, callType: 'video', otherUser }
             }))}
-            className="p-2 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-100 transition-colors"
+            className="p-2.5 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-50 hover:text-[var(--color-guff-primary)] transition-all cursor-pointer"
           >
-            <Video className="w-5 h-5" />
+            <Video className="w-4.5 h-4.5" />
+          </button>
+          <button className="p-2.5 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-50 transition-all cursor-pointer">
+            <MoreVertical className="w-4.5 h-4.5" />
           </button>
         </div>
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--color-guff-surface)]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--color-guff-surface)]">
         {messages.length === 0 ? (
-          <div className="text-center py-20">
-            <span className="text-4xl">👋</span>
+          <div className="text-center py-20 select-none">
+            <span className="text-4xl animate-bounce inline-block">👋</span>
             <h4 className="font-semibold text-sm text-[var(--color-guff-text)] mt-3">Say hello!</h4>
-            <p className="text-xs text-[var(--color-guff-text-muted)] mt-1">Start your conversation with @{otherUser?.username}</p>
+            <p className="text-xs text-[var(--color-guff-text-muted)] mt-1">Start your end-to-end encrypted conversation with @{otherUser?.username}</p>
           </div>
         ) : (
           messages.map((m) => {
@@ -411,33 +426,33 @@ export default function ChatThreadPage() {
 
             return (
               <div key={m.id} className={`flex flex-col ${isSelf ? 'items-end' : 'items-start'}`}>
-                <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm text-sm
+                <div className={`max-w-[85%] md:max-w-[70%] p-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.08)] text-sm leading-relaxed break-words
                   ${isSelf 
-                    ? 'bg-[var(--color-guff-primary)] text-white rounded-tr-none' 
-                    : 'bg-white text-[var(--color-guff-text)] rounded-tl-none border border-slate-100'}`}
+                    ? 'bg-[var(--color-guff-primary)] text-white rounded-[20px] rounded-tr-[4px]' 
+                    : 'bg-white text-[var(--color-guff-text)] rounded-[20px] rounded-tl-[4px] border border-slate-100'}`}
                 >
                   {/* Media attachment */}
                   {m.media_url && (
-                    <div className="mb-2 max-w-xs rounded-lg overflow-hidden">
+                    <div className="mb-2 max-w-xs rounded-xl overflow-hidden border border-black/5">
                       {m.media_url.match(/\.(mp3|wav|ogg|webm|m4a|aac)(\?|$)/i) ? (
                         <audio src={m.media_url} controls className="w-full max-w-[240px] focus:outline-none" />
                       ) : (
-                        <img src={m.media_url} alt="" className="max-h-48 object-cover w-full border border-black/5 rounded-lg" />
+                        <img src={m.media_url} alt="" className="max-h-48 object-cover w-full rounded-xl" />
                       )}
                     </div>
                   )}
 
                   {/* Text content */}
-                  {m.content && <p className="leading-relaxed break-words">{m.content}</p>}
+                  {m.content && <p className="font-sans">{m.content}</p>}
                 </div>
 
                 {/* Message Meta Info */}
-                <div className="flex items-center gap-1.5 mt-1 px-1 text-[10px] text-[var(--color-guff-text-muted)]">
+                <div className="flex items-center gap-1 mt-1.5 px-1.5 text-[9px] font-bold text-[var(--color-guff-text-muted)] select-none">
                   <span>{timeFormatted}</span>
                   {isSelf && (
                     <span>
                       {isRead ? (
-                        <CheckCheck className="w-3.5 h-3.5 text-indigo-500 stroke-[2.5]" />
+                        <CheckCheck className="w-3.5 h-3.5 text-[var(--color-guff-primary)] stroke-[2.5]" />
                       ) : (
                         <Check className="w-3.5 h-3.5 text-slate-300 stroke-[2.5]" />
                       )}
@@ -451,17 +466,17 @@ export default function ChatThreadPage() {
 
         {/* Live typing indicator bubble */}
         {isTyping && (
-          <div className="flex items-end gap-2">
-            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 overflow-hidden">
+          <div className="flex items-end gap-2 mt-2 select-none">
+            <div className="w-8 h-8 squircle bg-gradient-to-br from-indigo-300 to-purple-300 flex items-center justify-center text-[10px] font-bold text-white overflow-hidden flex-shrink-0">
               {otherUser?.username?.[0]?.toUpperCase()}
             </div>
-            <div className="bg-slate-100 rounded-2xl rounded-bl-none px-4 py-2.5 text-xs text-[var(--color-guff-text-secondary)] border border-slate-200">
-              <span className="flex items-center gap-1">
-                <span>{typingUser} is typing</span>
+            <div className="bg-white rounded-[20px] rounded-tl-[4px] px-4 py-3 shadow-[0_1px_3px_rgba(15,23,42,0.08)] border border-slate-100">
+              <span className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-[var(--color-guff-text-secondary)]">{typingUser} is typing</span>
                 <span className="flex gap-0.5 items-center justify-center">
-                  <span className="w-1 h-1 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1 h-1 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1 h-1 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </span>
               </span>
             </div>
@@ -472,39 +487,39 @@ export default function ChatThreadPage() {
       </div>
 
       {/* Input Composer Panel */}
-      <div className="bg-white p-4 border-t border-[var(--color-guff-border)] flex items-center gap-3">
+      <div className="bg-white p-4 border-t border-[var(--color-guff-border)]/40 flex items-center gap-3 relative z-10">
         {isRecording ? (
-          <div className="flex-grow flex items-center gap-3 bg-red-50/50 border border-red-100 rounded-2xl px-4 py-2">
+          <div className="flex-grow flex items-center gap-3 bg-red-50/50 border border-red-100 rounded-full px-4 py-2 select-none">
             <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse flex-shrink-0" />
-            <span className="text-sm font-semibold text-red-600">Recording {formatDuration(recordingDuration)}</span>
+            <span className="text-xs font-bold text-red-600">Recording {formatDuration(recordingDuration)}</span>
             
             <button
               type="button"
               onClick={cancelRecording}
-              className="p-2 rounded-xl text-rose-600 hover:bg-rose-100/50 transition-colors ml-auto flex items-center justify-center"
+              className="p-2 rounded-xl text-rose-600 hover:bg-rose-100/50 transition-colors ml-auto flex items-center justify-center cursor-pointer"
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className="w-4.5 h-4.5" />
             </button>
             <button
               type="button"
               onClick={stopRecording}
-              className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow transition-colors flex items-center justify-center"
+              className="p-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow transition-colors flex items-center justify-center cursor-pointer"
             >
               <Send className="w-4 h-4" />
             </button>
           </div>
         ) : (
-          <form onSubmit={(e) => handleSendMessage(e)} className="w-full flex items-center gap-3">
+          <form onSubmit={(e) => handleSendMessage(e)} className="w-full flex items-center gap-3 select-none">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="p-2 rounded-xl text-[var(--color-guff-text-muted)] hover:bg-slate-50 hover:text-[var(--color-guff-text)] transition-colors flex-shrink-0"
+              className="p-2.5 rounded-full text-[var(--color-guff-text-muted)] hover:bg-slate-50 hover:text-[var(--color-guff-primary)] transition-colors flex-shrink-0 cursor-pointer"
             >
               {uploading ? (
                 <Loader2 className="w-5 h-5 animate-spin text-[var(--color-guff-primary)]" />
               ) : (
-                <ImageIcon className="w-5 h-5" />
+                <Paperclip className="w-5 h-5" />
               )}
             </button>
             <input
@@ -516,20 +531,30 @@ export default function ChatThreadPage() {
               disabled={uploading}
             />
 
-            <input
-              type="text"
-              value={inputText}
-              onChange={handleInputChange}
-              placeholder="Type a message..."
-              className="input-field py-2.5 text-sm flex-grow bg-slate-50 border-none focus:bg-white"
-              disabled={uploading}
-            />
+            <div className="flex-grow bg-[var(--color-guff-surface-container-low)] rounded-full px-4 py-2 flex items-center gap-2 border border-transparent focus-within:border-[var(--color-guff-primary)]/20 focus-within:bg-white transition-all">
+              <button 
+                type="button"
+                className="p-1 rounded-full text-[var(--color-guff-text-muted)] hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-3.5-9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+                </svg>
+              </button>
+              <input
+                type="text"
+                value={inputText}
+                onChange={handleInputChange}
+                placeholder="Secure message..."
+                className="flex-grow bg-transparent border-none focus:ring-0 text-xs py-1.5 outline-none text-[var(--color-guff-text)]"
+                disabled={uploading}
+              />
+            </div>
 
             {!inputText.trim() && !uploading ? (
               <button
                 type="button"
                 onClick={startRecording}
-                className="p-2 rounded-xl text-[var(--color-guff-text-muted)] hover:bg-slate-50 hover:text-[var(--color-guff-text)] transition-colors flex-shrink-0"
+                className="p-2.5 rounded-full text-[var(--color-guff-text-muted)] hover:bg-slate-50 hover:text-[var(--color-guff-text)] transition-colors flex-shrink-0 cursor-pointer"
               >
                 <Mic className="w-5 h-5" />
               </button>
@@ -537,9 +562,9 @@ export default function ChatThreadPage() {
               <button
                 type="submit"
                 disabled={uploading || (!inputText.trim())}
-                className="btn-primary p-2.5 rounded-xl flex items-center justify-center flex-shrink-0"
+                className="p-3 bg-[var(--color-guff-primary)] hover:bg-[var(--color-guff-primary-hover)] text-white rounded-full flex items-center justify-center flex-shrink-0 shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4 fill-current" />
               </button>
             )}
           </form>

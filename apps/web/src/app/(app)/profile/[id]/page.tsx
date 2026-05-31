@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { PostCard } from '../../../../components/PostCard';
-import { Loader2, MapPin, LinkIcon, Calendar } from 'lucide-react';
+import { Loader2, Link as LinkIcon, Calendar, Settings, Edit, X, Save, MessageSquare, ShieldCheck, Heart } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProfilePage() {
   const params = useParams();
@@ -19,19 +20,40 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'saved'>('posts');
+
+  // Slide-over settings state
+  const [showSettings, setShowSettings] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editWebsite, setEditWebsite] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
 
+      await loadProfileData();
+    };
+    init();
+  }, [profileId]);
+
+  const loadProfileData = async () => {
+    try {
       // Fetch profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', profileId)
         .single();
-      setProfile(profileData);
+      
+      if (profileData) {
+        setProfile(profileData);
+        setEditDisplayName(profileData.display_name || '');
+        setEditBio(profileData.bio || '');
+        setEditWebsite(profileData.website || '');
+      }
 
       // Fetch posts
       const { data: postsData } = await supabase
@@ -55,26 +77,28 @@ export default function ProfilePage() {
       setFollowingCount(following || 0);
 
       // Check if following
-      if (session && session.user.id !== profileId) {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (currentSession && currentSession.user.id !== profileId) {
         const { data: followData } = await supabase
           .from('follows')
           .select('follower_id')
-          .eq('follower_id', session.user.id)
+          .eq('follower_id', currentSession.user.id)
           .eq('following_id', profileId)
           .maybeSingle();
         setIsFollowing(!!followData);
       }
-
+    } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
-    };
-    init();
-  }, [profileId]);
+    }
+  };
 
   const toggleFollow = async () => {
     if (!session) return;
     if (isFollowing) {
       setIsFollowing(false);
-      setFollowersCount(c => c - 1);
+      setFollowersCount(c => Math.max(0, c - 1));
       await supabase.from('follows').delete()
         .eq('follower_id', session.user.id)
         .eq('following_id', profileId);
@@ -105,17 +129,49 @@ export default function ProfilePage() {
     }
   };
 
+  const saveProfileSettings = async () => {
+    if (!session || !profile) return;
+    setSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: editDisplayName.trim(),
+          bio: editBio.trim(),
+          website: editWebsite.trim(),
+        })
+        .eq('id', session.user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setProfile((prev: any) => ({
+        ...prev,
+        display_name: editDisplayName.trim(),
+        bio: editBio.trim(),
+        website: editWebsite.trim(),
+      }));
+
+      setShowSettings(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update profile');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-[var(--color-guff-primary)]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-guff-primary)]" />
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="text-center py-20">
+      <div className="text-center py-20 select-none">
         <h2 className="text-xl font-bold text-[var(--color-guff-text)]">User not found</h2>
       </div>
     );
@@ -124,107 +180,290 @@ export default function ProfilePage() {
   const isOwnProfile = session?.user?.id === profileId;
 
   return (
-    <div className="max-w-2xl mx-auto py-6 px-4">
-      {/* Profile Header */}
-      <div className="card overflow-hidden mb-6">
-        {/* Cover */}
-        <div className="h-36 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400 relative">
+    <div className="max-w-[1000px] mx-auto py-6 px-4 md:py-8 select-none relative">
+      {/* Profile Header Card */}
+      <section className="bg-white shadow-[0_1px_3px_rgba(15,23,42,0.08)] border border-[var(--color-guff-outline-variant)]/20 rounded-2xl overflow-hidden relative mb-6">
+        {/* Cover Photo */}
+        <div className="h-[200px] w-full bg-gradient-to-r from-[var(--color-guff-primary)] to-[var(--color-guff-tertiary)] relative overflow-hidden">
+          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
           {profile.cover_url && (
             <img src={profile.cover_url} alt="" className="w-full h-full object-cover" />
           )}
         </div>
 
-        {/* Info */}
-        <div className="px-5 pb-5">
-          <div className="flex items-end justify-between -mt-10 mb-4">
-            <div className="w-20 h-20 rounded-full border-4 border-white bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-2xl font-bold overflow-hidden shadow-lg">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                profile.username?.[0]?.toUpperCase() || '?'
-              )}
+        {/* Profile Info Overlay */}
+        <div className="px-6 pb-6">
+          <div className="relative flex flex-col sm:flex-row sm:items-end -mt-14 sm:gap-6 mb-4">
+            {/* Avatar */}
+            <div className="relative inline-block self-start sm:self-auto">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-md">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  profile.username?.[0]?.toUpperCase() || '?'
+                )}
+              </div>
+              <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full"></span>
             </div>
 
-            {!isOwnProfile && session && (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleMessage}
-                  className="px-5 py-2 rounded-xl text-sm font-semibold border border-[var(--color-guff-border)] bg-[var(--color-guff-surface)] text-[var(--color-guff-text-secondary)] hover:bg-slate-50 transition-all"
-                >
-                  Message
-                </button>
-                <button
-                  onClick={toggleFollow}
-                  className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
-                    isFollowing
-                      ? 'bg-slate-100 text-[var(--color-guff-text)] hover:bg-red-50 hover:text-[var(--color-guff-danger)]'
-                      : 'btn-primary'
-                  }`}
-                >
-                  {isFollowing ? 'Following' : 'Follow'}
-                </button>
+            {/* Profile actions */}
+            <div className="mt-4 sm:mt-0 flex-grow flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-[var(--color-guff-text)]">
+                    {profile.display_name || profile.username}
+                  </h1>
+                  <ShieldCheck className="w-5 h-5 text-[var(--color-guff-primary)]" />
+                </div>
+                <p className="text-xs text-[var(--color-guff-text-muted)] mt-0.5">@{profile.username}</p>
               </div>
-            )}
+
+              <div className="flex gap-2">
+                {!isOwnProfile && session ? (
+                  <>
+                    <button
+                      onClick={handleMessage}
+                      className="px-5 py-2.5 rounded-xl text-xs font-bold border border-[var(--color-guff-outline-variant)] bg-white text-[var(--color-guff-text-secondary)] hover:bg-slate-50 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <MessageSquare className="w-4 h-4" /> Message
+                    </button>
+                    <button
+                      onClick={toggleFollow}
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
+                        isFollowing
+                          ? 'bg-slate-100 text-[var(--color-guff-text)] border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100'
+                          : 'bg-[var(--color-guff-primary)] text-white hover:bg-[var(--color-guff-primary-hover)]'
+                      }`}
+                    >
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </button>
+                  </>
+                ) : isOwnProfile ? (
+                  <button
+                    onClick={() => setShowSettings(true)}
+                    className="p-2.5 bg-slate-50 border border-[var(--color-guff-outline-variant)]/40 rounded-xl hover:bg-slate-100 text-[var(--color-guff-text-secondary)] active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
           </div>
 
-          <h1 className="text-xl font-extrabold text-[var(--color-guff-text)]">
-            {profile.display_name || profile.username}
-          </h1>
-          <p className="text-sm text-[var(--color-guff-text-muted)]">@{profile.username}</p>
-
           {profile.bio && (
-            <p className="text-sm text-[var(--color-guff-text-secondary)] mt-2 leading-relaxed">{profile.bio}</p>
+            <p className="text-sm text-[var(--color-guff-text-secondary)] mt-4 leading-relaxed max-w-xl">{profile.bio}</p>
           )}
 
-          <div className="flex items-center gap-4 mt-3 text-sm text-[var(--color-guff-text-muted)]">
+          {/* Links and Metadata */}
+          <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-[var(--color-guff-text-muted)]">
             {profile.website && (
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 <LinkIcon className="w-3.5 h-3.5" />
-                <a href={profile.website} target="_blank" rel="noopener" className="text-[var(--color-guff-primary)] hover:underline">
+                <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-[var(--color-guff-primary)] hover:underline font-semibold">
                   {profile.website.replace(/^https?:\/\//, '')}
                 </a>
               </span>
             )}
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
-              Joined {profile.created_at ? format(new Date(profile.created_at), 'MMM yyyy') : ''}
+              <span>Joined {profile.created_at ? format(new Date(profile.created_at), 'MMMM yyyy') : ''}</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-5 mt-4 text-sm">
-            <span>
-              <span className="font-bold text-[var(--color-guff-text)]">{followingCount}</span>{' '}
-              <span className="text-[var(--color-guff-text-muted)]">Following</span>
-            </span>
-            <span>
-              <span className="font-bold text-[var(--color-guff-text)]">{followersCount}</span>{' '}
-              <span className="text-[var(--color-guff-text-muted)]">Followers</span>
-            </span>
-            <span>
-              <span className="font-bold text-[var(--color-guff-text)]">{posts.length}</span>{' '}
-              <span className="text-[var(--color-guff-text-muted)]">Posts</span>
-            </span>
+          {/* Stats count */}
+          <div className="flex gap-8 mt-5 pt-5 border-t border-[var(--color-guff-border)]/40">
+            <div className="text-center sm:text-left">
+              <span className="block text-lg font-bold text-[var(--color-guff-text)] leading-none">{posts.length}</span>
+              <span className="text-[9px] font-extrabold text-[var(--color-guff-text-muted)] uppercase tracking-wider mt-1 block">Posts</span>
+            </div>
+            <div className="text-center sm:text-left">
+              <span className="block text-lg font-bold text-[var(--color-guff-text)] leading-none">{followersCount}</span>
+              <span className="text-[9px] font-extrabold text-[var(--color-guff-text-muted)] uppercase tracking-wider mt-1 block">Followers</span>
+            </div>
+            <div className="text-center sm:text-left">
+              <span className="block text-lg font-bold text-[var(--color-guff-text)] leading-none">{followingCount}</span>
+              <span className="text-[9px] font-extrabold text-[var(--color-guff-text-muted)] uppercase tracking-wider mt-1 block">Following</span>
+            </div>
           </div>
         </div>
+      </section>
+
+      {/* Tabs Menu */}
+      <div className="sticky top-0 z-20 bg-[var(--color-guff-surface-bright)]/90 backdrop-blur-md border-b border-[var(--color-guff-outline-variant)]/30 flex gap-6 mb-6">
+        <button
+          onClick={() => setActiveTab('posts')}
+          className={`py-3.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === 'posts'
+              ? 'border-[var(--color-guff-primary)] text-[var(--color-guff-primary)] font-bold'
+              : 'border-transparent text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-text)]'
+          }`}
+        >
+          Posts
+        </button>
+        <button
+          onClick={() => setActiveTab('media')}
+          className={`py-3.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === 'media'
+              ? 'border-[var(--color-guff-primary)] text-[var(--color-guff-primary)] font-bold'
+              : 'border-transparent text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-text)]'
+          }`}
+        >
+          Media
+        </button>
+        <button
+          onClick={() => setActiveTab('saved')}
+          className={`py-3.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === 'saved'
+              ? 'border-[var(--color-guff-primary)] text-[var(--color-guff-primary)] font-bold'
+              : 'border-transparent text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-text)]'
+          }`}
+        >
+          Saved
+        </button>
       </div>
 
-      {/* Posts */}
-      {posts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-[var(--color-guff-text-muted)] text-sm">No posts yet</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {posts.map(post => (
-            <PostCard
-              key={post.id}
-              post={post}
-              currentUserId={session?.user?.id}
-              onDelete={() => setPosts(prev => prev.filter(p => p.id !== post.id))}
+      {/* Grid Content */}
+      <div className="space-y-6">
+        {activeTab === 'posts' && (
+          posts.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-xl border border-[var(--color-guff-border)]/20 shadow-sm">
+              <p className="text-[var(--color-guff-text-muted)] text-sm font-semibold">No posts yet</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {posts.map(post => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  currentUserId={session?.user?.id}
+                  onDelete={() => setPosts(prev => prev.filter(p => p.id !== post.id))}
+                />
+              ))}
+            </div>
+          )
+        )}
+
+        {activeTab === 'media' && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {posts.filter(p => p.media_urls && p.media_urls.length > 0).map(post => (
+              <div 
+                key={post.id} 
+                className="aspect-square relative rounded-xl overflow-hidden cursor-pointer group bg-slate-50 border border-[var(--color-guff-border)]/20 shadow-sm"
+              >
+                <img src={post.media_urls[0]} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div className="absolute inset-0 bg-[var(--color-guff-primary)]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white text-xs font-bold">
+                  <div className="flex items-center gap-1"><Heart className="w-4 h-4 fill-current" /> {post.likes_count || 0}</div>
+                  <div className="flex items-center gap-1"><MessageSquare className="w-4 h-4 fill-current" /> {post.comments_count || 0}</div>
+                </div>
+              </div>
+            ))}
+            {posts.filter(p => p.media_urls && p.media_urls.length > 0).length === 0 && (
+              <div className="col-span-full text-center py-16 bg-white rounded-xl border border-[var(--color-guff-border)]/20 shadow-sm">
+                <p className="text-[var(--color-guff-text-muted)] text-sm font-semibold">No media posts found</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'saved' && (
+          <div className="text-center py-16 bg-white rounded-xl border border-[var(--color-guff-border)]/20 shadow-sm">
+            <p className="text-[var(--color-guff-text-muted)] text-sm font-semibold">No saved posts yet</p>
+          </div>
+        )}
+      </div>
+
+      {/* SLIDE-OVER SETTINGS PANEL */}
+      <AnimatePresence>
+        {showSettings && (
+          <div className="fixed inset-0 z-50 overflow-hidden">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSettings(false)}
+              className="absolute inset-0 bg-slate-900/40 cursor-pointer"
             />
-          ))}
-        </div>
-      )}
+            
+            {/* Panel Content */}
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl p-6 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-lg font-bold text-[var(--color-guff-text)]">Profile Settings</h2>
+                  <button 
+                    onClick={() => setShowSettings(false)}
+                    className="p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5 text-[var(--color-guff-text-secondary)]" />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Display Name */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-extrabold text-[var(--color-guff-text-muted)] uppercase tracking-wider">Display Name</label>
+                    <input 
+                      type="text" 
+                      value={editDisplayName}
+                      onChange={e => setEditDisplayName(e.target.value)}
+                      className="input-field py-2.5 text-xs bg-slate-50 border-none focus:bg-white text-[var(--color-guff-text)]"
+                      placeholder="Your Name"
+                    />
+                  </div>
+
+                  {/* Bio */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-extrabold text-[var(--color-guff-text-muted)] uppercase tracking-wider">Bio</label>
+                    <textarea 
+                      value={editBio}
+                      onChange={e => setEditBio(e.target.value)}
+                      rows={3}
+                      className="input-field py-2.5 text-xs bg-slate-50 border-none focus:bg-white text-[var(--color-guff-text)] resize-none"
+                      placeholder="Tell others about yourself..."
+                      maxLength={160}
+                    />
+                    <span className="block text-right text-[10px] text-[var(--color-guff-text-muted)]">{editBio.length}/160</span>
+                  </div>
+
+                  {/* Website */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-extrabold text-[var(--color-guff-text-muted)] uppercase tracking-wider">Website</label>
+                    <input 
+                      type="text" 
+                      value={editWebsite}
+                      onChange={e => setEditWebsite(e.target.value)}
+                      className="input-field py-2.5 text-xs bg-slate-50 border-none focus:bg-white text-[var(--color-guff-text)]"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Save changes footer */}
+              <button 
+                onClick={saveProfileSettings}
+                disabled={savingSettings}
+                className="w-full py-3.5 bg-[var(--color-guff-primary)] hover:bg-[var(--color-guff-primary-hover)] text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingSettings ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Save Changes</span>
+                  </>
+                )}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -9,11 +9,15 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@privacyresearch/libsignal-protocol-typescript": "^0.0.16",
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/noto-serif": "^0.4.2",
+    "@expo-google-fonts/public-sans": "^0.4.2",
     "@react-native-async-storage/async-storage": "^1.21.0",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/native-stack": "^6.9.26",
+    "@signal/crypto": "file:../../packages/crypto",
     "expo": "~50.0.14",
+    "expo-font": "^56.0.5",
     "expo-status-bar": "~1.11.1",
     "lucide-react-native": "^1.17.0",
     "react": "18.2.0",

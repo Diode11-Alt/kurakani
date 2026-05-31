@@ -9,23 +9,27 @@ export const users = pgTable('users', {
   email:           varchar('email', { length: 255 }).unique().notNull(),
   passwordHash:    varchar('password_hash', { length: 255 }).notNull(),
   phoneNumber:     varchar('phone_number', { length: 20 }).unique(),
+  phoneHash:       varchar('phone_hash', { length: 128 }),  // SHA-256 hash of phone + pepper
   username:        varchar('username', { length: 50 }).unique(),
   displayName:     varchar('display_name', { length: 100 }),
+  bio:             text('bio'),
   avatarUrl:       text('avatar_url'),
   profileKey:      text('profile_key'),          // E2EE profile key (base64)
   registrationId:  integer('registration_id').notNull(),
   createdAt:       timestamp('created_at').defaultNow(),
   lastSeenAt:      timestamp('last_seen_at'),
   isActive:        boolean('is_active').default(true),
+  deletionScheduledAt: timestamp('deletion_scheduled_at'), // 30-day grace period
 }, t => ({
   emailIdx: index('users_email_idx').on(t.email),
   phoneIdx: index('users_phone_idx').on(t.phoneNumber),
+  usernameIdx: index('users_username_idx').on(t.username),
 }));
 
 // ─── IDENTITY KEYS (Signal Protocol) ──────────────────────
 export const identityKeys = pgTable('identity_keys', {
   id:              uuid('id').defaultRandom().primaryKey(),
-  userId:          uuid('user_id').references(() => users.id).notNull(),
+  userId:          uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   deviceId:        integer('device_id').notNull(),
   identityKey:     text('identity_key').notNull(),       // IK public (base64)
   signedPreKey:    jsonb('signed_pre_key').notNull(),    // { keyId, publicKey, signature }
@@ -37,18 +41,19 @@ export const identityKeys = pgTable('identity_keys', {
 // ─── ONE-TIME PREKEYS ──────────────────────────────────────
 export const oneTimePreKeys = pgTable('one_time_pre_keys', {
   id:              uuid('id').defaultRandom().primaryKey(),
-  userId:          uuid('user_id').references(() => users.id).notNull(),
+  userId:          uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   deviceId:        integer('device_id').notNull(),
   keyId:           integer('key_id').notNull(),
   publicKey:       text('public_key').notNull(),          // base64
   used:            boolean('used').default(false),
+  usedAt:          timestamp('used_at'),
   createdAt:       timestamp('created_at').defaultNow(),
 });
 
 // ─── SESSIONS ─────────────────────────────────────────────
 export const sessions = pgTable('sessions', {
   id:              uuid('id').defaultRandom().primaryKey(),
-  userId:          uuid('user_id').references(() => users.id).notNull(),
+  userId:          uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   deviceId:        integer('device_id').notNull(),
   token:           text('token').notNull().unique(),
   pushToken:       text('push_token'),
@@ -56,6 +61,19 @@ export const sessions = pgTable('sessions', {
   expiresAt:       timestamp('expires_at').notNull(),
   createdAt:       timestamp('created_at').defaultNow(),
 });
+
+// ─── DEVICES ──────────────────────────────────────────────
+export const devices = pgTable('devices', {
+  id:              uuid('id').defaultRandom().primaryKey(),
+  userId:          uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  deviceId:        integer('device_id').notNull(),
+  pushToken:       text('push_token'),
+  platform:        varchar('platform', { length: 10 }), // ios | android | web
+  lastActiveAt:    timestamp('last_active_at').defaultNow(),
+  createdAt:       timestamp('created_at').defaultNow(),
+}, t => ({
+  userDeviceIdx: uniqueIndex('devices_user_device_idx').on(t.userId, t.deviceId),
+}));
 
 // ─── CONVERSATIONS ─────────────────────────────────────────
 export const conversations = pgTable('conversations', {
@@ -69,8 +87,8 @@ export const conversations = pgTable('conversations', {
 });
 
 export const conversationMembers = pgTable('conversation_members', {
-  conversationId:  uuid('conversation_id').references(() => conversations.id).notNull(),
-  userId:          uuid('user_id').references(() => users.id).notNull(),
+  conversationId:  uuid('conversation_id').references(() => conversations.id, { onDelete: 'cascade' }).notNull(),
+  userId:          uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   role:            varchar('role', { length: 10 }).default('member'), // admin | member
   joinedAt:        timestamp('joined_at').defaultNow(),
   lastReadAt:      timestamp('last_read_at'),
@@ -81,7 +99,7 @@ export const conversationMembers = pgTable('conversation_members', {
 // ─── MESSAGES ─────────────────────────────────────────────
 export const messages = pgTable('messages', {
   id:              uuid('id').defaultRandom().primaryKey(),
-  conversationId:  uuid('conversation_id').references(() => conversations.id).notNull(),
+  conversationId:  uuid('conversation_id').references(() => conversations.id, { onDelete: 'cascade' }).notNull(),
   senderId:        uuid('sender_id').references(() => users.id).notNull(),
   // Ciphertext only — server NEVER stores plaintext
   ciphertext:      text('ciphertext').notNull(),         // base64 Signal ciphertext
@@ -97,6 +115,7 @@ export const messages = pgTable('messages', {
   isDeleted:       boolean('is_deleted').default(false),
 }, t => ({
   convIdx: index('messages_conv_idx').on(t.conversationId, t.sentAt),
+  senderIdx: index('messages_sender_idx').on(t.senderId),
 }));
 
 // ─── CALL RECORDS ─────────────────────────────────────────
@@ -115,7 +134,7 @@ export const callRecords = pgTable('call_records', {
 // ─── ATTACHMENTS (metadata only; binary in S3 E2EE) ───────
 export const attachments = pgTable('attachments', {
   id:              uuid('id').defaultRandom().primaryKey(),
-  messageId:       uuid('message_id').references(() => messages.id).notNull(),
+  messageId:       uuid('message_id').references(() => messages.id, { onDelete: 'cascade' }).notNull(),
   uploadedBy:      uuid('uploaded_by').references(() => users.id).notNull(),
   s3Key:           text('s3_key').notNull(),
   contentType:     varchar('content_type', { length: 50 }),
@@ -124,3 +143,24 @@ export const attachments = pgTable('attachments', {
   iv:              text('iv').notNull(),
   createdAt:       timestamp('created_at').defaultNow(),
 });
+
+// ─── USER SETTINGS ────────────────────────────────────────
+export const userSettings = pgTable('user_settings', {
+  userId:                  uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).primaryKey(),
+  lastSeen:                varchar('last_seen', { length: 20 }).notNull().default('everyone'), // everyone | contacts | nobody
+  readReceipts:            boolean('read_receipts').notNull().default(true),
+  profilePhotoVisibility:  varchar('profile_photo_visibility', { length: 20 }).notNull().default('everyone'),
+  pushNotifications:       boolean('push_notifications').notNull().default(true),
+  notificationPreview:     boolean('notification_preview').notNull().default(false),
+  updatedAt:               timestamp('updated_at').defaultNow(),
+});
+
+// ─── BLOCKED USERS ────────────────────────────────────────
+export const blockedUsers = pgTable('blocked_users', {
+  id:              uuid('id').defaultRandom().primaryKey(),
+  userId:          uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  blockedUserId:   uuid('blocked_user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  blockedAt:       timestamp('blocked_at').defaultNow(),
+}, t => ({
+  uniqueBlock: uniqueIndex('blocked_users_unique').on(t.userId, t.blockedUserId),
+}));

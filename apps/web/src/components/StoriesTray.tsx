@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, X, ChevronLeft, ChevronRight, Loader2, Play } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import toast from 'react-hot-toast';
 
 interface Story {
   id: string;
@@ -72,7 +73,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
     return () => {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
-  }, [activeUserIndex, activeStoryIndex]);
+  }, [activeUserIndex, activeStoryIndex, groupedStories]);
 
   const fetchStories = async () => {
     try {
@@ -151,7 +152,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
       await fetchStories();
     } catch (err) {
       console.error('Story upload error:', err);
-      alert('Failed to post story');
+      toast.error('Failed to post story');
     } finally {
       setUploading(false);
     }
@@ -204,20 +205,20 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
       <div className="flex gap-4 items-center overflow-x-auto pb-2 scrollbar-none py-1">
         {/* Create Story card */}
         <div className="flex flex-col items-center flex-shrink-0 cursor-pointer" onClick={handleCreateStoryClick}>
-          <div className="relative w-16 h-16 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition-colors border-2 border-dashed border-slate-300">
+          <div className="relative w-16 h-16 rounded-[22px] flex items-center justify-center bg-[var(--color-guff-surface-container-low)] hover:bg-[var(--color-guff-surface-container-high)] transition-all duration-200 border-2 border-dashed border-[var(--color-guff-border)]">
             {uploading ? (
               <Loader2 className="w-6 h-6 animate-spin text-[var(--color-guff-primary)]" />
             ) : currentProfile?.avatar_url ? (
-              <div className="w-full h-full rounded-full overflow-hidden">
-                <img src={currentProfile.avatar_url} alt="" className="w-full h-full object-cover" />
+              <div className="w-full h-full rounded-[19px] overflow-hidden p-0.5">
+                <img src={currentProfile.avatar_url} alt="" className="w-full h-full object-cover rounded-[17px]" />
               </div>
             ) : (
-              <span className="text-slate-600 font-bold text-sm">
+              <span className="text-[var(--color-guff-text-secondary)] font-bold text-sm">
                 {currentProfile?.username?.[0]?.toUpperCase() || '+'}
               </span>
             )}
             
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--color-guff-primary)] flex items-center justify-center border-2 border-white text-white">
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--color-guff-primary)] flex items-center justify-center border-2 border-white text-white shadow-sm">
               <Plus className="w-4 h-4 stroke-[3]" />
             </div>
           </div>
@@ -229,6 +230,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
             onChange={handleFileUpload}
             className="hidden"
             disabled={uploading}
+            aria-label="Upload Story"
           />
         </div>
 
@@ -236,22 +238,24 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
         {groupedStories.map((group, userIdx) => (
           <div
             key={group.author.id}
-            className="flex flex-col items-center flex-shrink-0 cursor-pointer"
+            className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
             onClick={() => {
               setActiveUserIndex(userIdx);
               setActiveStoryIndex(0);
             }}
           >
             {/* Story Ring wrapper */}
-            <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-500">
-              <div className="w-15 h-15 rounded-full border-2 border-white overflow-hidden bg-slate-200">
-                {group.author.avatar_url ? (
-                  <img src={group.author.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-700 font-bold text-sm">
-                    {group.author.username[0].toUpperCase()}
-                  </div>
-                )}
+            <div className="relative p-[3px] rounded-[22px] bg-gradient-to-tr from-[var(--color-guff-secondary-container)] to-[var(--color-guff-primary)] shadow-sm group-hover:scale-105 transition-transform duration-200">
+              <div className="bg-white p-0.5 rounded-[19px]">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100">
+                  {group.author.avatar_url ? (
+                    <img src={group.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[var(--color-guff-text)] font-bold text-sm bg-slate-200">
+                      {group.author.username[0].toUpperCase()}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <span className="text-[11px] font-medium text-[var(--color-guff-text-secondary)] mt-2 max-w-[70px] truncate">
@@ -267,7 +271,8 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
           {/* Close button */}
           <button
             onClick={closeViewer}
-            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white z-55 transition-colors"
+            aria-label="Close Story Viewer"
+            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white z-55 transition-colors cursor-pointer"
           >
             <X className="w-6 h-6" />
           </button>
@@ -275,7 +280,8 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
           {/* Left Arrow (Desktop) */}
           <button
             onClick={handlePrevStory}
-            className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-55 transition-colors"
+            aria-label="Previous Story"
+            className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-55 transition-colors cursor-pointer"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
@@ -316,7 +322,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
                   <div className="text-white font-semibold text-xs leading-none">
                     {groupedStories[activeUserIndex].author.display_name || groupedStories[activeUserIndex].author.username}
                   </div>
-                  <div className="text-white/60 text-[10px] mt-0.5 leading-none">
+                  <div className="text-white/60 text-[10px] mt-1 leading-none">
                     {formatDistanceToNow(new Date(groupedStories[activeUserIndex].stories[activeStoryIndex].created_at), { addSuffix: true })}
                   </div>
                 </div>
@@ -343,7 +349,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
                 <img
                   src={groupedStories[activeUserIndex].stories[activeStoryIndex].media_url}
                   alt=""
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain animate-fade-in"
                 />
               )}
             </div>
@@ -352,7 +358,8 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
           {/* Right Arrow (Desktop) */}
           <button
             onClick={handleNextStory}
-            className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-55 transition-colors"
+            aria-label="Next Story"
+            className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-55 transition-colors cursor-pointer"
           >
             <ChevronRight className="w-6 h-6" />
           </button>

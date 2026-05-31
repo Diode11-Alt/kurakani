@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { Sidebar } from '../../components/Sidebar';
-import { Loader2, Home, Search, PlusSquare, MessageCircle } from 'lucide-react';
+import { Loader2, Rss, Compass, PlusSquare, MessageSquare } from 'lucide-react';
 import { VideoCall } from '../../components/VideoCall';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -91,21 +91,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const mobileNavItems = [
-    { icon: Home, path: '/feed' },
-    { icon: Search, path: '/explore' },
-    { icon: PlusSquare, path: '/create' },
-    { icon: MessageCircle, path: '/messages' },
+    { icon: Rss, label: 'Feed', path: '/feed' },
+    { icon: Compass, label: 'Explore', path: '/explore' },
+    { icon: PlusSquare, label: 'Create', path: '/create' },
+    { icon: MessageSquare, label: 'Messages', path: '/messages' },
   ];
 
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar profile={profile} />
-      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-0 bg-[var(--color-guff-surface-bright)]">
         {children}
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--color-guff-surface)] border-t border-[var(--color-guff-border)] z-40 flex items-center justify-around px-2 shadow-lg">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--color-guff-surface)]/90 backdrop-blur-md border-t border-[var(--color-guff-border)]/40 z-40 flex items-center justify-around px-4 shadow-lg rounded-t-xl select-none">
         {mobileNavItems.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.path || pathname.startsWith(item.path + '/');
@@ -113,13 +113,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <button
               key={item.path}
               onClick={() => router.push(item.path)}
-              className={`p-2.5 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center py-1 px-3.5 rounded-xl transition-all duration-200 cursor-pointer ${
                 active 
-                  ? 'text-[var(--color-guff-primary)] bg-[var(--color-guff-primary-light)] scale-105' 
+                  ? 'text-[var(--color-guff-primary)] bg-[var(--color-guff-primary-light)] font-bold scale-105' 
                   : 'text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-text)]'
               }`}
             >
-              <Icon className="w-6 h-6" />
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] mt-0.5 font-medium">{item.label}</span>
             </button>
           );
         })}
@@ -127,19 +128,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Profile tab */}
         <button
           onClick={() => router.push(`/profile/${profile?.id}`)}
-          className={`p-0.5 rounded-full transition-all ${
+          className={`flex flex-col items-center justify-center p-1 rounded-xl transition-all duration-200 cursor-pointer ${
             pathname.startsWith(`/profile/${profile?.id}`)
-              ? 'ring-2 ring-[var(--color-guff-primary)] ring-offset-2 scale-105'
-              : 'hover:scale-105'
+              ? 'text-[var(--color-guff-primary)] bg-[var(--color-guff-primary-light)] font-bold scale-105'
+              : 'text-[var(--color-guff-text-secondary)] hover:text-[var(--color-guff-text)]'
           }`}
         >
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-[10px] font-bold overflow-hidden">
+          <div className="w-5.5 h-5.5 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-[9px] font-bold overflow-hidden">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
               profile?.username?.[0]?.toUpperCase() || '?'
             )}
           </div>
+          <span className="text-[10px] mt-0.5 font-medium">Profile</span>
         </button>
       </nav>
 

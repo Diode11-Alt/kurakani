@@ -8,11 +8,34 @@ interface SignalingClient {
   ws: WebSocket;
   userId: string;
   deviceId: number;
+  isAlive: boolean;
 }
 
 const clients = new Map<string, SignalingClient>(); // key = `${userId}:${deviceId}`
 
+const HEARTBEAT_INTERVAL = 30_000; // 30 seconds
+const HEARTBEAT_TIMEOUT = 10_000;  // 10 seconds to respond
+
 export function setupSignaling(wss: WebSocketServer) {
+  // ─── Heartbeat interval ─────────────────────────────────
+  const heartbeatTimer = setInterval(() => {
+    for (const [key, client] of clients.entries()) {
+      if (!client.isAlive) {
+        // No pong received — terminate dead connection
+        console.log(`[WS] Heartbeat timeout, terminating: ${key}`);
+        client.ws.terminate();
+        clients.delete(key);
+        continue;
+      }
+
+      client.isAlive = false;
+      client.ws.ping();
+    }
+  }, HEARTBEAT_INTERVAL);
+
+  wss.on('close', () => clearInterval(heartbeatTimer));
+
+  // ─── Connection handler ─────────────────────────────────
   wss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
     const url = new URL(req.url!, 'ws://localhost');
     const token = url.searchParams.get('token');
@@ -26,11 +49,17 @@ export function setupSignaling(wss: WebSocketServer) {
     }
 
     const clientKey = `${userId}:${deviceId}`;
-    clients.set(clientKey, { ws, userId, deviceId });
+    clients.set(clientKey, { ws, userId, deviceId, isAlive: true });
     await redis.set(`presence:${userId}`, 'online', 'EX', 300);
     broadcastPresence(userId, 'online');
     
-    console.log(`[WS] User connected: ${userId}:${deviceId}`);
+    console.log(`[WS] Connected: ${clientKey}`);
+
+    // Respond to pong with isAlive flag
+    ws.on('pong', () => {
+      const client = clients.get(clientKey);
+      if (client) client.isAlive = true;
+    });
 
     ws.on('message', (raw) => handleMessage(userId, deviceId, raw));
 
@@ -48,9 +77,15 @@ export function setupSignaling(wss: WebSocketServer) {
       
       if (!hasOtherConnections) {
         await redis.del(`presence:${userId}`);
+        // Update last seen
+        try {
+          await db.update(schema.users)
+            .set({ lastSeenAt: new Date() })
+            .where(require('drizzle-orm').eq(schema.users.id, userId));
+        } catch {}
         broadcastPresence(userId, 'offline');
       }
-      console.log(`[WS] User disconnected: ${userId}:${deviceId}`);
+      console.log(`[WS] Disconnected: ${clientKey}`);
     });
 
     ws.on('error', () => clients.delete(clientKey));
@@ -62,11 +97,17 @@ async function handleMessage(userId: string, deviceId: number, raw: any) {
   try { msg = JSON.parse(raw.toString()); } catch { return; }
 
   switch (msg.type) {
-    // ── CALL SIGNALING ───────────────────────────────────────
+    // ── PING/PONG ─────────────────────────────────────────
+    case 'ping': {
+      const client = clients.get(`${userId}:${deviceId}`);
+      if (client?.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(JSON.stringify({ type: 'pong' }));
+      }
+      break;
+    }
+
+    // ── CALL SIGNALING ────────────────────────────────────
     case 'call:signal': {
-      // msg = { type, callId, targetUserId, signalData, callType (optional) }
-      
-      // Track call state based on simple-peer signal types
       if (msg.signalData?.type === 'offer') {
         await redis.set(`call:${msg.callId}`, JSON.stringify({
           callId: msg.callId,
@@ -89,19 +130,18 @@ async function handleMessage(userId: string, deviceId: number, raw: any) {
     }
     case 'call:reject':
     case 'call:hangup': {
-      const callStr = await redis.get(`call:${msg.callId}`);
-      if (callStr) {
-        await redis.del(`call:${msg.callId}`);
-      }
+      await redis.del(`call:${msg.callId}`);
       forwardToUser(msg.targetUserId, { ...msg, senderId: userId });
       break;
     }
-    // ── MESSAGING ────────────────────────────────────────────
+
+    // ── MESSAGING ─────────────────────────────────────────
     case 'message:send': {
       try {
         let convId = msg.conversationId;
+        const { eq } = require('drizzle-orm');
         
-        // If no conversationId is provided, lazily create a direct conversation
+        // Lazily create direct conversation if none provided
         if (!convId && msg.recipientId) {
           const insertedConv = await db.insert(schema.conversations).values({
             type: 'direct',
@@ -118,10 +158,11 @@ async function handleMessage(userId: string, deviceId: number, raw: any) {
           senderId: userId,
           conversationId: convId,
           ciphertext: msg.ciphertext,
-          ciphertextType: msg.ciphertextType,
+          ciphertextType: msg.ciphertextType || 1,
+          expiresAt: msg.expiresIn ? new Date(Date.now() + msg.expiresIn * 1000) : null,
         }).returning();
 
-        forwardToUser(msg.recipientId, {
+        const payload = {
           type: 'message:receive',
           id: inserted[0].id,
           conversationId: convId,
@@ -129,17 +170,30 @@ async function handleMessage(userId: string, deviceId: number, raw: any) {
           ciphertext: msg.ciphertext,
           ciphertextType: msg.ciphertextType,
           sentAt: inserted[0].sentAt,
-        });
+        };
+
+        // Try live delivery first
+        const delivered = forwardToUser(msg.recipientId, payload);
+
+        // If not online, queue in Redis
+        if (!delivered) {
+          await redis.lpush(
+            `messages:pending:${msg.recipientId}`,
+            JSON.stringify(payload)
+          );
+        }
       } catch (err) {
-        console.error('Error storing message:', err);
+        console.error('[WS] Error storing message:', err);
       }
       break;
     }
+
     case 'message:delivered':
     case 'message:read':
       forwardToUser(msg.targetUserId, { ...msg, fromUserId: userId });
       break;
-    // ── TYPING ───────────────────────────────────────────────
+
+    // ── TYPING ────────────────────────────────────────────
     case 'typing:start':
     case 'typing:stop':
       forwardToUser(msg.targetUserId, { ...msg, fromUserId: userId });
@@ -147,15 +201,21 @@ async function handleMessage(userId: string, deviceId: number, raw: any) {
   }
 }
 
-function forwardToUser(targetUserId: string, payload: object) {
-  // Forward to all devices of user
+/**
+ * Forward a payload to all devices of a user.
+ * Returns true if at least one device was online and received it.
+ */
+function forwardToUser(targetUserId: string, payload: object): boolean {
+  let delivered = false;
   for (const [key, client] of clients.entries()) {
     if (key.startsWith(`${targetUserId}:`)) {
       if (client.ws.readyState === WebSocket.OPEN) {
         client.ws.send(JSON.stringify(payload));
+        delivered = true;
       }
     }
   }
+  return delivered;
 }
 
 function broadcastPresence(userId: string, status: 'online' | 'offline') {

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GUFF | Professional Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .masonry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-auto-rows: 10px;
+        }
+        .masonry-item {
+            grid-row-end: span 25;
+        }
+        .masonry-item-tall {
+            grid-row-end: span 40;
+        }
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            background: rgba(11, 19, 38, 0.7);
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b1326;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #464555;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #918fa1;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#283044",
+                        "surface-dim": "#0b1326",
+                        "tertiary-fixed": "#d8e3fb",
+                        "primary-fixed": "#e2dfff",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#31394d",
+                        "inverse-primary": "#4d44e3",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "outline": "#918fa1",
+                        "on-tertiary": "#263143",
+                        "on-surface-variant": "#c7c4d8",
+                        "tertiary-fixed-dim": "#bcc7de",
+                        "on-secondary-fixed": "#07006c",
+                        "secondary-fixed": "#e1e0ff",
+                        "on-secondary-container": "#b0b2ff",
+                        "on-tertiary-container": "#d1dcf4",
+                        "surface-container-lowest": "#060e20",
+                        "on-primary": "#1d00a5",
+                        "primary": "#c3c0ff",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "primary-container": "#4f46e5",
+                        "on-tertiary-fixed": "#111c2d",
+                        "secondary": "#c0c1ff",
+                        "on-primary-container": "#dad7ff",
+                        "surface-container-highest": "#2d3449",
+                        "inverse-surface": "#dae2fd",
+                        "surface": "#0b1326",
+                        "tertiary": "#bcc7de",
+                        "on-error": "#690005",
+                        "surface-container-high": "#222a3d",
+                        "surface-container": "#171f33",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#c0c1ff",
+                        "background": "#0b1326",
+                        "surface-variant": "#2d3449",
+                        "secondary-container": "#3131c0",
+                        "on-surface": "#dae2fd",
+                        "surface-tint": "#c3c0ff",
+                        "outline-variant": "#464555",
+                        "on-secondary-fixed-variant": "#2f2ebe",
+                        "surface-container-low": "#131b2e",
+                        "on-primary-fixed": "#0f0069",
+                        "on-secondary": "#1000a9",
+                        "tertiary-container": "#566175",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-fixed-variant": "#3c475a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "container-max": "1200px",
+                        "margin-md": "32px",
+                        "margin-sm": "16px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "label-md": ["JetBrains Mono"],
+                        "display": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-x-hidden">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-margin-md h-16 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-bold text-primary">GUFF</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant hover:bg-surface-container transition-colors px-3 py-1 rounded cursor-pointer font-body-md" href="#">Feed</a>
+<a class="text-on-surface-variant hover:bg-surface-container transition-colors px-3 py-1 rounded cursor-pointer font-body-md" href="#">Messages</a>
+<a class="text-on-surface-variant hover:bg-surface-container transition-colors px-3 py-1 rounded cursor-pointer font-body-md" href="#">Explore</a>
+<a class="text-primary font-bold px-3 py-1 rounded cursor-pointer font-body-md" href="#">Profile</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center bg-surface-container px-3 py-1.5 rounded border border-outline-variant">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md p-0 w-48 text-on-surface" placeholder="Search Secure Mesh..." type="text"/>
+</div>
+<span class="material-symbols-outlined text-primary cursor-pointer hover:opacity-80 transition-all" data-icon="verified_user">verified_user</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:opacity-80 transition-all" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:opacity-80 transition-all" data-icon="settings">settings</span>
+<img alt="User Profile" class="w-8 h-8 rounded-full border border-primary object-cover" data-alt="A professional close-up portrait of a high-level executive with a confident expression, set against a blurred corporate office background. The lighting is crisp and sophisticated, highlighting the subject's features with soft shadows. The overall aesthetic is clean and modern, following a dark-mode palette with deep blues and slate grays, conveying authority and security." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHV7hcg8iHN4qYnRaX5YAG6XRbg272C4yoyBTh80MMZ1NTNv6pndmB5k-1NR9L_JJdqVOZ-3erNKkAjIV7kcLApgp3I8VXJwA-4RTMKsV1belcSvTniHc_qn6p74fptICkru-Aeh6AJgnoKn85ki9gPA4X4ixxSvlGHj8e5WuGTy-KU8j9BJsK0Jiwjgc_X_HIfF11F6Lpx5T-b0kNGKgykFeFR75x2xBgAY6tI7DgQNlbCsZMets3rRGBg-NTyq5g5CTU12mV_1LM"/>
+</div>
+</header>
+<!-- SideNavBar (Left) - Desk-only -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-72 bg-surface-container border-r border-outline-variant py-6 hidden lg:flex flex-col">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 p-3 rounded bg-surface-container-high border border-outline-variant/30">
+<div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center text-on-primary-container font-bold">SM</div>
+<div>
+<div class="font-headline-md text-headline-md text-primary text-[14px]">Secure Mesh</div>
+<div class="font-label-md text-label-md text-on-surface-variant">Encrypted-01</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<div class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="dynamic_feed">dynamic_feed</span>
+<span class="font-label-md">Feed</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="font-label-md">Messages</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span class="font-label-md">Explore</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded text-primary font-bold border-r-2 border-primary bg-surface-container-high cursor-pointer">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md">Profile</span>
+</div>
+<div class="pt-6 px-4">
+<button class="w-full bg-primary-container text-on-primary-container py-3 rounded font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                    New Message
+                </button>
+</div>
+</nav>
+<div class="px-4 mt-auto border-t border-outline-variant pt-4">
+<div class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="font-label-md">Security</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md">Support</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="lg:ml-72 pt-16 min-h-screen">
+<!-- Cover Section -->
+<section class="relative h-64 md:h-80 w-full overflow-hidden">
+<img alt="Cover Image" class="w-full h-full object-cover" data-alt="A high-tech digital abstract background featuring intricate circuit patterns and flowing data streams in deep indigo and charcoal gray. Minimalist geometric structures and soft light glares create a sense of vast digital depth. The mood is highly professional, secure, and technologically advanced, perfectly matching a premium enterprise software aesthetic with crisp lines and cold lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5N8neY_mOiAAz-7D_1Gkcp071G3Aof80VO4KETfcv5wG0oW56Oh8xrOFlg8aWfSGRM6L9E3llv4G2RYBlqXu41ZuB9iH_2ulKQFjkrl4aQmM3siUiRaumWvLm3L1BPKZxQ0WBuazlWY60JWyN4apfvVWPG1iBHsCtMNNRysFDLG4a0uNSYUXYg6zcm_wy60x-BTfOyCQM2b3HojOq1ewRChB_YkDXI62UKmYHc4hx0so7bN9MbfpWFPXBjlnCLXyiPQv4037OFzuZ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+<div class="absolute bottom-4 right-8 flex gap-3">
+<button class="bg-surface-container-high border border-outline-variant px-4 py-2 rounded text-body-md flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+                    Edit Profile
+                </button>
+<button class="bg-primary text-on-primary px-4 py-2 rounded font-bold text-body-md flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]" data-icon="share">share</span>
+                    Share Node
+                </button>
+</div>
+</section>
+<!-- Profile Detail Header -->
+<div class="px-margin-md max-w-7xl mx-auto -mt-16 relative z-10">
+<div class="flex flex-col md:flex-row items-end gap-6 pb-8 border-b border-outline-variant">
+<div class="relative">
+<img alt="Large Avatar" class="w-32 h-32 md:w-40 md:h-40 rounded-xl border-4 border-background object-cover shadow-2xl" data-alt="A detailed, professional studio portrait of a man in his late 30s with a focused and intelligent expression. He is wearing a dark, tailored suit. The lighting is dramatic yet controlled, casting a professional sheen. The background is a dark, neutral studio wall, ensuring the subject stands out with clarity and authority in a corporate, minimalist style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuByfr5P8dUo1HvoUv1g8FZuiJYFNT2_VmWJkM0XaGUg8HfCMG1SXbts8Sf5rSSiStZESz6HaqU-HfjL8AVHZR1QkP1uGMJXNnOUaFHdLdI9KA75_DIZzSobkLbBKM5-PQ534HpmN-1-Ines-H3WdS4qAr71sYccW8MljpxOLe1rH3lNJZG798NooxxKlpmWzoq4cGJ9TRl3lbVbRdP3QxGPQA9tQbpJiFtufqW-D2Y9slyOjhp7vrHbrXk1rnXmcUXkHPJ-49Ik6TSy"/>
+<div class="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-4 border-background rounded-full"></div>
+</div>
+<div class="flex-1 mb-2">
+<div class="flex items-center gap-2">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Julian Thorne</h1>
+<span class="material-symbols-outlined text-primary" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="text-on-surface-variant font-body-lg mb-4">Principal Security Architect @ GUFF Infrastructure</p>
+<div class="flex flex-wrap gap-4 items-center">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="location_on">location_on</span>
+<span class="text-body-md">Zurich Hub</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="link">link</span>
+<a class="text-primary hover:underline text-body-md" href="#">thorne.guff.mesh</a>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="calendar_today">calendar_today</span>
+<span class="text-body-md">Joined 2021</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Stats Row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter py-8">
+<div class="bg-surface-container-low border border-outline-variant p-6 rounded flex flex-col items-center justify-center text-center">
+<span class="font-label-md text-on-surface-variant mb-1">NETWORK CONNECTIONS</span>
+<span class="font-headline-lg text-headline-lg text-primary">1,429</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-6 rounded flex flex-col items-center justify-center text-center">
+<span class="font-label-md text-on-surface-variant mb-1">SECURITY CLEARANCE</span>
+<span class="font-headline-lg text-headline-lg text-on-surface">LEVEL 7</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-6 rounded flex flex-col items-center justify-center text-center">
+<span class="font-label-md text-on-surface-variant mb-1">DATA NODES</span>
+<span class="font-headline-lg text-headline-lg text-on-surface">342</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-6 rounded flex flex-col items-center justify-center text-center">
+<span class="font-label-md text-on-surface-variant mb-1">REPUTATION SCORE</span>
+<span class="font-headline-lg text-headline-lg text-secondary">99.8%</span>
+</div>
+</div>
+<!-- Content Tabs -->
+<div class="flex gap-8 border-b border-outline-variant mb-8 overflow-x-auto whitespace-nowrap">
+<button class="pb-4 border-b-2 border-primary text-primary font-bold font-body-md">Insights</button>
+<button class="pb-4 border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-body-md transition-colors">Shared Assets</button>
+<button class="pb-4 border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-body-md transition-colors">Whitepapers</button>
+<button class="pb-4 border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-body-md transition-colors">Security Log</button>
+</div>
+<!-- Masonry Grid -->
+<div class="masonry-grid gap-gutter pb-12">
+<!-- Post Card 1 -->
+<div class="masonry-item bg-surface-container-high border border-outline-variant rounded-xl overflow-hidden hover:border-primary transition-all duration-300 group">
+<div class="p-6 h-full flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-1 rounded text-[10px] font-label-md uppercase tracking-wider">Security Advisory</span>
+<span class="text-on-surface-variant text-[12px]">2h ago</span>
+</div>
+<h3 class="font-headline-md text-[18px] text-on-surface mb-3 group-hover:text-primary transition-colors">Zero-Knowledge Implementation in Mesh v4.2</h3>
+<p class="text-on-surface-variant text-body-md flex-1">Exploring the structural shifts required to implement ZK-proofs across high-latency node networks without compromising performance ceilings.</p>
+<div class="mt-6 flex items-center justify-between">
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant" data-icon="thumb_up">thumb_up</span>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant" data-icon="chat_bubble">chat_bubble</span>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="north_east">north_east</span>
+</div>
+</div>
+</div>
+<!-- Post Card 2 (Image) -->
+<div class="masonry-item-tall bg-surface-container-high border border-outline-variant rounded-xl overflow-hidden hover:border-primary transition-all duration-300">
+<img alt="Tech Visual" class="w-full h-48 object-cover" data-alt="A close-up photograph of a professional server rack with glowing blue LED indicator lights. The cables are neatly organized and managed, showcasing a high level of technical discipline. The background is dark and out of focus, emphasizing the hardware. The image has a cold, metallic aesthetic with sharp focus on the networking ports, representing data security and infrastructure integrity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1zl5jtrRbMtsJbZ3FUgK3yLZA6Ui8rth3pdTRSzvA0c9MZ0d0TQQwFtRRTapYbOYKLJ13ljsZzMzrr22hg98ys1tGwXtCl1b8AnjN46tTx1m3MvAL8GO5MdrjczrkXs_WyBSd16oUg2O8RiMhr7MhMm5DldFy7dwT_6-R3werBuz6nFqPiJtFnWgqIkHNQw8e399b4NtANv59LQKt1UOfECHjIAOSAZ-SqlISDMxXJIzQIhAk7SuB0KxxEIv9qsFL9KrS58JU6mn-"/>
+<div class="p-6">
+<span class="bg-primary-container text-on-primary-container px-2 py-1 rounded text-[10px] font-label-md uppercase tracking-wider mb-4 inline-block">Infrastructure</span>
+<h3 class="font-headline-md text-[18px] text-on-surface mb-2">New Data Node: Zurich Central</h3>
+<p class="text-on-surface-variant text-body-md">Successfully deployed the 12th hub in the DACH region. Benchmarking shows a 15% reduction in cross-border latency.</p>
+<div class="mt-4 pt-4 border-t border-outline-variant/30 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-slate-700"></div>
+<span class="text-label-md text-on-surface-variant">+4 team members tagged</span>
+</div>
+</div>
+</div>
+<!-- Post Card 3 (Bento Style) -->
+<div class="masonry-item bg-surface-container border border-outline-variant rounded-xl p-6 flex flex-col justify-between hover:shadow-xl transition-all border-dashed border-2">
+<div class="flex flex-col items-center justify-center text-center py-8">
+<span class="material-symbols-outlined text-outline text-[48px] mb-4" data-icon="add_circle">add_circle</span>
+<p class="text-on-surface-variant font-label-md uppercase">Add Entry to Insights</p>
+</div>
+</div>
+<!-- Post Card 4 -->
+<div class="masonry-item bg-surface-container-high border border-outline-variant rounded-xl p-6 hover:border-primary transition-all duration-300">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-label-md text-secondary">ENCRYPTED THREAD</span>
+</div>
+<h3 class="font-headline-md text-[18px] text-on-surface mb-3">Post-Quantum Cryptography Standards</h3>
+<p class="text-on-surface-variant text-body-md">A brief summary of why we are moving to lattice-based algorithms for all GUFF internal comms before EOY 2024.</p>
+<div class="mt-6 flex justify-end">
+<button class="bg-surface-container-highest px-3 py-1.5 rounded text-label-md text-on-surface hover:bg-outline-variant transition-colors">Decrypt Access</button>
+</div>
+</div>
+<!-- Post Card 5 (Long Text) -->
+<div class="masonry-item-tall bg-surface-container-high border border-outline-variant rounded-xl p-6 hover:border-primary transition-all duration-300">
+<span class="text-on-surface-variant text-[12px] block mb-4">Yesterday, 14:22</span>
+<h3 class="font-headline-md text-[18px] text-on-surface mb-4">Reflections on Architecture</h3>
+<div class="space-y-4 text-on-surface-variant text-body-md">
+<p>Architecture is not just about connecting components; it is about defining the boundaries of trust. In our current ecosystem, we have seen a trend toward excessive decentralization without centralized auditing. This creates blind spots.</p>
+<p>In the coming months, I will be proposing a "Hybrid Trust" model that keeps data local but verifies integrity globally. This avoids the pitfalls of monolithic structures while retaining the speed of peer-to-peer networks.</p>
+<p>The goal is absolute reliability. No compromises.</p>
+</div>
+<div class="mt-8 flex items-center gap-4">
+<div class="flex -space-x-2">
+<img alt="Avatar" class="w-6 h-6 rounded-full border border-surface-container-high object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_2EDAIRqDWT6eQyQDuq1T5wa85SeMoNAKSqImjxFrBeHliuGJK1DCBR4p5GqntExG3LB5dW8p4Unu-RzMbjJyz73PHJfkX6RTzu89t87u56JTCQ9Vqj2Fawz4OiBbSd5hixH1zm0h-1uujBXfaMhprvYm0U-yMQ6-Eq6tRJzkXVNtbcIuOr-5LjIHxUxmPC_12VDdg6O_jd_LUVYL5-wyqYP13L4FSY-_Be2ANLNF-SXl7h0g8E4IXpu4wfOgWbOyy-7Ekak_t8lx"/>
+<img alt="Avatar" class="w-6 h-6 rounded-full border border-surface-container-high object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7UPrVagAjn0e7CTeBPNL79JI6aXDTtZv3eGMOQSboZadWMX_UYiXtGE68oAsFq15hEV3FDIaFiJXdWmBk8lT0QUk6alUKzI7doYNQw2ihPXqv_4nuFDHHvu3GLm-Aw9yEHlUD6irEIg9IfWgPBU4HJKgfEnvWvs-xU2Gev9QSiuciPPhTr-meUjSEeVJSEd5SmDmqzWp8lBd-t4i43o1J-gpE8M4U-nB0gLDIuB27YlMCcSVmZoAzsSCFL3lixIePa0_JPIalhRnU"/>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center text-[8px] text-on-surface-variant border border-surface-container-high">+12</div>
+</div>
+</div>
+</div>
+<!-- Post Card 6 (Stats/Chart Visual) -->
+<div class="masonry-item bg-surface-container-high border border-outline-variant rounded-xl p-6 hover:border-primary transition-all duration-300">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-label-md text-on-surface-variant">NODE UPTIME</h3>
+<span class="text-green-400 text-label-md">99.99%</span>
+</div>
+<div class="flex items-end gap-1 h-24">
+<div class="flex-1 bg-primary/20 h-[40%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[60%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-[90%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[30%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-[85%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-[100%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[55%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[45%] rounded-t-sm"></div>
+</div>
+<p class="text-on-surface-variant text-[12px] mt-4">Last 24 hours stability report for North Hub.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- SideNavBar (Right) - Settings Panel (Hidden by default, used as design anchor) -->
+<aside class="fixed right-0 top-0 h-full w-80 bg-surface-container-high shadow-xl translate-x-full z-[60] flex flex-col p-6 transition-transform duration-300 ease-in-out" id="settings-panel">
+<div class="flex items-center justify-between mb-8">
+<h2 class="font-headline-md text-headline-md text-primary">User Settings</h2>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-on-surface" data-icon="close" onclick="toggleSettings()">close</button>
+</div>
+<div class="space-y-6">
+<div>
+<span class="font-label-md text-on-surface-variant uppercase mb-2 block">ACCOUNT TYPE</span>
+<div class="bg-surface-container-highest p-4 rounded border border-outline-variant flex items-center justify-between">
+<span class="font-body-md text-on-surface">Enterprise Tier</span>
+<span class="material-symbols-outlined text-primary" data-icon="workspace_premium" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+</div>
+<nav class="space-y-1">
+<div class="flex items-center gap-3 p-3 rounded bg-surface-container-highest text-primary font-bold transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="manage_accounts">manage_accounts</span>
+<span class="font-body-md">Account</span>
+</div>
+<div class="flex items-center gap-3 p-3 rounded text-on-surface-variant hover:bg-surface-container-highest transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+<span class="font-body-md">Privacy</span>
+</div>
+<div class="flex items-center gap-3 p-3 rounded text-on-surface-variant hover:bg-surface-container-highest transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span class="font-body-md">Preferences</span>
+</div>
+</nav>
+</div>
+<div class="mt-auto">
+<button class="w-full bg-error-container text-on-error-container py-3 rounded font-bold hover:opacity-90 transition-opacity">
+                Terminate Session
+            </button>
+</div>
+</aside>
+<!-- BottomNavBar (Mobile Only) -->
+<footer class="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant flex justify-around items-center h-16 px-4 z-50">
+<button class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="dynamic_feed">dynamic_feed</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant" onclick="toggleSettings()">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</footer>
+<script>
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            panel.classList.toggle('translate-x-full');
+        }
+
+        // Simple Masonry "re-layout" on load
+        window.addEventListener('load', () => {
+            const grid = document.querySelector('.masonry-grid');
+            if (grid) {
+                // In a real environment, we'd use a proper masonry library, 
+                // but for this UI demo, CSS Grid auto-rows handles basic layout well.
+            }
+        });
+        
+        // Add listeners to settings icons in TopNav
+        document.querySelector('[data-icon="settings"]').addEventListener('click', toggleSettings);
+    </script>
+</body></html>

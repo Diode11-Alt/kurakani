@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Explore - Alexandria</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&amp;family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e3e2e3",
+                        "secondary": "#5a5f63",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#d9e2ff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#094cb2",
+                        "on-secondary-container": "#606569",
+                        "on-primary-fixed": "#001946",
+                        "surface-container-high": "#e9e8e9",
+                        "on-primary": "#ffffff",
+                        "outline": "#737784",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#e7ebff",
+                        "background": "#faf9fa",
+                        "on-surface-variant": "#434653",
+                        "primary-fixed-dim": "#b1c5ff",
+                        "on-tertiary-fixed": "#211b00",
+                        "surface-bright": "#faf9fa",
+                        "on-background": "#1b1c1d",
+                        "inverse-on-surface": "#f2f0f1",
+                        "tertiary-container": "#bfab49",
+                        "tertiary": "#6d5e00",
+                        "surface-container": "#efedee",
+                        "inverse-primary": "#b1c5ff",
+                        "tertiary-fixed-dim": "#dcc661",
+                        "secondary-fixed": "#dfe3e8",
+                        "on-primary-fixed-variant": "#00419d",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#c2c7cc",
+                        "surface": "#faf9fa",
+                        "on-secondary-fixed-variant": "#42474b",
+                        "primary-container": "#3366cc",
+                        "on-surface": "#1b1c1d",
+                        "on-tertiary-fixed-variant": "#524600",
+                        "surface-container-low": "#f5f3f4",
+                        "tertiary-fixed": "#f9e37a",
+                        "surface-dim": "#dbdadb",
+                        "inverse-surface": "#303031",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#c3c6d5",
+                        "surface-container-highest": "#e3e2e3",
+                        "on-secondary-fixed": "#171c20",
+                        "on-tertiary-container": "#4a3f00",
+                        "secondary-container": "#dfe3e8",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#2259bf"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    "fontFamily": {
+                        "headline": ["Noto Serif", "serif"],
+                        "display": ["Noto Serif", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Public Sans", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Noto Serif', serif; }
+        .font-label { font-family: 'Public Sans', sans-serif; }
+        
+        /* Hide scrollbar for horizontal scroll areas but keep functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .ghost-border { border: 1px solid rgba(195, 198, 213, 0.15); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-bright text-on-surface min-h-screen pb-24 md:pb-0 overflow-x-hidden antialiased">
+<!-- TopAppBar (Mobile) -->
+<header class="md:hidden flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50 bg-surface-bright/90 backdrop-blur-md transition-all duration-300">
+<button class="text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-full -ml-2 active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="font-headline italic text-2xl text-primary font-bold tracking-tight">Alexandria</div>
+<button class="text-on-surface-variant hover:bg-surface-variant/50 transition-colors p-2 rounded-full -mr-2 active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">search</span>
+</button>
+</header>
+<!-- Top Navigation (Web) -->
+<header class="hidden md:flex justify-between items-center px-8 py-6 w-full sticky top-0 z-50 bg-surface-bright/90 backdrop-blur-md">
+<div class="flex items-center gap-8">
+<div class="font-headline italic text-2xl text-primary font-bold tracking-tight">Alexandria</div>
+<nav class="flex items-center gap-6">
+<a class="text-on-surface-variant hover:bg-surface-variant/50 transition-colors px-3 py-2 rounded-xl text-sm font-medium" href="#">Feed</a>
+<a class="text-primary font-bold px-3 py-2 rounded-xl text-sm" href="#">Explore</a>
+<a class="text-on-surface-variant hover:bg-surface-variant/50 transition-colors px-3 py-2 rounded-xl text-sm font-medium" href="#">Messages</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm group-focus-within:text-primary transition-colors">search</span>
+<input class="pl-9 pr-4 py-2 bg-surface-container-lowest border-none ghost-border rounded-full text-sm font-body focus:ring-1 focus:ring-primary w-64 transition-all focus:w-80 shadow-sm text-on-surface placeholder:text-outline" placeholder="Search curated knowledge..." type="text"/>
+</div>
+<button class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden ghost-border">
+<span class="material-symbols-outlined text-on-surface-variant mt-2">account_circle</span>
+</button>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-12 space-y-12">
+<!-- Mobile Search Bar -->
+<section class="md:hidden mb-8">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-11 pr-4 py-4 bg-surface-container-lowest ghost-border rounded-xl text-sm font-body focus:ring-1 focus:ring-primary shadow-sm text-on-surface placeholder:text-outline transition-all" placeholder="Search curated knowledge..." type="text"/>
+</div>
+</section>
+<!-- Technical Categories (Pills) -->
+<section class="space-y-4">
+<h2 class="font-headline text-lg text-on-surface">Taxonomies</h2>
+<div class="flex overflow-x-auto no-scrollbar gap-3 pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+<button class="whitespace-nowrap px-5 py-2.5 bg-primary-container text-on-primary-container rounded-full font-label text-xs tracking-wide hover:bg-primary/90 hover:text-on-primary transition-colors shadow-sm">Post-Quantum</button>
+<button class="whitespace-nowrap px-5 py-2.5 bg-surface-container text-on-surface rounded-full font-label text-xs tracking-wide hover:bg-surface-variant transition-colors ghost-border">Mesh Nodes</button>
+<button class="whitespace-nowrap px-5 py-2.5 bg-surface-container text-on-surface rounded-full font-label text-xs tracking-wide hover:bg-surface-variant transition-colors ghost-border">Zero-Knowledge</button>
+<button class="whitespace-nowrap px-5 py-2.5 bg-surface-container text-on-surface rounded-full font-label text-xs tracking-wide hover:bg-surface-variant transition-colors ghost-border">Neural Symbiosis</button>
+<button class="whitespace-nowrap px-5 py-2.5 bg-surface-container text-on-surface rounded-full font-label text-xs tracking-wide hover:bg-surface-variant transition-colors ghost-border">Quantum Ledgers</button>
+</div>
+</section>
+<!-- Bento Grid: Trending Technical Topics -->
+<section class="space-y-6">
+<div class="flex justify-between items-baseline">
+<h2 class="font-headline text-2xl text-on-surface">Trending Architectures</h2>
+<a class="text-primary text-sm font-body font-medium hover:underline" href="#">View Archive</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+<!-- Large Card -->
+<div class="md:col-span-2 group relative overflow-hidden rounded-xl bg-surface-container-lowest ghost-border aspect-square md:aspect-[2/1] cursor-pointer">
+<img alt="A highly detailed close-up shot of a complex server motherboard bathed in cool blue and stark white lighting. The circuit pathways glow subtly, suggesting advanced data processing and high-end technical architecture. The aesthetic is clean, clinical, and scholarly, fitting a premium editorial design. Depth of field focuses heavily on the central processor, blurring the peripheral components to create a sense of scale and importance." class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A highly detailed close-up shot of a complex server motherboard bathed in cool blue and stark white lighting. The circuit pathways glow subtly, suggesting advanced data processing and high-end technical architecture. The aesthetic is clean, clinical, and scholarly, fitting a premium editorial design. Depth of field focuses heavily on the central processor, blurring the peripheral components to create a sense of scale and importance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrGSHi9MWsAXb5aTrV30ZyBT7nt1SD8N53O5ksB2WyEALSUSAKfWFrTx_QH5DXQANBiBrDLWk9sHnvOVHQszkHeQcFar_BtjKo2PDfv-jIHy-Gmz1mN9STyGy0jBtkTlL4bUb9r64wDj3Xat92w6a83Q5gW-4SnBh2wviaG-2MEQNvCktDx7OTU3rb5WQMleTx6KUo31ucvAC3VSOYlzDRK6oFNhGJSjDNC-7LKAEHb8f_l-eIlzn4098vZCeYSFNZT314I4IwEwyN"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/90 via-on-surface/40 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-6 md:p-8">
+<span class="inline-block px-3 py-1 bg-tertiary-container/90 text-on-tertiary-container text-[10px] uppercase tracking-widest font-label rounded-sm mb-3 backdrop-blur-sm">Thesis</span>
+<h3 class="font-headline text-2xl md:text-3xl text-surface-bright mb-2 leading-tight">The Decentralization of Trust in Sub-Orbital Networks</h3>
+<p class="text-surface-variant font-body text-sm md:text-base max-w-xl opacity-90 hidden md:block">An exploration into the structural integrity of ephemeral data nodes and their impact on continuous authentication protocols.</p>
+</div>
+</div>
+<!-- Tall Card -->
+<div class="group relative overflow-hidden rounded-xl bg-surface-container-lowest ghost-border aspect-square md:aspect-auto cursor-pointer">
+<div class="absolute inset-0 bg-surface-container-high transition-colors group-hover:bg-surface-variant/60"></div>
+<div class="relative h-full flex flex-col p-6">
+<div class="flex-1">
+<span class="material-symbols-outlined text-primary mb-4 block" style="font-variation-settings: 'FILL' 1;">architecture</span>
+<h3 class="font-headline text-xl text-on-surface mb-3">Cryptographic Scaffolding</h3>
+<p class="text-on-surface-variant font-body text-sm leading-relaxed">Evaluating the tensile strength of zero-knowledge proofs in high-latency environments.</p>
+</div>
+<div class="mt-4 flex items-center justify-between border-t border-outline-variant/20 pt-4">
+<span class="text-xs font-label text-secondary uppercase tracking-widest">Analysis</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm group-hover:text-primary transition-colors">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Small Card 1 -->
+<div class="group relative overflow-hidden rounded-xl bg-surface-container-low ghost-border p-6 flex flex-col justify-between cursor-pointer hover:bg-surface-container transition-colors">
+<div>
+<h3 class="font-headline text-lg text-on-surface mb-2">Kinetic Topology</h3>
+<p class="text-on-surface-variant font-body text-xs line-clamp-2">Abstract data structuring for predictive traffic routing.</p>
+</div>
+<div class="mt-6 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-primary text-xs font-bold">JD</div>
+<span class="text-xs font-body text-secondary">Dr. J. Doe</span>
+</div>
+</div>
+<!-- Small Card 2 -->
+<div class="group relative overflow-hidden rounded-xl bg-surface-container-low ghost-border p-6 flex flex-col justify-between cursor-pointer hover:bg-surface-container transition-colors">
+<div>
+<h3 class="font-headline text-lg text-on-surface mb-2">Quantum Entropy Pools</h3>
+<p class="text-on-surface-variant font-body text-xs line-clamp-2">Harvesting thermal noise for true random number generation at scale.</p>
+</div>
+<div class="mt-6 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container text-xs font-bold">AL</div>
+<span class="text-xs font-body text-secondary">A. Lovelace</span>
+</div>
+</div>
+<!-- Small Card 3 -->
+<div class="group relative overflow-hidden rounded-xl bg-primary text-on-primary p-6 flex flex-col justify-between cursor-pointer shadow-sm">
+<div class="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-4xl">lightbulb</span>
+</div>
+<div class="relative z-10">
+<span class="text-[10px] font-label uppercase tracking-widest opacity-80 mb-2 block">Curated Collection</span>
+<h3 class="font-headline text-lg mb-2">The Future of Mesh</h3>
+<p class="font-body text-xs opacity-90 line-clamp-2">A compilation of seminal papers on decentralized physical infrastructure networks.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Recommended Profiles Section -->
+<section class="space-y-6 pt-4">
+<h2 class="font-headline text-2xl text-on-surface">Curators &amp; Architects</h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+<!-- Profile Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 ghost-border flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
+<div class="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-surface-container-high">
+<img alt="A professional black and white portrait of a lead security architect. The lighting is dramatic, casting soft shadows that highlight the subject's authoritative yet approachable demeanor. The background is a clean, out-of-focus grey, perfectly complementing the scholarly, editorial UI aesthetic. High contrast and sharp details define the image." class="w-full h-full object-cover" data-alt="A professional black and white portrait of a lead security architect. The lighting is dramatic, casting soft shadows that highlight the subject's authoritative yet approachable demeanor. The background is a clean, out-of-focus grey, perfectly complementing the scholarly, editorial UI aesthetic. High contrast and sharp details define the image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDO_PY2zqQkQ9DmctWWjRzUzwe5HLnaFJKCdSTfpEy1bIGgdNbVapb-3aPbR5YfShicZJBDETUCAnCSCsd6vKHv8_NkiFa6xagGJxw0GaF7T7fj0YOWf-JtbJ-9BblxNQg4c_Sm5TcKcQ1HJZx_-9Gb40zdPEBGlyejFx9Nv67C_2bxDqMxJRDedUIHODSdHT10hdAB4k27ZLF9k_7HunH6woBs7_bqKxqtRWRG8-x15qXspgwWP3saaabVbs6NQsBQa29D1W4khsXa"/>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-headline text-base text-on-surface truncate">Elias Thorne</h4>
+<p class="text-xs font-label text-primary uppercase tracking-wider mt-1 truncate">Lead Security Architect</p>
+<p class="text-xs font-body text-on-surface-variant mt-2 line-clamp-2">Specializing in Byzantine fault tolerance and distributed consensus mechanisms.</p>
+</div>
+<button class="flex-shrink-0 w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-primary hover:border-primary hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+<!-- Profile Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 ghost-border flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
+<div class="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-surface-container-high">
+<img alt="A high-key portrait of a female network strategist in a modern architectural setting. Soft, diffused daylight illuminates her face, highlighting a calm, intellectual expression. The background features subtle, blurred lines of modern architecture, reinforcing the structural and strategic themes of her profession. The color palette is muted, relying on whites and soft greys." class="w-full h-full object-cover" data-alt="A high-key portrait of a female network strategist in a modern architectural setting. Soft, diffused daylight illuminates her face, highlighting a calm, intellectual expression. The background features subtle, blurred lines of modern architecture, reinforcing the structural and strategic themes of her profession. The color palette is muted, relying on whites and soft greys." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGQJyaa7Kguzpmxbo_uVXWHhNrJqiFgmyMkZSm4ARLJZc2v7XIrDprTv6Lwx4DR1wXq4aTWfcf2VRzxXYNopZxicQ6N0PPXAgeZC9mQXCRS-KQYve5USlJ2-xLZjjqZslyWqAlmH59sUNrmI2nM8iBBYTrDBj0yvG4SjlMmtYFYc8qZcJcNs3YQN-fe0u-JfcX35fRZ71Xo2d4GAgIMrgELXJ-Wv5ESvcJZxZB41A56vUlPai1YN3roRAoJg1j4gizTeEMG9vQ8qwP"/>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-headline text-base text-on-surface truncate">Sarah Vance</h4>
+<p class="text-xs font-label text-primary uppercase tracking-wider mt-1 truncate">Network Strategist</p>
+<p class="text-xs font-body text-on-surface-variant mt-2 line-clamp-2">Pioneering fluid topology models for deep-space communication arrays.</p>
+</div>
+<button class="flex-shrink-0 w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-primary hover:border-primary hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface-bright/80 dark:bg-surface-dim/80 backdrop-blur-xl rounded-t-full shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim opacity-60 hover:text-primary transition-all scale-95 active:scale-90 duration-200 gap-1 w-16" href="#">
+<span class="material-symbols-outlined text-xl">newspaper</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Feed</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:text-primary transition-all scale-95 active:scale-90 duration-200 gap-1 w-16" href="#">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim opacity-60 hover:text-primary transition-all scale-95 active:scale-90 duration-200 gap-1 w-16" href="#">
+<span class="material-symbols-outlined text-xl">chat_bubble</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Messages</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim opacity-60 hover:text-primary transition-all scale-95 active:scale-90 duration-200 gap-1 w-16" href="#">
+<span class="material-symbols-outlined text-xl">account_circle</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Profile</span>
+</a>
+</nav>
+</body></html>

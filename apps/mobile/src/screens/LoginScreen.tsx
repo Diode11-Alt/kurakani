@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSocket } from '../signal/SocketContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,6 +8,8 @@ import { SignalProtocolStore } from '../signal/SignalStore';
 import { KeyHelper } from '@privacyresearch/libsignal-protocol-typescript';
 import { bufferToBase64 } from '../signal/utils';
 import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
+import { Phone, User, ArrowRight, ShieldCheck } from 'lucide-react-native';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -37,13 +39,11 @@ export default function LoginScreen({ navigation }: Props) {
       let body: any = { phone, username };
 
       if (mode === 'register') {
-        // Generate Signal Protocol Keys
         const registrationId = KeyHelper.generateRegistrationId();
         const identityKeyPair = await KeyHelper.generateIdentityKeyPair();
         const preKey = await KeyHelper.generatePreKey(1);
         const signedPreKey = await KeyHelper.generateSignedPreKey(identityKeyPair, 1);
 
-        // Store keys locally
         const store = new SignalProtocolStore();
         await AsyncStorage.setItem('keys:localRegistrationId', registrationId.toString());
         await AsyncStorage.setItem('keys:localIdentity', JSON.stringify({
@@ -84,7 +84,7 @@ export default function LoginScreen({ navigation }: Props) {
       await AsyncStorage.setItem('signal_token', token);
       await AsyncStorage.setItem('signal_user', JSON.stringify(user));
       
-      connect(); // Connect websocket
+      connect();
       navigation.replace('Home');
     } catch (err: any) {
       setError(err.message);
@@ -94,174 +94,226 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.iconText}>G</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Sign in to continue your session.</Text>
         </View>
-        <Text style={styles.title}>GUFF</Text>
-        <Text style={styles.subtitle}>Enter your details to log in or register</Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <View style={styles.card}>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <TextInput
-          style={[styles.input, isPhoneFocused && styles.inputFocused]}
-          placeholder="Phone number"
-          placeholderTextColor={colors.textSecondary}
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          autoCapitalize="none"
-          onFocus={() => setIsPhoneFocused(true)}
-          onBlur={() => setIsPhoneFocused(false)}
-        />
-        <TextInput
-          style={[styles.input, isUserFocused && styles.inputFocused]}
-          placeholder="Username"
-          placeholderTextColor={colors.textSecondary}
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-          onFocus={() => setIsUserFocused(true)}
-          onBlur={() => setIsUserFocused(false)}
-        />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Phone Number</Text>
+            <View style={styles.inputContainer}>
+              <Phone size={20} color={colors.outline} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, isPhoneFocused && styles.inputFocused]}
+                placeholder="+1 234 567 8900"
+                placeholderTextColor={colors.outline}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                onFocus={() => setIsPhoneFocused(true)}
+                onBlur={() => setIsPhoneFocused(false)}
+              />
+            </View>
+          </View>
 
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={() => handleAuth('login')}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Log In</Text>
-          )}
-        </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Username</Text>
+            </View>
+            <View style={styles.inputContainer}>
+              <User size={20} color={colors.outline} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, isUserFocused && styles.inputFocused]}
+                placeholder="julian_vance"
+                placeholderTextColor={colors.outline}
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                onFocus={() => setIsUserFocused(true)}
+                onBlur={() => setIsUserFocused(false)}
+              />
+            </View>
+          </View>
 
-        <TouchableOpacity 
-          style={[styles.button, styles.secondaryButton]} 
-          onPress={() => handleAuth('register')}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.secondaryButtonText}>Create New Account</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={() => handleAuth('login')}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.onPrimary} />
+            ) : (
+              <>
+                <Text style={styles.buttonText}>Sign In</Text>
+                <ArrowRight size={18} color={colors.onPrimary} />
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.button, styles.secondaryButton]} 
+            onPress={() => handleAuth('register')}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.secondaryButtonText}>Create Account</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <ShieldCheck size={20} color={colors.tertiary} />
+          <Text style={styles.footerText}>ENTERPRISE PROTECTED</Text>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: colors.background,
-    alignItems: 'center',
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
     justifyContent: 'center',
-    padding: 20,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 380,
-    backgroundColor: colors.surface,
-    borderRadius: 24,
-    padding: 28,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 4,
   },
-  iconContainer: {
-    width: 68,
-    height: 68,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
+  header: {
+    marginBottom: 48,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  iconText: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#fff',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '900',
-    marginBottom: 6,
-    color: colors.text,
+    fontFamily: typography.fonts.headline,
+    fontSize: 36,
+    color: colors.onSurface,
+    marginBottom: 12,
     letterSpacing: -0.5,
   },
   subtitle: {
+    fontFamily: typography.fonts.body,
+    fontSize: 18,
+    color: colors.onSurfaceVariant,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: colors.glassBackground,
+    borderRadius: 24,
+    padding: 32,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  inputGroup: {
+    marginBottom: 24,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  label: {
+    fontFamily: typography.fonts.labelBold,
     fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 28,
-    textAlign: 'center',
+    color: colors.onSurfaceVariant,
+    marginBottom: 8,
+  },
+  inputContainer: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: 12,
+    zIndex: 1,
   },
   input: {
+    fontFamily: typography.fonts.body,
     width: '100%',
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 14,
-    fontSize: 16,
-    color: colors.text,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.outline,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingRight: 16,
+    paddingLeft: 40,
+    fontSize: 16,
+    color: colors.onSurface,
   },
   inputFocused: {
     borderColor: colors.primary,
-    backgroundColor: colors.surface,
+    borderWidth: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   button: {
     width: '100%',
     backgroundColor: colors.primary,
     borderRadius: 12,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    justifyContent: 'center',
+    gap: 8,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
   },
   buttonText: {
-    color: '#fff',
+    fontFamily: typography.fonts.labelBold,
+    color: colors.onPrimary,
     fontSize: 16,
-    fontWeight: '600',
   },
   secondaryButton: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.primary,
+    borderWidth: 0,
     shadowOpacity: 0,
     elevation: 0,
-    marginTop: 12,
+    marginTop: 8,
   },
   secondaryButtonText: {
+    fontFamily: typography.fonts.labelBold,
     color: colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
   },
   error: {
+    fontFamily: typography.fonts.bodyMedium,
     color: colors.error,
     marginBottom: 16,
     textAlign: 'center',
     fontSize: 14,
-    fontWeight: '500',
-  }
+  },
+  footer: {
+    marginTop: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  footerText: {
+    fontFamily: typography.fonts.labelBold,
+    fontSize: 14,
+    color: colors.tertiary,
+    letterSpacing: 1,
+  },
 });

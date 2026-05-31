@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>GUFF Messaging</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700;900&amp;family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-primary": "#b1c5ff",
+                    "surface-tint": "#2259bf",
+                    "surface-dim": "#dbdadb",
+                    "on-primary-fixed-variant": "#00419d",
+                    "surface-container-highest": "#e3e2e3",
+                    "on-secondary-fixed": "#171c20",
+                    "primary-container": "#3366cc",
+                    "tertiary": "#6d5e00",
+                    "surface-bright": "#faf9fa",
+                    "on-surface": "#1b1c1d",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#bfab49",
+                    "on-primary-container": "#e7ebff",
+                    "surface-variant": "#e3e2e3",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#303031",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#dfe3e8",
+                    "primary-fixed-dim": "#b1c5ff",
+                    "background": "#faf9fa",
+                    "secondary": "#5a5f63",
+                    "outline-variant": "#c3c6d5",
+                    "surface-container-high": "#e9e8e9",
+                    "surface": "#faf9fa",
+                    "on-secondary-fixed-variant": "#42474b",
+                    "on-tertiary-container": "#4a3f00",
+                    "on-surface-variant": "#434653",
+                    "on-tertiary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "primary-fixed": "#d9e2ff",
+                    "outline": "#737784",
+                    "on-secondary-container": "#606569",
+                    "tertiary-fixed-dim": "#dcc661",
+                    "secondary-container": "#dfe3e8",
+                    "primary": "#094cb2",
+                    "secondary-fixed-dim": "#c2c7cc",
+                    "surface-container": "#efedee",
+                    "tertiary-fixed": "#f9e37a",
+                    "surface-container-low": "#f5f3f4",
+                    "on-tertiary-fixed-variant": "#524600",
+                    "on-tertiary-fixed": "#211b00",
+                    "on-primary-fixed": "#001946",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#1b1c1d",
+                    "inverse-on-surface": "#f2f0f1",
+                    "error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Noto Serif"],
+                    "display": ["Noto Serif"],
+                    "body": ["Inter"],
+                    "label": ["Public Sans"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body antialiased min-h-screen flex flex-col pt-safe">
+<!-- TopAppBar -->
+<header class="bg-surface-bright dark:bg-surface-dim text-primary dark:text-inverse-primary docked full-width top-0 bg-surface-container-low dark:bg-surface-container-high flat no shadows flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50">
+<button class="hover:bg-surface-variant/50 transition-colors active:opacity-80 transition-opacity p-2 rounded-full -ml-2 text-on-surface-variant dark:text-surface-variant">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<div class="font-headline italic text-2xl text-primary dark:text-inverse-primary tracking-tight font-bold">Alexandria</div>
+<button class="hover:bg-surface-variant/50 transition-colors active:opacity-80 transition-opacity p-2 rounded-full -mr-2 text-on-surface-variant dark:text-surface-variant">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+</header>
+<main class="flex-1 overflow-y-auto pb-24">
+<!-- Search & Filters -->
+<section class="px-4 py-6 bg-surface-container-lowest">
+<div class="relative mb-6 group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+</div>
+<input class="w-full bg-surface-container text-on-surface placeholder:text-on-surface-variant font-body text-sm py-3 pl-12 pr-4 rounded-xl border border-outline-variant/15 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-300" placeholder="Search secure channels" type="text"/>
+</div>
+<div class="flex space-x-2 overflow-x-auto hide-scrollbar pb-2">
+<button class="px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label text-xs font-bold whitespace-nowrap transition-transform active:scale-95">All</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label text-xs font-bold whitespace-nowrap transition-transform active:scale-95">Unread</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label text-xs font-bold whitespace-nowrap transition-transform active:scale-95">Groups</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label text-xs font-bold whitespace-nowrap transition-transform active:scale-95">Vaults</button>
+</div>
+</section>
+<!-- Messages List -->
+<section class="flex flex-col">
+<!-- Thread 1: Unread, Vault -->
+<article class="flex items-center px-4 py-4 bg-surface-container-lowest hover:bg-surface-container-low transition-colors duration-200 cursor-pointer relative overflow-hidden group">
+<div class="relative mr-4 shrink-0">
+<img alt="Avatar" class="w-14 h-14 rounded-full object-cover" data-alt="A striking portrait of a sophisticated man with sharp features, shot in a high-end editorial style. The lighting is soft but dramatic, casting subtle shadows that emphasize depth. He is styled in dark, textured clothing against a neutral, slightly warm grey background. The mood is serious and authoritative, fitting perfectly with a premium digital curation platform's aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVVP6nNtg5TwlAGrAExH_BkYpzFpMxILIP2PKIrxSOObBIzqMSpMtquPDmwkvJrAYOUJdh8gPLRTcjB949llvoku_Sl4kOmGhCDShuGArRaxYKbyslawxFdQxsxySjZ5QxwUdOZ-tVdRCZPjMuGHWAl8vyTOkGA3mdOuFssRjGp0vzyH-o_pv-smFPIxJ-bEK1mQumSpVyNbwpHY4TPIzRx3UkpMnKZ_ENTvw1CdXOMlb9tLcbT-FZGC8yaaDfQLSDC7RF9NUmIOu3"/>
+<div class="absolute bottom-0 right-0 bg-tertiary text-on-tertiary rounded-full p-[2px] border-2 border-surface-container-lowest flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[10px]" data-icon="verified" data-weight="fill" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<div class="flex-1 min-w-0 pr-2">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-headline font-bold text-on-surface truncate pr-2 text-base">Dr. Elias Vance</h3>
+<span class="font-label text-[10px] text-primary font-bold shrink-0">10:42 AM</span>
+</div>
+<div class="flex items-center space-x-1">
+<span class="material-symbols-outlined text-primary text-[14px]" data-icon="lock" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lock</span>
+<p class="font-body text-sm text-on-surface font-medium truncate">The encrypted archival files are ready for review.</p>
+</div>
+</div>
+<div class="flex flex-col items-end space-y-2 shrink-0">
+<div class="bg-primary text-on-primary font-label text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">3</div>
+</div>
+</article>
+<!-- Thread 2: Read, Group -->
+<article class="flex items-center px-4 py-4 bg-surface-container-lowest hover:bg-surface-container-low transition-colors duration-200 cursor-pointer relative overflow-hidden group">
+<div class="relative mr-4 shrink-0 flex w-14 h-14">
+<img alt="Avatar 1" class="w-10 h-10 rounded-full object-cover absolute top-0 left-0 border-2 border-surface-container-lowest z-10" data-alt="A portrait of a young woman with a calm, focused expression, shot with clean, soft studio lighting. She has a natural, unpretentious elegance. The color grading leans towards cool, desaturated tones with pristine whites and deep blacks, aligning with a scholarly, high-end editorial visual language." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWZN12JrVNv0x0VRwS6VbsLffa3W6ZhQdPSo16LDhGxhNyEdYjWcknEXXk0zsWFqYQa1ZKZGRDDn4piChodsE3uk4e599FA1JnbThhZq-zePDa5-6w6KSc9BhboWE3702snGrUJiFgnvNMlc-_HbPN0gaFpUaUPVHEUhanlrVkqp2e65UFkfXnQ5ryV_IINOD0yNAz7CPPXjCVU2Zj1wAFAwIYZ9HYTsNUC_pm6Q31rOOYwKvKRYtGPFcgSUQVuJXectQTyTSpFTHz"/>
+<img alt="Avatar 2" class="w-10 h-10 rounded-full object-cover absolute bottom-0 right-0 border-2 border-surface-container-lowest z-0" data-alt="A close-up profile of a person in deep thought, illuminated by a high-key white light that creates a bright, minimalist aesthetic. The background is a stark, clean white. The composition is tight, focusing on the texture of their skin and the thoughtful mood, suited for a sophisticated digital interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfgNGcHLOLNBnkRu_fkjVARf2cxtkTMPXFvr4TanEG2BXlsWJYMXWOSRJYtLwIxat9oyMdvgSWiBHhrUZFhf6cbhK6wwA_5oNdBtMIw665oszdJAfiGMUznrkWb1CxIhkS4tM_m5D715gQl-9SYSwplA-XOhrlVWvkK_jOQMPM7LT26YB_e_6QnXeK17Y9moLOc-SG446C-ZlQoT7yXCf2YnMR5EhFDvTLy2ZvLdVN6vtsjxup5YWTdjdnTiLSNX6vCL0akTKT1JBW"/>
+</div>
+<div class="flex-1 min-w-0 pr-2">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-headline font-bold text-on-surface truncate pr-2 text-base">Curatorial Board</h3>
+<span class="font-label text-[10px] text-on-surface-variant shrink-0">Yesterday</span>
+</div>
+<p class="font-body text-sm text-on-surface-variant truncate">Sarah: We need to finalize the typography hierarchy.</p>
+</div>
+</article>
+<!-- Thread 3: Read, Vault -->
+<article class="flex items-center px-4 py-4 bg-surface-container-lowest hover:bg-surface-container-low transition-colors duration-200 cursor-pointer relative overflow-hidden group">
+<div class="relative mr-4 shrink-0">
+<img alt="Avatar" class="w-14 h-14 rounded-full object-cover" data-alt="A confident, older individual looking directly at the camera. The portrait is captured in a minimalist style, emphasizing wisdom and authority. The lighting is diffused, casting soft, flattering shadows. The color palette consists of neutral greys and subtle warm tones, maintaining a premium, scholarly feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAJpZOfq7sllF9cT4f-QKDxFBMhy2eveogmVIMjkaAwhwsLGQAA5TOA20P5vII6Uy83J0koRcmPXVmWLwUpWd3k2JBUrqeUACrdCvQRJWzKWpVrXIhB5C7c8ivV1imGJQ2h000chl5gCtGrnKcbgvhZ0Talpr_kXWDWdi15FyE59RziAlABBGUICxlLBDuZj4dzJzbNdb4oEKNm034Ppf0vPHAQSKb3fkt20FfGoMveZ2VnAcxLJd_Ke0SHdNvO_siiXTrnHCaDWjQ"/>
+</div>
+<div class="flex-1 min-w-0 pr-2">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-headline font-bold text-on-surface truncate pr-2 text-base">Prof. Aris Thorne</h3>
+<span class="font-label text-[10px] text-on-surface-variant shrink-0">Mon</span>
+</div>
+<div class="flex items-center space-x-1">
+<span class="material-symbols-outlined text-outline text-[14px]" data-icon="lock">lock</span>
+<p class="font-body text-sm text-on-surface-variant truncate">Access to the beta vault granted.</p>
+</div>
+</div>
+</article>
+<!-- Spacing to define hierarchy via background shift instead of borders -->
+<div class="h-1 w-full bg-surface-container-low"></div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-bright/80 dark:bg-surface-dim/80 backdrop-blur-xl docked full-width bottom-0 rounded-t-full bg-surface-container-lowest dark:bg-surface-container-highest flat no shadows fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe">
+<button class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim opacity-60 hover:text-primary transition-all scale-95 active:scale-90 transition-transform duration-200 w-16 group">
+<div class="mb-1 rounded-full group-hover:bg-surface-variant/50 p-1 transition-colors">
+<span class="material-symbols-outlined text-[24px]" data-icon="newspaper">newspaper</span>
+</div>
+<span class="font-label text-[10px] uppercase tracking-widest">Feed</span>
+</button>
+<button class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim opacity-60 hover:text-primary transition-all scale-95 active:scale-90 transition-transform duration-200 w-16 group">
+<div class="mb-1 rounded-full group-hover:bg-surface-variant/50 p-1 transition-colors">
+<span class="material-symbols-outlined text-[24px]" data-icon="explore">explore</span>
+</div>
+<span class="font-label text-[10px] uppercase tracking-widest">Explore</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:text-primary transition-all scale-95 active:scale-90 transition-transform duration-200 w-16 group">
+<div class="mb-1 bg-primary-container text-on-primary-container rounded-full p-1 px-4 transition-colors">
+<span class="material-symbols-outlined text-[24px]" data-icon="chat_bubble" data-weight="fill" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+</div>
+<span class="font-label text-[10px] uppercase tracking-widest font-bold">Messages</span>
+</button>
+<button class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim opacity-60 hover:text-primary transition-all scale-95 active:scale-90 transition-transform duration-200 w-16 group">
+<div class="mb-1 rounded-full group-hover:bg-surface-variant/50 p-1 transition-colors">
+<span class="material-symbols-outlined text-[24px]" data-icon="account_circle">account_circle</span>
+</div>
+<span class="font-label text-[10px] uppercase tracking-widest">Profile</span>
+</button>
+</nav>
+</body></html>
