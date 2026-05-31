@@ -1,0 +1,16 @@
+{
+  "name": "signal-clone",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "db:migrate": "turbo run db:migrate --filter=@signal/db",
+    "db:studio": "turbo run db:studio --filter=@signal/db"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  }
+}

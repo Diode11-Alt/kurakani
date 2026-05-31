@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  /* GUFF Brand */
+  --color-guff-primary: #4F46E5;
+  --color-guff-primary-hover: #4338CA;
+  --color-guff-primary-light: #EEF2FF;
+  --color-guff-accent: #F59E0B;
+  --color-guff-accent-hover: #D97706;
+
+  /* Neutrals */
+  --color-guff-bg: #F8FAFC;
+  --color-guff-surface: #FFFFFF;
+  --color-guff-border: #E2E8F0;
+  --color-guff-text: #0F172A;
+  --color-guff-text-secondary: #64748B;
+  --color-guff-text-muted: #94A3B8;
+
+  /* Semantic */
+  --color-guff-danger: #EF4444;
+  --color-guff-success: #10B981;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1);
+
+  /* Typography */
+  --font-inter: var(--font-inter);
+}
+
+@layer base {
+  body {
+    color: var(--color-guff-text);
+    background: var(--color-guff-bg);
+    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--color-guff-primary);
+    color: white;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+}
+
+@layer components {
+  .btn-primary {
+    background: var(--color-guff-primary);
+    color: white;
+    font-weight: 600;
+    padding: 0.625rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 150ms ease;
+    font-size: 0.875rem;
+  }
+  .btn-primary:hover { background: var(--color-guff-primary-hover); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-ghost {
+    color: var(--color-guff-text-secondary);
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    transition: all 150ms ease;
+    font-size: 0.875rem;
+  }
+  .btn-ghost:hover { background: var(--color-guff-primary-light); color: var(--color-guff-primary); }
+
+  .card {
+    background: var(--color-guff-surface);
+    border: 1px solid var(--color-guff-border);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  .input-field {
+    width: 100%;
+    background: var(--color-guff-bg);
+    border: 1px solid var(--color-guff-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+    color: var(--color-guff-text);
+    outline: none;
+    transition: all 150ms ease;
+  }
+  .input-field:focus {
+    background: white;
+    border-color: var(--color-guff-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+  .input-field::placeholder { color: var(--color-guff-text-muted); }
+}
