@@ -6,7 +6,8 @@ import rateLimit from 'express-rate-limit';
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
+import RedisStore from 'rate-limit-redis';
+import { redis } from './lib/redis';
 import authRoutes from './routes/auth';
 import keysRoutes from './routes/keys';
 import messageRoutes from './routes/messages';
@@ -49,10 +50,9 @@ for (const envVar of requiredEnvVars) {
 
 const app = express();
 const httpServer = createServer(app);
-const wss = new WebSocketServer({ server: httpServer });
 
 // Setup Signaling using our dedicated module
-setupSignaling(wss);
+setupSignaling(httpServer);
 
 // Trust proxy if we are behind a reverse proxy (e.g. Nginx, Docker)
 app.set('trust proxy', 1);
@@ -64,7 +64,7 @@ app.use(cors({
     : ['http://localhost:3000', 'https://localhost:3000'],
   credentials: true,
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '100kb' }));
 app.use(morgan('combined')); // Production-grade structured logging
 
 // Global Rate Limiting
@@ -73,16 +73,22 @@ const apiLimiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_MAX || '1000'),
   standardHeaders: true,
   legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
+  }),
 });
 app.use('/api/', apiLimiter);
 
 // Auth-specific rate limiting (stricter)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '10'),
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '5'),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many authentication attempts. Try again later.' },
+  store: new RedisStore({
+    sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
+  }),
 });
 
 // ─── Routes ───────────────────────────────────────────────

@@ -3,7 +3,10 @@ import { db, schema } from '@signal/db';
 import { eq, and, lt, desc, sql, inArray } from 'drizzle-orm';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { sendMessageSchema } from '../lib/validation';
-import { redis } from '../lib/redis';
+import { redis, pubClient } from '../lib/redis';
+import { Emitter } from '@socket.io/redis-emitter';
+
+const io = new Emitter(pubClient);
 
 const router = Router();
 
@@ -20,11 +23,17 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
 
     const { recipientId, conversationId, ciphertext, ciphertextType, contentType, sealedSender, expiresIn } = parsed.data;
 
-    // Verify recipient exists
-    const recipient = await db.query.users.findFirst({
-      where: eq(schema.users.id, recipientId),
-    });
-    if (!recipient) return res.status(404).json({ error: 'Recipient not found' });
+    // recipientId can now be a string (1-on-1) or an array of strings (multi-cast group fan-out)
+    const targetUserIds = Array.isArray(recipientId) ? recipientId : [recipientId];
+    
+    // Verify recipients exist
+    const recipients = await db.select({ id: schema.users.id })
+      .from(schema.users)
+      .where(inArray(schema.users.id, targetUserIds));
+      
+    if (recipients.length !== targetUserIds.length) {
+      return res.status(404).json({ error: 'One or more recipients not found' });
+    }
 
     // Find or create conversation
     let convId = conversationId;
@@ -66,7 +75,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
 
         await db.insert(schema.conversationMembers).values([
           { conversationId: convId, userId: senderId },
-          { conversationId: convId, userId: recipientId },
+          { conversationId: convId, userId: targetUserIds[0] }, // fallback to first target for direct
         ]);
       }
     }
@@ -91,8 +100,6 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       .where(eq(schema.conversations.id, convId));
 
     // Queue for offline delivery via Redis or push immediately if online
-    const isOnline = await redis.get(`presence:${recipientId}`);
-    
     const wsPayload = {
       type: 'message:receive',
       id: message.id,
@@ -103,23 +110,23 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       sentAt: message.sentAt,
     };
 
-    if (!isOnline) {
-      await redis.lpush(`messages:pending:${recipientId}`, JSON.stringify({
-        messageId: message.id,
-        conversationId: convId,
-        senderId: dbSenderId,
-        ciphertext,
-        ciphertextType,
-        contentType,
-        sentAt: message.sentAt,
-      }));
-    } else {
-      // Publish to global pub/sub channel for cross-server WebSocket delivery
-      const { pubClient } = require('../lib/redis');
-      pubClient.publish('ws:messages', JSON.stringify({ 
-        targetUserId: recipientId, 
-        payload: wsPayload 
-      }));
+    // Fan-out to all target participants
+    for (const targetId of targetUserIds) {
+      const isOnline = await redis.get(`presence:${targetId}`);
+      if (!isOnline) {
+        await redis.lpush(`messages:pending:${targetId}`, JSON.stringify({
+          messageId: message.id,
+          conversationId: convId,
+          senderId: dbSenderId,
+          ciphertext,
+          ciphertextType,
+          contentType,
+          sentAt: message.sentAt,
+        }));
+      } else {
+        // Publish via Socket.io Redis Emitter
+        io.to(`user_${targetId}`).emit('message:receive', wsPayload);
+      }
     }
 
     res.status(201).json({
