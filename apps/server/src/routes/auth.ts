@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { verifyPassword } from '../lib/auth';
 import { registerSchema, loginSchema, refreshSchema } from '../lib/validation';
 import { redis } from '../lib/redis';
 import crypto from 'crypto';
@@ -13,7 +14,9 @@ const router = Router();
 const PHONE_PEPPER = process.env.PHONE_PEPPER || 'kurakani-secure-pepper';
 
 function hashPhoneNumber(phone: string): string {
-  return crypto.createHash('sha256').update(phone + PHONE_PEPPER).digest('hex');
+  // Strip every non-numeric element (spaces, dashes, plus signs)
+  const normalizedPhone = phone.replace(/\D/g, "");
+  return crypto.createHash('sha256').update(normalizedPhone + PHONE_PEPPER).digest('hex');
 }
 
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -164,7 +167,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = await verifyPassword(password, user.passwordHash);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

@@ -19,6 +19,7 @@ export default function ChatThreadPage() {
   const [uploading, setUploading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -56,9 +57,15 @@ export default function ChatThreadPage() {
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        let mimeType = 'audio/webm';
+        let ext = 'webm';
+        if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+          ext = 'mp4';
+        }
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         if (audioBlob.size > 0) {
-          await uploadVoiceNote(audioBlob);
+          await uploadVoiceNote(audioBlob, ext);
         }
         stream.getTracks().forEach(track => track.stop());
       };
@@ -97,11 +104,11 @@ export default function ChatThreadPage() {
     }
   };
 
-  const uploadVoiceNote = async (blob: Blob) => {
+  const uploadVoiceNote = async (blob: Blob, ext: string = 'webm') => {
     setUploading(true);
     try {
-      const filename = `${session.user.id}-${Date.now()}.webm`;
-      const file = new File([blob], filename, { type: 'audio/webm' });
+      const filename = `${session.user.id}-${Date.now()}.${ext}`;
+      const file = new File([blob], filename, { type: blob.type });
 
       const { error: uploadError } = await supabase.storage
         .from('chat-media')
@@ -237,7 +244,15 @@ export default function ChatThreadPage() {
 
   // Scroll to bottom whenever messages list changes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    };
+    
+    // Use timeout to ensure DOM has updated (especially for media)
+    const timeoutId = setTimeout(scrollToBottom, 150);
+    return () => clearTimeout(timeoutId);
   }, [messages, isTyping]);
 
   async function loadMessages(userId: string) {
@@ -338,7 +353,7 @@ export default function ChatThreadPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-white">
+      <div className="flex-1 flex items-center justify-center bg-base">
         <Loader2 className="w-8 h-8 animate-spin text-[var(--color-guff-primary)]" />
       </div>
     );
@@ -347,41 +362,46 @@ export default function ChatThreadPage() {
   return (
     <div className="flex-1 flex flex-col h-full bg-[var(--color-guff-surface)] relative overflow-hidden select-none">
       {/* Header */}
-      <div className="bg-white px-4 py-3 border-b border-[var(--color-guff-border)]/40 flex items-center justify-between z-10 shadow-sm">
+      <div className="bg-[#1C1816] px-4 py-3 border-b border-[#4A3D33] flex items-center justify-between z-10 shadow-sm">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/messages')}
-            className="md:hidden p-1.5 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-100 transition-colors cursor-pointer"
+            className="md:hidden p-1.5 rounded-xl text-content-secondary hover:bg-[#262220] transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          {/* Avatar with Squircle wrapper */}
-          <div className="relative">
-            <div className="w-10 h-10 squircle bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
-              {otherUser?.avatar_url ? (
-                <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                otherUser?.username?.[0]?.toUpperCase() || '?'
-              )}
+          <div 
+            onClick={() => router.push(`/profile/${otherUser?.id}`)}
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            {/* Avatar with Squircle wrapper */}
+            <div className="relative">
+              <div className="w-10 h-10 squircle bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden ember-glow-sm">
+                {otherUser?.avatar_url ? (
+                  <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  otherUser?.username?.[0]?.toUpperCase() || '?'
+                )}
+              </div>
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-spark border-2 border-[#1C1816] rounded-full"></span>
             </div>
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
-          </div>
 
-          {/* User Info */}
-          <div className="flex flex-col select-none">
-            <div className="font-bold text-sm text-[var(--color-guff-text)] leading-tight">
-              {otherUser?.display_name || otherUser?.username}
-            </div>
-            <div className="text-[10px] font-bold text-[var(--color-guff-text-muted)] mt-0.5 flex items-center gap-1">
-              {isTyping ? (
-                <span className="text-[var(--color-guff-primary)] animate-pulse">typing...</span>
-              ) : (
-                <>
-                  <ShieldCheck className="w-3 h-3 text-[var(--color-guff-success)]" />
-                  <span>Encrypted Connection</span>
-                </>
-              )}
+            {/* User Info */}
+            <div className="flex flex-col select-none">
+              <div className="font-bold text-sm text-[var(--color-guff-text)] leading-tight">
+                {otherUser?.display_name || otherUser?.username}
+              </div>
+              <div className="text-[10px] font-bold text-[var(--color-guff-text-muted)] mt-0.5 flex items-center gap-1">
+                {isTyping ? (
+                  <span className="text-[var(--color-guff-primary)] animate-pulse">typing...</span>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-3 h-3 text-[var(--color-guff-success)]" />
+                    <span>Encrypted Connection</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -392,7 +412,7 @@ export default function ChatThreadPage() {
             onClick={() => window.dispatchEvent(new CustomEvent('guff-start-call', {
               detail: { conversationId, callType: 'audio', otherUser }
             }))}
-            className="p-2.5 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-50 hover:text-[var(--color-guff-primary)] transition-all cursor-pointer"
+            className="p-2.5 rounded-xl text-content-secondary hover:bg-[#262220] hover:text-brand transition-all cursor-pointer"
           >
             <Phone className="w-4.5 h-4.5" />
           </button>
@@ -400,13 +420,43 @@ export default function ChatThreadPage() {
             onClick={() => window.dispatchEvent(new CustomEvent('guff-start-call', {
               detail: { conversationId, callType: 'video', otherUser }
             }))}
-            className="p-2.5 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-50 hover:text-[var(--color-guff-primary)] transition-all cursor-pointer"
+            className="p-2.5 rounded-xl text-content-secondary hover:bg-[#262220] hover:text-brand transition-all cursor-pointer"
           >
             <Video className="w-4.5 h-4.5" />
           </button>
-          <button className="p-2.5 rounded-xl text-[var(--color-guff-text-secondary)] hover:bg-slate-50 transition-all cursor-pointer">
-            <MoreVertical className="w-4.5 h-4.5" />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="p-2.5 rounded-xl text-content-secondary hover:bg-[#262220] transition-all cursor-pointer"
+            >
+              <MoreVertical className="w-4.5 h-4.5" />
+            </button>
+            {showDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)}></div>
+                <div className="absolute right-0 top-full mt-2 w-48 card-ember shadow-xl py-2 z-50 border border-[#4A3D33] overflow-hidden">
+                  <button 
+                    onClick={() => {
+                      setShowDropdown(false);
+                      router.push(`/profile/${otherUser?.id}`);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-content hover:bg-[#262220] transition-colors"
+                  >
+                    View Profile
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowDropdown(false);
+                      setMessages([]); // Client-side clear for demo
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-blaze hover:bg-blaze/10 transition-colors"
+                  >
+                    Clear Chat
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -428,22 +478,24 @@ export default function ChatThreadPage() {
               <div key={m.id} className={`flex flex-col ${isSelf ? 'items-end' : 'items-start'}`}>
                 <div className={`max-w-[85%] md:max-w-[70%] p-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.08)] text-sm leading-relaxed break-words
                   ${isSelf 
-                    ? 'bg-[var(--color-guff-primary)] text-white rounded-[20px] rounded-tr-[4px]' 
-                    : 'bg-white text-[var(--color-guff-text)] rounded-[20px] rounded-tl-[4px] border border-slate-100'}`}
+                    ? 'bg-brand text-white rounded-[20px] rounded-tr-[4px]' 
+                    : 'bg-[#262220] text-content rounded-[20px] rounded-tl-[4px] border border-[#4A3D33]'}`}
                 >
                   {/* Media attachment */}
                   {m.media_url && (
-                    <div className="mb-2 max-w-xs rounded-xl overflow-hidden border border-black/5">
-                      {m.media_url.match(/\.(mp3|wav|ogg|webm|m4a|aac)(\?|$)/i) ? (
-                        <audio src={m.media_url} controls className="w-full max-w-[240px] focus:outline-none" />
+                    <div className="mb-2 max-w-xs rounded-xl overflow-hidden">
+                      {m.content === 'Voice Note 🎤' || m.media_url.match(/\.(mp3|wav|ogg|webm|m4a|aac|mp4)(\?|$)/i) ? (
+                        <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-black/5">
+                          <audio src={m.media_url} controls className="w-full h-10 min-w-[200px] max-w-[240px] focus:outline-none rounded-lg" />
+                        </div>
                       ) : (
-                        <img src={m.media_url} alt="" className="max-h-48 object-cover w-full rounded-xl" />
+                        <img src={m.media_url} alt="" className="max-h-48 object-cover w-full rounded-xl border border-black/5" />
                       )}
                     </div>
                   )}
 
-                  {/* Text content */}
-                  {m.content && <p className="font-sans">{m.content}</p>}
+                  {/* Text content (skip if it's just the Voice Note placeholder text) */}
+                  {m.content && m.content !== 'Voice Note 🎤' && <p className="font-sans">{m.content}</p>}
                 </div>
 
                 {/* Message Meta Info */}
@@ -454,7 +506,7 @@ export default function ChatThreadPage() {
                       {isRead ? (
                         <CheckCheck className="w-3.5 h-3.5 text-[var(--color-guff-primary)] stroke-[2.5]" />
                       ) : (
-                        <Check className="w-3.5 h-3.5 text-slate-300 stroke-[2.5]" />
+                        <Check className="w-3.5 h-3.5 text-content-muted stroke-[2.5]" />
                       )}
                     </span>
                   )}
@@ -467,43 +519,43 @@ export default function ChatThreadPage() {
         {/* Live typing indicator bubble */}
         {isTyping && (
           <div className="flex items-end gap-2 mt-2 select-none">
-            <div className="w-8 h-8 squircle bg-gradient-to-br from-indigo-300 to-purple-300 flex items-center justify-center text-[10px] font-bold text-white overflow-hidden flex-shrink-0">
+            <div className="w-8 h-8 squircle bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-[10px] font-bold text-white overflow-hidden flex-shrink-0">
               {otherUser?.username?.[0]?.toUpperCase()}
             </div>
-            <div className="bg-white rounded-[20px] rounded-tl-[4px] px-4 py-3 shadow-[0_1px_3px_rgba(15,23,42,0.08)] border border-slate-100">
+            <div className="bg-[#262220] rounded-[20px] rounded-tl-[4px] px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-[#4A3D33]">
               <span className="flex items-center gap-1.5">
                 <span className="text-xs font-semibold text-[var(--color-guff-text-secondary)]">{typingUser} is typing</span>
                 <span className="flex gap-0.5 items-center justify-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand animate-bounce" style={{ animationDelay: '300ms' }} />
                 </span>
               </span>
             </div>
           </div>
         )}
 
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-4" />
       </div>
 
       {/* Input Composer Panel */}
-      <div className="bg-white p-4 border-t border-[var(--color-guff-border)]/40 flex items-center gap-3 relative z-10">
+      <div className="bg-[#1C1816] p-4 border-t border-[#4A3D33] flex items-center gap-3 relative z-10">
         {isRecording ? (
-          <div className="flex-grow flex items-center gap-3 bg-red-50/50 border border-red-100 rounded-full px-4 py-2 select-none">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse flex-shrink-0" />
-            <span className="text-xs font-bold text-red-600">Recording {formatDuration(recordingDuration)}</span>
+          <div className="flex-grow flex items-center gap-3 bg-blaze/10 border border-blaze/30 rounded-full px-4 py-2 select-none">
+            <span className="w-2.5 h-2.5 rounded-full bg-blaze animate-pulse flex-shrink-0" />
+            <span className="text-xs font-bold text-blaze">Recording {formatDuration(recordingDuration)}</span>
             
             <button
               type="button"
               onClick={cancelRecording}
-              className="p-2 rounded-xl text-rose-600 hover:bg-rose-100/50 transition-colors ml-auto flex items-center justify-center cursor-pointer"
+              className="p-2 rounded-xl text-blaze hover:bg-blaze/10 transition-colors ml-auto flex items-center justify-center cursor-pointer"
             >
               <Trash2 className="w-4.5 h-4.5" />
             </button>
             <button
               type="button"
               onClick={stopRecording}
-              className="p-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow transition-colors flex items-center justify-center cursor-pointer"
+              className="p-2.5 rounded-full bg-spark hover:bg-spark/80 text-white shadow transition-colors flex items-center justify-center cursor-pointer"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -514,7 +566,7 @@ export default function ChatThreadPage() {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="p-2.5 rounded-full text-[var(--color-guff-text-muted)] hover:bg-slate-50 hover:text-[var(--color-guff-primary)] transition-colors flex-shrink-0 cursor-pointer"
+              className="p-2.5 rounded-full text-content-muted hover:bg-[#262220] hover:text-brand transition-colors flex-shrink-0 cursor-pointer"
             >
               {uploading ? (
                 <Loader2 className="w-5 h-5 animate-spin text-[var(--color-guff-primary)]" />
@@ -531,10 +583,10 @@ export default function ChatThreadPage() {
               disabled={uploading}
             />
 
-            <div className="flex-grow bg-[var(--color-guff-surface-container-low)] rounded-full px-4 py-2 flex items-center gap-2 border border-transparent focus-within:border-[var(--color-guff-primary)]/20 focus-within:bg-white transition-all">
+            <div className="flex-grow bg-[#171311] rounded-full px-4 py-2 flex items-center gap-2 border border-[#4A3D33] focus-within:border-brand/40 transition-all">
               <button 
                 type="button"
-                className="p-1 rounded-full text-[var(--color-guff-text-muted)] hover:bg-slate-100 transition-colors cursor-pointer"
+                className="p-1 rounded-full text-content-muted hover:bg-[#262220] transition-colors cursor-pointer"
               >
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                   <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-3.5-9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
@@ -554,7 +606,7 @@ export default function ChatThreadPage() {
               <button
                 type="button"
                 onClick={startRecording}
-                className="p-2.5 rounded-full text-[var(--color-guff-text-muted)] hover:bg-slate-50 hover:text-[var(--color-guff-text)] transition-colors flex-shrink-0 cursor-pointer"
+                className="p-2.5 rounded-full text-content-muted hover:bg-[#262220] hover:text-content transition-colors flex-shrink-0 cursor-pointer"
               >
                 <Mic className="w-5 h-5" />
               </button>

@@ -51,12 +51,12 @@ export default function FeedPage() {
     <div className="max-w-2xl mx-auto py-6 px-4 md:py-8">
       {/* Header */}
       <div className="mb-6 select-none">
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[var(--color-guff-text)]">Feed</h1>
-        <p className="text-xs md:text-sm text-[var(--color-guff-text-muted)] mt-1">See what's happening securely</p>
+        <h1 className="text-headline-lg text-content">Feed</h1>
+        <p className="text-body-sm text-content-muted mt-1">See what's happening securely</p>
       </div>
 
       {/* Stories Tray */}
-      <div className="mb-6 p-4 bg-[var(--color-guff-surface-container-lowest)] rounded-xl shadow-[0_1px_3px_rgba(15,23,42,0.08)] border border-[var(--color-guff-outline-variant)]/30 overflow-hidden">
+      <div className="mb-6 p-4 card-ember rounded-xl overflow-hidden">
         <StoriesTray
           currentUserId={session.user.id}
           currentProfile={profile}
@@ -75,13 +75,13 @@ export default function FeedPage() {
       {/* Posts */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[var(--color-guff-primary)]" />
+          <Loader2 className="w-6 h-6 animate-spin text-brand" />
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-16 bg-[var(--color-guff-surface-container-lowest)] rounded-xl border border-[var(--color-guff-outline-variant)]/20 shadow-sm">
+        <div className="text-center py-16 card-ember rounded-xl">
           <div className="text-4xl mb-3">📝</div>
-          <h3 className="font-semibold text-[var(--color-guff-text)]">No posts yet</h3>
-          <p className="text-xs text-[var(--color-guff-text-muted)] mt-1">Be the first to share something!</p>
+          <h3 className="font-semibold text-content">No posts yet</h3>
+          <p className="text-xs text-content-muted mt-1">Be the first to share something!</p>
         </div>
       ) : (
         <div className="space-y-6">

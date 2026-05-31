@@ -1,26 +1,27 @@
 "use client";
 
 import { useAppStore } from "../../store/appStore";
+import Link from "next/link";
 
 export function MobileHeader() {
-  const { user } = useAppStore();
+  const { user, userId } = useAppStore();
 
   return (
-    <header className="md:hidden fixed top-0 left-0 right-0 h-16 glass bg-surface/80 flex items-center justify-between px-lg z-40 border-b border-outline-variant/30 shadow-sm">
-      <span className="font-display-lg text-headline-md font-black text-primary tracking-tight">GUFF</span>
+    <header className="md:hidden fixed top-0 left-0 right-0 h-16 glass-dark flex items-center justify-between px-lg z-40 shadow-sm">
+      <span className="text-headline-md font-black text-brand tracking-tight">GUFF</span>
       <div className="flex items-center gap-md">
-        <span className="material-symbols-outlined text-on-surface-variant cursor-pointer active:scale-95">
+        <span className="material-symbols-outlined text-content-muted hover:text-brand cursor-pointer transition-colors active:scale-95">
           notifications
         </span>
         <span 
-          className="material-symbols-outlined text-primary cursor-pointer active:scale-95" 
+          className="material-symbols-outlined text-spark cursor-pointer active:scale-95" 
           style={{ fontVariationSettings: "'FILL' 1" }}
         >
           encrypted
         </span>
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white font-bold overflow-hidden shadow-sm border border-outline-variant/30">
+        <Link href={`/profile/${userId || 'me'}`} className="w-8 h-8 rounded-xl bg-ember-gradient flex items-center justify-center text-white font-bold overflow-hidden ember-glow-sm border border-[#4A3D33] hover:opacity-80 transition-opacity">
           {user?.name?.[0]?.toUpperCase() || "?"}
-        </div>
+        </Link>
       </div>
     </header>
   );

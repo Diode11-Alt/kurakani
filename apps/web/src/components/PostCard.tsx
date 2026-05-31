@@ -106,7 +106,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       <div className="flex flex-col gap-3">
         <span className="font-semibold text-sm">Delete this post?</span>
         <div className="flex gap-2 justify-end">
-          <button onClick={() => toast.dismiss(t.id)} className="px-3 py-1.5 text-xs rounded-lg hover:bg-slate-100 font-medium">Cancel</button>
+          <button onClick={() => toast.dismiss(t.id)} className="px-3 py-1.5 text-xs rounded-lg hover:bg-[#262220] font-medium text-content-secondary">Cancel</button>
           <button onClick={async () => {
             toast.dismiss(t.id);
             const { error } = await supabase.from('posts').delete().eq('id', post.id);
@@ -116,7 +116,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               onDelete?.();
               toast.success('Post deleted');
             }
-          }} className="px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium">Delete</button>
+          }} className="px-3 py-1.5 text-xs bg-blaze text-white rounded-lg hover:bg-blaze-dim font-medium">Delete</button>
         </div>
       </div>
     ), { duration: 5000 });
@@ -127,11 +127,11 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
     : '';
 
   return (
-    <article className="card overflow-hidden bg-[var(--color-guff-surface-container-lowest)] rounded-xl shadow-[0_1px_3px_rgba(15,23,42,0.08)] transition-all duration-300 hover:shadow-md border border-[var(--color-guff-outline-variant)]/30">
+    <article className="card-ember overflow-hidden rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-all duration-300 hover:shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pb-2">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0 ember-glow-sm">
             {author?.avatar_url ? (
               <img src={author.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -161,15 +161,15 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-1.5 rounded-xl text-[var(--color-guff-text-muted)] hover:bg-slate-100 transition-colors cursor-pointer"
+              className="p-1.5 rounded-xl text-[var(--color-guff-text-muted)] hover:bg-[#262220] transition-colors cursor-pointer"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border border-[var(--color-guff-border)] py-1 z-20 overflow-hidden">
+              <div className="absolute right-0 top-full mt-1 w-36 bg-[#262220] rounded-xl shadow-lg border border-[var(--color-guff-border)] py-1 z-20 overflow-hidden">
                 <button
                   onClick={handleDelete}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[var(--color-guff-danger)] hover:bg-red-50 transition-colors cursor-pointer text-left font-medium"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blaze hover:bg-blaze/10 transition-colors cursor-pointer text-left font-medium"
                 >
                   <Trash2 className="w-4 h-4" /> Delete Post
                 </button>
@@ -189,7 +189,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       {/* Media Content */}
       {post.media_urls && post.media_urls.length > 0 && (
         <div className="mt-2 px-4">
-          <div className="rounded-xl overflow-hidden bg-slate-50 border border-[var(--color-guff-border)]/20">
+          <div className="rounded-xl overflow-hidden bg-[#171311] border border-[var(--color-guff-border)]/20">
             {post.media_urls.length === 1 ? (
               post.post_type === 'video' ? (
                 <video src={post.media_urls[0]} controls className="w-full max-h-[460px] object-cover" />
@@ -213,8 +213,8 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
           onClick={toggleLike}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
             liked
-              ? 'text-rose-600 bg-rose-50'
-              : 'text-[var(--color-guff-text-secondary)] hover:text-rose-600 hover:bg-rose-50/40'
+              ? 'text-brand bg-brand/10'
+              : 'text-content-secondary hover:text-brand hover:bg-brand/10'
           } ${isLiking ? 'scale-110 duration-200' : ''}`}
         >
           <Heart className={`w-4.5 h-4.5 ${liked ? 'fill-current' : ''}`} />
@@ -243,21 +243,21 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
 
       {/* Comments Drawer */}
       {showComments && (
-        <div className="px-4 pb-4 border-t border-[var(--color-guff-border)]/20 bg-slate-50/50">
+        <div className="px-4 pb-4 border-t border-[var(--color-guff-border)]/20 bg-[#171311]">
           <div className="space-y-3 mt-3 max-h-[250px] overflow-y-auto pr-1">
             {comments.length === 0 ? (
               <p className="text-center py-4 text-xs text-[var(--color-guff-text-muted)]">No comments yet. Be the first to reply!</p>
             ) : (
               comments.map(c => (
                 <div key={c.id} className="flex gap-2.5 items-start">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-600 to-red-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">
                     {c.profiles?.avatar_url ? (
                       <img src={c.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
                       c.profiles?.username?.[0]?.toUpperCase() || '?'
                     )}
                   </div>
-                  <div className="bg-white rounded-2xl px-3.5 py-2 flex-1 shadow-sm border border-slate-100">
+                  <div className="bg-[#262220] rounded-2xl px-3.5 py-2 flex-1 shadow-sm border border-[#4A3D33]">
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-xs text-[var(--color-guff-text)]">
                         @{c.profiles?.username}
@@ -278,7 +278,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               placeholder="Write a secure comment..."
               disabled={isCommenting}
               aria-label="Comment text"
-              className="input-field text-xs py-2 bg-white flex-grow disabled:opacity-50"
+              className="input-field text-xs py-2 flex-grow disabled:opacity-50"
             />
             <button type="submit" disabled={!commentText.trim() || isCommenting} className="btn-primary px-4 py-2 text-xs cursor-pointer flex items-center gap-1 disabled:opacity-50">
               {isCommenting && <Loader2 className="w-3 h-3 animate-spin" />}

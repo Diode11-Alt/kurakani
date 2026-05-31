@@ -1,35 +1,86 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Obsidian Sunset Theme ── */
-  
-  /* Core Backgrounds (The Vault) */
-  --color-base: #09090B;
-  --color-surface: #18181B;
-  --color-elevated: #27272A;
-  
-  /* Primary Accent (The Sunset) */
-  --color-brand: #E11D48;
-  --color-brand-hover: #BE123C;
-  --color-brand-muted: rgba(225, 29, 72, 0.15);
+  /* ══════════════════════════════════════════
+     🔥 EMBER FLAME — Design System Tokens
+     ══════════════════════════════════════════ */
 
-  /* Text Colors */
-  --color-content: #F4F4F5;
-  --color-content-muted: #A1A1AA;
-  
-  /* Semantic (For E2EE states) */
-  --color-secure: #10B981;
+  /* ── Core Surfaces (The Obsidian Layers) ── */
+  --color-base: #0C0A09;
+  --color-surface: #1C1816;
+  --color-elevated: #262220;
+  --color-surface-bright: #31302E;
+
+  /* ── Primary Accent (Ember Orange) ── */
+  --color-brand: #F97316;
+  --color-brand-hover: #EA580C;
+  --color-brand-dim: #C2410C;
+  --color-brand-muted: rgba(249, 115, 22, 0.15);
+  --color-brand-glow: rgba(249, 115, 22, 0.20);
+
+  /* ── Secondary (Blaze Red) ── */
+  --color-blaze: #EF4444;
+  --color-blaze-dim: #B91C1C;
+
+  /* ── Tertiary (Spark Amber) ── */
+  --color-spark: #FBBF24;
+  --color-spark-dim: #B45309;
+
+  /* ── Text Colors (Ash Scale) ── */
+  --color-content: #F5F0EB;
+  --color-content-secondary: #D4C4B0;
+  --color-content-muted: #9A8A7B;
+
+  /* ── Borders ── */
+  --color-border: #4A3D33;
+  --color-border-subtle: rgba(74, 61, 51, 0.5);
+
+  /* ── Semantic ── */
+  --color-secure: #FBBF24;
   --color-error: #EF4444;
+  --color-success: #10B981;
 
-  /* Typography */
-  --font-inter: var(--font-inter);
+  /* ── Font Stacks ── */
+  --font-sora: 'Sora', system-ui, sans-serif;
+  --font-jakarta: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'Space Mono', 'JetBrains Mono', monospace;
+
+  /* ══ Legacy GUFF Variables (Mapped to Ember Flame) ══ */
+  --color-guff-background: #0C0A09;
+  --color-guff-bg: #0C0A09;
+  --color-guff-surface: #1C1816;
+  --color-guff-surface-bright: #262220;
+  --color-guff-surface-container-lowest: #070504;
+  --color-guff-surface-container-low: #171311;
+  --color-guff-surface-container: #1C1816;
+  --color-guff-surface-container-high: #262220;
+  --color-guff-border: #4A3D33;
+  --color-guff-outline: #9A8A7B;
+  --color-guff-outline-variant: #4A3D33;
+
+  --color-guff-text: #F5F0EB;
+  --color-guff-text-secondary: #D4C4B0;
+  --color-guff-text-muted: #9A8A7B;
+
+  --color-guff-primary: #F97316;
+  --color-guff-primary-hover: #EA580C;
+  --color-guff-primary-light: rgba(249, 115, 22, 0.15);
+  --color-guff-primary-container: #C2410C;
+  --color-guff-primary-fixed: #F97316;
+
+  --color-guff-secondary: #EF4444;
+  --color-guff-secondary-container: #B91C1C;
+  --color-guff-tertiary: #FBBF24;
+
+  --color-guff-success: #FBBF24;
+  --color-guff-danger: #EF4444;
 }
 
 @layer base {
   body {
     color: var(--color-content);
     background: var(--color-base);
-    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+    font-family: var(--font-jakarta);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -44,79 +95,232 @@
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   }
 
-  /* Ultra-thin custom scrollbar */
+  /* ── Dark Scrollbar ── */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--color-elevated); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 999px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--color-content-muted); }
 }
 
 @layer components {
-  /* ── Buttons ── */
+  /* ══ Buttons ══ */
   .btn-primary {
-    background: var(--color-brand);
+    background: linear-gradient(135deg, #F97316, #EA580C);
     color: white;
+    font-family: var(--font-jakarta);
+    font-weight: 700;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.875rem;
+    box-shadow: 0 0 20px var(--color-brand-glow), 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #FB923C, #F97316);
+    box-shadow: 0 0 32px var(--color-brand-glow), 0 8px 24px rgba(0,0,0,0.4);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active { transform: scale(0.98) translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
+
+  .btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-content-secondary);
     font-weight: 600;
     padding: 0.75rem 1.5rem;
     border-radius: 0.75rem;
-    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--color-border);
+    transition: all 200ms;
     font-size: 0.875rem;
-    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25);
   }
-  .btn-primary:hover { background: var(--color-brand-hover); box-shadow: 0 4px 16px rgba(225, 29, 72, 0.3); }
-  .btn-primary:active { transform: scale(0.98); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+  .btn-secondary:hover {
+    border-color: rgba(249, 115, 22, 0.4);
+    color: var(--color-content);
+    background: var(--color-elevated);
+  }
 
-  /* ── Input Fields ── */
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-brand);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 200ms;
+    font-size: 0.875rem;
+  }
+  .btn-ghost:hover { background: var(--color-brand-muted); }
+
+  /* ══ Input Fields ══ */
   .input-field {
     width: 100%;
-    background: var(--color-surface);
-    border: 1px solid var(--color-elevated);
+    background: #171311;
+    border: 1px solid var(--color-border);
     border-radius: 0.75rem;
-    padding: 0.75rem 1rem;
+    padding: 0.875rem 1rem;
     font-size: 0.875rem;
+    font-family: var(--font-jakarta);
     color: var(--color-content);
     outline: none;
-    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   .input-field:focus {
     border-color: var(--color-brand);
-    box-shadow: 0 0 0 3px var(--color-brand-muted);
+    box-shadow: 0 0 0 3px var(--color-brand-muted), inset 0 0 12px rgba(249, 115, 22, 0.05);
   }
   .input-field::placeholder { color: var(--color-content-muted); }
 
-  /* ── Typography Scales ── */
+  /* ══ Floating Labels ══ */
+  .input-floating-label:focus-within label,
+  .input-floating-label input:not(:placeholder-shown) + label {
+    transform: translateY(-28px) scale(0.8);
+    color: var(--color-brand);
+    font-weight: 600;
+  }
+
+  /* ══ Cards ══ */
+  .card-ember {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    transition: border-color 300ms;
+  }
+  .card-ember:hover {
+    border-color: rgba(249, 115, 22, 0.3);
+  }
+
+  /* ══ Ember Glow Effects ══ */
+  .ember-glow {
+    box-shadow: 0 0 20px var(--color-brand-glow);
+  }
+  .ember-glow-sm {
+    box-shadow: 0 0 12px var(--color-brand-glow);
+  }
+  .ember-glow-lg {
+    box-shadow: 0 0 40px var(--color-brand-glow), 0 0 80px rgba(249, 115, 22, 0.08);
+  }
+
+  /* ══ Glass (Dark) ══ */
+  .glass-dark {
+    background: rgba(28, 24, 22, 0.80);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  /* ══ Gradients ══ */
+  .bg-ember-gradient {
+    background: linear-gradient(135deg, #0C0A09 0%, #1C1816 40%, #C2410C 100%);
+  }
+  .bg-auth-gradient {
+    background: linear-gradient(145deg, #0C0A09 0%, #1C1210 30%, #7C2D12 70%, #C2410C 100%);
+  }
+  .bg-ember-hero {
+    background: linear-gradient(135deg, #0C0A09 0%, #171311 40%, rgba(249, 115, 22, 0.15) 100%);
+  }
+
+  /* ══ Ember Ring (for avatars) ══ */
+  .ember-ring {
+    box-shadow: 0 0 0 2px var(--color-brand), 0 0 12px var(--color-brand-glow);
+  }
+
+  /* ══ Typography Scales ══ */
   .text-display-lg {
-    font-size: 32px;
-    line-height: 40px;
-    letter-spacing: -0.02em;
+    font-family: var(--font-sora);
+    font-size: 52px;
+    line-height: 60px;
+    letter-spacing: -0.03em;
     font-weight: 800;
   }
+  .text-display-md {
+    font-family: var(--font-sora);
+    font-size: 40px;
+    line-height: 48px;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  .text-headline-lg {
+    font-family: var(--font-sora);
+    font-size: 28px;
+    line-height: 36px;
+    letter-spacing: -0.015em;
+    font-weight: 700;
+  }
   .text-headline-md {
+    font-family: var(--font-sora);
     font-size: 24px;
     line-height: 32px;
     letter-spacing: -0.01em;
-    font-weight: 700;
+    font-weight: 600;
   }
   .text-headline-sm {
+    font-family: var(--font-sora);
     font-size: 20px;
     line-height: 28px;
     font-weight: 600;
   }
   .text-body-lg {
+    font-family: var(--font-jakarta);
     font-size: 16px;
     line-height: 24px;
     font-weight: 400;
   }
   .text-body-md {
+    font-family: var(--font-jakarta);
     font-size: 14px;
     line-height: 20px;
     font-weight: 400;
   }
+  .text-body-sm {
+    font-family: var(--font-jakarta);
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 400;
+  }
+  .text-label-lg {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+  }
   .text-label-md {
+    font-family: var(--font-mono);
     font-size: 12px;
     line-height: 16px;
     letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+  .text-label-sm {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 14px;
+    letter-spacing: 0.06em;
     font-weight: 600;
   }
+}
+
+/* ══ Ember Particle Animation ══ */
+@keyframes ember-float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+  50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+}
+@keyframes ember-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+@keyframes ember-drift {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.5; }
+  100% { transform: translate(100px, -200px) rotate(45deg); opacity: 0; }
+}
+
+.animate-ember-float { animation: ember-float 3s ease-in-out infinite; }
+.animate-ember-pulse { animation: ember-pulse 2s ease-in-out infinite; }
+.animate-ember-drift { animation: ember-drift 8s linear infinite; }
+
+/* ══ Squircle Shape ══ */
+.squircle {
+  border-radius: 22%;
+  mask-image: paint(squircle);
 }

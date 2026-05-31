@@ -86,7 +86,7 @@ export default function ExplorePage() {
         {/* Prominent Search Bar */}
         <form onSubmit={handleSearch} className="relative group">
           <div className="absolute inset-0 bg-[var(--color-guff-primary)]/5 rounded-2xl blur-xl group-focus-within:bg-[var(--color-guff-primary)]/10 transition-all duration-500 pointer-events-none"></div>
-          <div className="relative flex items-center bg-white border border-[var(--color-guff-outline-variant)]/40 focus-within:border-[var(--color-guff-primary)] rounded-2xl shadow-sm transition-all duration-300 overflow-hidden">
+          <div className="relative flex items-center bg-[#1C1816] border border-[#4A3D33] focus-within:border-brand rounded-2xl shadow-sm transition-all duration-300 overflow-hidden">
             <Search className="ml-5 text-[var(--color-guff-text-muted)] w-6 h-6 flex-shrink-0" />
             <input
               type="text"
@@ -133,16 +133,16 @@ export default function ExplorePage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map(i => (
-              <div key={i} className="glass-card p-6 rounded-2xl flex flex-col items-center space-y-4 border border-[var(--color-guff-border)]/20 animate-pulse">
-                <div className="w-20 h-20 rounded-[24px] bg-slate-200"></div>
-                <div className="w-3/4 h-5 rounded bg-slate-200"></div>
-                <div className="w-1/2 h-3.5 rounded bg-slate-200"></div>
-                <div className="w-full h-9 rounded-xl bg-slate-200 mt-2"></div>
+              <div key={i} className="card-ember p-6 rounded-2xl flex flex-col items-center space-y-4 animate-pulse">
+                <div className="w-20 h-20 rounded-[24px] bg-[#262220]"></div>
+                <div className="w-3/4 h-5 rounded bg-[#262220]"></div>
+                <div className="w-1/2 h-3.5 rounded bg-[#262220]"></div>
+                <div className="w-full h-9 rounded-xl bg-[#262220] mt-2"></div>
               </div>
             ))}
           </div>
         ) : query.trim() && results.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl border border-[var(--color-guff-border)]/20 shadow-sm">
+          <div className="text-center py-12 card-ember rounded-2xl">
             <span className="text-3xl">🔍</span>
             <p className="text-sm font-semibold text-[var(--color-guff-text)] mt-3">No profiles matched your search</p>
             <p className="text-xs text-[var(--color-guff-text-muted)] mt-1">Try another query or check spelling</p>
@@ -156,20 +156,20 @@ export default function ExplorePage() {
               return (
                 <div 
                   key={user.id} 
-                  className="glass-card p-6 rounded-2xl flex flex-col items-center text-center space-y-4 hover:shadow-md transition-shadow group border border-[var(--color-guff-outline-variant)]/20 relative"
+                  className="card-ember p-6 rounded-2xl flex flex-col items-center text-center space-y-4 hover:shadow-md transition-shadow group relative"
                 >
                   <div className="relative cursor-pointer" onClick={() => !isDefault && router.push(`/profile/${user.id}`)}>
-                    <div className="w-20 h-20 rounded-[24px] overflow-hidden rotate-3 group-hover:rotate-0 transition-transform duration-300 bg-slate-100 border border-[var(--color-guff-border)]/20">
+                    <div className="w-20 h-20 rounded-[24px] overflow-hidden rotate-3 group-hover:rotate-0 transition-transform duration-300 bg-[#262220] border border-[#4A3D33]">
                       {user.avatar_url ? (
                         <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-lg text-slate-700 bg-slate-200">
+                        <div className="w-full h-full flex items-center justify-center font-bold text-lg text-content bg-[#262220]">
                           {user.username?.[0]?.toUpperCase() || '?'}
                         </div>
                       )}
                     </div>
                     {user.verified !== false && (
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[var(--color-guff-primary-container)] rounded-full border-4 border-white flex items-center justify-center shadow">
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-brand rounded-full border-4 border-[#1C1816] flex items-center justify-center shadow ember-glow-sm">
                         <Check className="w-3 h-3 text-white stroke-[4]" />
                       </div>
                     )}
@@ -191,8 +191,8 @@ export default function ExplorePage() {
                       onClick={() => toggleFollow(user.id)}
                       className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer ${
                         following
-                          ? 'bg-slate-100 text-[var(--color-guff-text)] border border-slate-200'
-                          : 'bg-[var(--color-guff-primary)] text-white hover:bg-[var(--color-guff-primary-hover)]'
+                          ? 'bg-[#262220] text-content border border-[#4A3D33]'
+                          : 'bg-brand text-white hover:bg-brand-hover ember-glow-sm'
                       }`}
                     >
                       {following ? 'Following' : 'Follow'}
@@ -208,7 +208,7 @@ export default function ExplorePage() {
                           });
                           if (data) router.push(`/messages/${data}`);
                         }}
-                        className="p-2 border border-[var(--color-guff-outline-variant)] hover:bg-slate-50 text-[var(--color-guff-text-secondary)] rounded-xl transition-all cursor-pointer"
+                        className="p-2 border border-[#4A3D33] hover:bg-[#262220] text-content-secondary rounded-xl transition-all cursor-pointer"
                       >
                         <MessageSquare className="w-4 h-4" />
                       </button>

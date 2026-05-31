@@ -182,7 +182,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-[1000px] mx-auto py-6 px-4 md:py-8 select-none relative">
       {/* Profile Header Card */}
-      <section className="bg-white shadow-[0_1px_3px_rgba(15,23,42,0.08)] border border-[var(--color-guff-outline-variant)]/20 rounded-2xl overflow-hidden relative mb-6">
+      <section className="card-ember rounded-2xl overflow-hidden relative mb-6">
         {/* Cover Photo */}
         <div className="h-[200px] w-full bg-gradient-to-r from-[var(--color-guff-primary)] to-[var(--color-guff-tertiary)] relative overflow-hidden">
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
@@ -196,14 +196,14 @@ export default function ProfilePage() {
           <div className="relative flex flex-col sm:flex-row sm:items-end -mt-14 sm:gap-6 mb-4">
             {/* Avatar */}
             <div className="relative inline-block self-start sm:self-auto">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-md">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-[#1C1816] bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-md ember-glow">
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
                   profile.username?.[0]?.toUpperCase() || '?'
                 )}
               </div>
-              <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full"></span>
+              <span className="absolute bottom-1 right-1 w-5 h-5 bg-spark border-2 border-[#1C1816] rounded-full"></span>
             </div>
 
             {/* Profile actions */}
@@ -223,7 +223,7 @@ export default function ProfilePage() {
                   <>
                     <button
                       onClick={handleMessage}
-                      className="px-5 py-2.5 rounded-xl text-xs font-bold border border-[var(--color-guff-outline-variant)] bg-white text-[var(--color-guff-text-secondary)] hover:bg-slate-50 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                      className="px-5 py-2.5 rounded-xl text-xs font-bold border border-[#4A3D33] bg-[#262220] text-content-secondary hover:bg-[#2e2a27] active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
                     >
                       <MessageSquare className="w-4 h-4" /> Message
                     </button>
@@ -231,8 +231,8 @@ export default function ProfilePage() {
                       onClick={toggleFollow}
                       className={`px-5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
                         isFollowing
-                          ? 'bg-slate-100 text-[var(--color-guff-text)] border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100'
-                          : 'bg-[var(--color-guff-primary)] text-white hover:bg-[var(--color-guff-primary-hover)]'
+                          ? 'bg-[#262220] text-content border border-[#4A3D33] hover:bg-blaze/10 hover:text-blaze hover:border-blaze/30'
+                          : 'bg-brand text-white hover:bg-brand-hover ember-glow-sm'
                       }`}
                     >
                       {isFollowing ? 'Following' : 'Follow'}
@@ -241,7 +241,7 @@ export default function ProfilePage() {
                 ) : isOwnProfile ? (
                   <button
                     onClick={() => setShowSettings(true)}
-                    className="p-2.5 bg-slate-50 border border-[var(--color-guff-outline-variant)]/40 rounded-xl hover:bg-slate-100 text-[var(--color-guff-text-secondary)] active:scale-95 transition-all cursor-pointer"
+                    className="p-2.5 bg-[#262220] border border-[#4A3D33] rounded-xl hover:bg-[#2e2a27] text-content-secondary active:scale-95 transition-all cursor-pointer"
                   >
                     <Settings className="w-5 h-5" />
                   </button>
@@ -326,7 +326,7 @@ export default function ProfilePage() {
       <div className="space-y-6">
         {activeTab === 'posts' && (
           posts.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-xl border border-[var(--color-guff-border)]/20 shadow-sm">
+            <div className="text-center py-16 card-ember rounded-xl">
               <p className="text-[var(--color-guff-text-muted)] text-sm font-semibold">No posts yet</p>
             </div>
           ) : (
@@ -348,7 +348,7 @@ export default function ProfilePage() {
             {posts.filter(p => p.media_urls && p.media_urls.length > 0).map(post => (
               <div 
                 key={post.id} 
-                className="aspect-square relative rounded-xl overflow-hidden cursor-pointer group bg-slate-50 border border-[var(--color-guff-border)]/20 shadow-sm"
+                className="aspect-square relative rounded-xl overflow-hidden cursor-pointer group bg-[#171311] border border-[#4A3D33] shadow-sm"
               >
                 <img src={post.media_urls[0]} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 <div className="absolute inset-0 bg-[var(--color-guff-primary)]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white text-xs font-bold">
@@ -358,7 +358,7 @@ export default function ProfilePage() {
               </div>
             ))}
             {posts.filter(p => p.media_urls && p.media_urls.length > 0).length === 0 && (
-              <div className="col-span-full text-center py-16 bg-white rounded-xl border border-[var(--color-guff-border)]/20 shadow-sm">
+              <div className="col-span-full text-center py-16 card-ember rounded-xl">
                 <p className="text-[var(--color-guff-text-muted)] text-sm font-semibold">No media posts found</p>
               </div>
             )}
@@ -366,7 +366,7 @@ export default function ProfilePage() {
         )}
 
         {activeTab === 'saved' && (
-          <div className="text-center py-16 bg-white rounded-xl border border-[var(--color-guff-border)]/20 shadow-sm">
+          <div className="text-center py-16 card-ember rounded-xl">
             <p className="text-[var(--color-guff-text-muted)] text-sm font-semibold">No saved posts yet</p>
           </div>
         )}
@@ -382,7 +382,7 @@ export default function ProfilePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowSettings(false)}
-              className="absolute inset-0 bg-slate-900/40 cursor-pointer"
+              className="absolute inset-0 bg-black/60 cursor-pointer"
             />
             
             {/* Panel Content */}
@@ -391,14 +391,14 @@ export default function ProfilePage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl p-6 flex flex-col justify-between"
+              className="absolute right-0 top-0 h-full w-full max-w-sm bg-[#1C1816] shadow-2xl p-6 flex flex-col justify-between border-l border-[#4A3D33]"
             >
               <div>
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-lg font-bold text-[var(--color-guff-text)]">Profile Settings</h2>
                   <button 
                     onClick={() => setShowSettings(false)}
-                    className="p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                    className="p-1.5 hover:bg-[#262220] rounded-full transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5 text-[var(--color-guff-text-secondary)]" />
                   </button>
@@ -412,7 +412,7 @@ export default function ProfilePage() {
                       type="text" 
                       value={editDisplayName}
                       onChange={e => setEditDisplayName(e.target.value)}
-                      className="input-field py-2.5 text-xs bg-slate-50 border-none focus:bg-white text-[var(--color-guff-text)]"
+                      className="input-field py-2.5 text-xs"
                       placeholder="Your Name"
                     />
                   </div>
@@ -424,7 +424,7 @@ export default function ProfilePage() {
                       value={editBio}
                       onChange={e => setEditBio(e.target.value)}
                       rows={3}
-                      className="input-field py-2.5 text-xs bg-slate-50 border-none focus:bg-white text-[var(--color-guff-text)] resize-none"
+                      className="input-field py-2.5 text-xs resize-none"
                       placeholder="Tell others about yourself..."
                       maxLength={160}
                     />

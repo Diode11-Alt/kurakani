@@ -38,12 +38,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Prevent SSR flash of unauthenticated content
   if (!mounted || !jwt || !isKeysGenerated) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-surface">
+      <div className="w-full h-screen flex items-center justify-center bg-base">
         <div className="flex flex-col items-center gap-4">
-          <span className="material-symbols-outlined animate-spin text-primary text-4xl">
+          <span className="material-symbols-outlined animate-spin text-brand text-4xl">
             sync
           </span>
-          <p className="text-on-surface-variant font-medium animate-pulse">
+          <p className="text-content-muted font-medium animate-pulse">
             Verifying secure session...
           </p>
         </div>
@@ -52,7 +52,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-on-background font-body-lg">
+    <div className="flex h-screen overflow-hidden bg-base text-content">
       <Sidebar />
       <MobileHeader />
       

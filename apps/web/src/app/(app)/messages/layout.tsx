@@ -170,7 +170,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
     <div className="flex w-full h-[calc(100vh-64px)] md:h-screen overflow-hidden bg-[var(--color-guff-surface)]">
       {/* Sidebar pane: Hidden on mobile if thread is active */}
       <div
-        className={`w-full md:w-[360px] border-r border-[var(--color-guff-border)] flex flex-col flex-shrink-0 bg-white relative z-10
+        className={`w-full md:w-[360px] border-r border-[#4A3D33] flex flex-col flex-shrink-0 bg-[#1C1816] relative z-10
           ${!isInboxRoute ? 'hidden md:flex' : 'flex'}`}
       >
         {/* Sidebar Header */}
@@ -193,7 +193,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
 
           {/* Search Results Dropdown */}
           {searchQuery.trim() !== '' && (
-            <div className="absolute left-4 right-4 md:left-4 md:w-[328px] mt-1 bg-white rounded-xl shadow-xl border border-[var(--color-guff-border)] py-2 z-50 max-h-[250px] overflow-y-auto">
+            <div className="absolute left-4 right-4 md:left-4 md:w-[328px] mt-1 bg-[#262220] rounded-xl shadow-xl border border-[#4A3D33] py-2 z-50 max-h-[250px] overflow-y-auto">
               {searching ? (
                 <div className="flex justify-center py-4">
                   <Loader2 className="w-5 h-5 animate-spin text-[var(--color-guff-primary)]" />
@@ -205,9 +205,9 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                   <button
                     key={user.id}
                     onClick={() => startConversation(user.id)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-left transition-colors cursor-pointer"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#262220] text-left transition-colors cursor-pointer"
                   >
-                    <div className="w-8 h-8 squircle bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold overflow-hidden text-xs">
+                    <div className="w-8 h-8 squircle bg-brand/20 flex items-center justify-center text-brand font-bold overflow-hidden text-xs">
                       {user.avatar_url ? (
                         <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -235,7 +235,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
             </div>
           ) : conversations.length === 0 ? (
             <div className="text-center py-16 px-4">
-              <MessageSquare className="w-10 h-10 mx-auto text-slate-300 mb-3" />
+              <MessageSquare className="w-10 h-10 mx-auto text-content-muted mb-3" />
               <p className="font-semibold text-[var(--color-guff-text-secondary)] text-sm">No conversations yet</p>
               <p className="text-xs text-[var(--color-guff-text-muted)] mt-1">Search users above to start messaging!</p>
             </div>
@@ -272,7 +272,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 >
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 squircle bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                    <div className="w-12 h-12 squircle bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
                       {c.otherUser.avatar_url ? (
                         <img src={c.otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -280,7 +280,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                       )}
                     </div>
                     {/* Online badge mockup */}
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></div>
+                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-spark border-2 border-[#1C1816] rounded-full"></div>
                   </div>
 
                   {/* Info */}

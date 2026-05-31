@@ -1,12 +1,17 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   User, Shield, Bell, Smartphone, Trash2, LogOut,
   ChevronRight, Eye, EyeOff, Check, X, Loader2, Save
 } from 'lucide-react';
+import { getProfile, updateProfile, getPrivacySettings, updatePrivacySettings, getNotificationSettings, updateNotificationSettings, logout, deleteAccount } from '../../../lib/api';
+import { useAppStore } from '../../../store/appStore';
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const { clearAuth } = useAppStore();
   const [activeSection, setActiveSection] = useState<string>('profile');
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -32,74 +37,85 @@ export default function SettingsPage() {
 
   async function loadSettings() {
     try {
-      const token = await getAccessToken();
-      if (!token) return;
-
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-      const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-
       const [profileRes, privacyRes, notifRes] = await Promise.all([
-        fetch(`${apiBase}/users/me`, { headers }),
-        fetch(`${apiBase}/settings/privacy`, { headers }),
-        fetch(`${apiBase}/settings/notifications`, { headers }),
+        getProfile().catch(() => null),
+        getPrivacySettings().catch(() => null),
+        getNotificationSettings().catch(() => null),
       ]);
 
-      if (profileRes.ok) {
-        const p = await profileRes.json();
-        setDisplayName(p.displayName || '');
-        setBio(p.bio || '');
-        setUsername(p.username || '');
+      if (profileRes) {
+        setDisplayName(profileRes.displayName || '');
+        setBio(profileRes.bio || '');
+        setUsername(profileRes.username || '');
       }
-      if (privacyRes.ok) {
-        const pr = await privacyRes.json();
-        setLastSeen(pr.lastSeen);
-        setReadReceipts(pr.readReceipts);
-        setProfilePhoto(pr.profilePhotoVisibility);
+      if (privacyRes) {
+        setLastSeen(privacyRes.lastSeen || 'everyone');
+        setReadReceipts(privacyRes.readReceipts ?? true);
+        setProfilePhoto(privacyRes.profilePhotoVisibility || 'everyone');
       }
-      if (notifRes.ok) {
-        const n = await notifRes.json();
-        setPushEnabled(n.pushNotifications);
-        setPreviewEnabled(n.notificationPreview);
+      if (notifRes) {
+        setPushEnabled(notifRes.pushNotifications ?? true);
+        setPreviewEnabled(notifRes.notificationPreview ?? false);
       }
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load settings", err);
+    }
   }
 
   async function saveSettings(section: string) {
     setLoading(true);
     try {
-      const token = await getAccessToken();
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-      const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-
       if (section === 'profile') {
-        await fetch(`${apiBase}/users/me`, {
-          method: 'PUT', headers,
-          body: JSON.stringify({ displayName, bio, username }),
-        });
+        await updateProfile({ displayName, bio, username });
       } else if (section === 'privacy') {
-        await fetch(`${apiBase}/settings/privacy`, {
-          method: 'PUT', headers,
-          body: JSON.stringify({ lastSeen, readReceipts, profilePhotoVisibility: profilePhoto }),
-        });
+        await updatePrivacySettings({ lastSeen, readReceipts, profilePhotoVisibility: profilePhoto });
       } else if (section === 'notifications') {
-        await fetch(`${apiBase}/settings/notifications`, {
-          method: 'PUT', headers,
-          body: JSON.stringify({ pushNotifications: pushEnabled, notificationPreview: previewEnabled }),
-        });
+        await updateNotificationSettings({ pushNotifications: pushEnabled, notificationPreview: previewEnabled });
       }
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {} finally {
+    } catch (err) {
+      console.error("Failed to save settings", err);
+      alert("Failed to save changes. Please try again.");
+    } finally {
       setLoading(false);
     }
   }
 
+  async function handleLogout() {
+    try {
+      setLoading(true);
+      await logout();
+      clearAuth();
+      router.push('/login');
+    } catch (err) {
+      console.error("Logout failed", err);
+      alert("Failed to log out.");
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (confirm("Are you sure you want to delete your account? This action cannot be undone and your data will be permanently deleted.")) {
+      try {
+        setLoading(true);
+        await deleteAccount();
+        clearAuth();
+        router.push('/login');
+      } catch (err) {
+        console.error("Delete account failed", err);
+        alert("Failed to delete account. Please try again.");
+        setLoading(false);
+      }
+    }
+  }
+
   const sections = [
-    { id: 'profile', label: 'Profile', icon: User, color: 'text-indigo-500' },
-    { id: 'privacy', label: 'Privacy', icon: Shield, color: 'text-emerald-500' },
-    { id: 'notifications', label: 'Notifications', icon: Bell, color: 'text-amber-500' },
-    { id: 'account', label: 'Account', icon: Smartphone, color: 'text-rose-500' },
+    { id: 'profile', label: 'Profile', icon: User, color: 'text-brand' },
+    { id: 'privacy', label: 'Privacy', icon: Shield, color: 'text-spark' },
+    { id: 'notifications', label: 'Notifications', icon: Bell, color: 'text-brand' },
+    { id: 'account', label: 'Account', icon: Smartphone, color: 'text-blaze' },
   ];
 
   return (
@@ -128,7 +144,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 card p-6">
+        <div className="flex-1 card-ember p-6">
           {/* Profile Section */}
           {activeSection === 'profile' && (
             <div className="space-y-6">
@@ -199,7 +215,7 @@ export default function SettingsPage() {
                     <p className="text-xs text-[var(--color-guff-text-muted)]">Let others know when you&apos;ve read their messages</p>
                   </div>
                   <button onClick={() => setReadReceipts(!readReceipts)}
-                    className={`w-11 h-6 rounded-full transition-all relative ${readReceipts ? 'bg-[var(--color-guff-primary)]' : 'bg-gray-300'}`}>
+                    className={`w-11 h-6 rounded-full transition-all relative ${readReceipts ? 'bg-brand' : 'bg-[#4A3D33]'}`}>
                     <div className={`w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all ${readReceipts ? 'left-5.5' : 'left-0.5'}`} />
                   </button>
                 </div>
@@ -228,7 +244,7 @@ export default function SettingsPage() {
                     <p className="text-xs text-[var(--color-guff-text-muted)]">Receive notifications when the app is in the background</p>
                   </div>
                   <button onClick={() => setPushEnabled(!pushEnabled)}
-                    className={`w-11 h-6 rounded-full transition-all relative ${pushEnabled ? 'bg-[var(--color-guff-primary)]' : 'bg-gray-300'}`}>
+                    className={`w-11 h-6 rounded-full transition-all relative ${pushEnabled ? 'bg-brand' : 'bg-[#4A3D33]'}`}>
                     <div className={`w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all ${pushEnabled ? 'left-5.5' : 'left-0.5'}`} />
                   </button>
                 </div>
@@ -239,7 +255,7 @@ export default function SettingsPage() {
                     <p className="text-xs text-[var(--color-guff-text-muted)]">Show message content in notifications</p>
                   </div>
                   <button onClick={() => setPreviewEnabled(!previewEnabled)}
-                    className={`w-11 h-6 rounded-full transition-all relative ${previewEnabled ? 'bg-[var(--color-guff-primary)]' : 'bg-gray-300'}`}>
+                    className={`w-11 h-6 rounded-full transition-all relative ${previewEnabled ? 'bg-brand' : 'bg-[#4A3D33]'}`}>
                     <div className={`w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all ${previewEnabled ? 'left-5.5' : 'left-0.5'}`} />
                   </button>
                 </div>
@@ -262,7 +278,11 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--color-guff-border)] hover:bg-[var(--color-guff-bg)] transition-all">
+                <button 
+                  onClick={handleLogout}
+                  disabled={loading}
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--color-guff-border)] hover:bg-[var(--color-guff-bg)] transition-all cursor-pointer disabled:opacity-50"
+                >
                   <div className="flex items-center gap-3">
                     <LogOut className="w-5 h-5 text-[var(--color-guff-text-secondary)]" />
                     <span className="text-sm font-medium">Log Out</span>
@@ -270,15 +290,19 @@ export default function SettingsPage() {
                   <ChevronRight className="w-4 h-4 text-[var(--color-guff-text-muted)]" />
                 </button>
 
-                <button className="w-full flex items-center justify-between p-4 rounded-xl border border-red-200 hover:bg-red-50 transition-all group">
+                <button 
+                  onClick={handleDeleteAccount}
+                  disabled={loading}
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-blaze/30 hover:bg-blaze/10 transition-all group cursor-pointer disabled:opacity-50"
+                >
                   <div className="flex items-center gap-3">
-                    <Trash2 className="w-5 h-5 text-red-400 group-hover:text-red-500" />
+                    <Trash2 className="w-5 h-5 text-blaze group-hover:text-blaze" />
                     <div className="text-left">
-                      <span className="text-sm font-medium text-red-500">Delete Account</span>
-                      <p className="text-xs text-[var(--color-guff-text-muted)]">Your data will be deleted after 30 days</p>
+                      <span className="text-sm font-medium text-blaze">Delete Account</span>
+                      <p className="text-xs text-[var(--color-guff-text-muted)]">Your data will be permanently deleted</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-red-300" />
+                  <ChevronRight className="w-4 h-4 text-blaze/50" />
                 </button>
               </div>
             </div>

@@ -218,7 +218,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
               </span>
             )}
             
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--color-guff-primary)] flex items-center justify-center border-2 border-white text-white shadow-sm">
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-brand flex items-center justify-center border-2 border-[#1C1816] text-white shadow-sm ember-glow-sm">
               <Plus className="w-4 h-4 stroke-[3]" />
             </div>
           </div>
@@ -245,13 +245,13 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
             }}
           >
             {/* Story Ring wrapper */}
-            <div className="relative p-[3px] rounded-[22px] bg-gradient-to-tr from-[var(--color-guff-secondary-container)] to-[var(--color-guff-primary)] shadow-sm group-hover:scale-105 transition-transform duration-200">
-              <div className="bg-white p-0.5 rounded-[19px]">
-                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100">
+            <div className="relative p-[3px] rounded-[22px] bg-gradient-to-tr from-red-600 to-orange-500 shadow-sm group-hover:scale-105 transition-transform duration-200">
+              <div className="bg-[#1C1816] p-0.5 rounded-[19px]">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-[#262220]">
                   {group.author.avatar_url ? (
                     <img src={group.author.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[var(--color-guff-text)] font-bold text-sm bg-slate-200">
+                    <div className="w-full h-full flex items-center justify-center text-content font-bold text-sm bg-[#262220]">
                       {group.author.username[0].toUpperCase()}
                     </div>
                   )}
