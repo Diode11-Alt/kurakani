@@ -110,6 +110,38 @@ router.get('/search', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+// ─── GET /api/users/:id ───────────────────────────────────
+router.get('/:id', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Simple validation
+    if (!id || id.length < 10) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const user = await db.query.users.findFirst({
+      where: eq(schema.users.id, id),
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      userId: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      bio: user.bio,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+    });
+  } catch (error) {
+    console.error('[Get User By ID Error]', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ─── DELETE /api/users/me ─────────────────────────────────
 // Delete account with 30-day grace period
 router.delete('/me', requireAuth, async (req: AuthRequest, res) => {

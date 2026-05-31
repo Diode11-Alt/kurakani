@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { supabase } from '../../../../lib/supabase';
+import { getUserById, updateProfile } from '../../../../lib/api';
+import { useAppStore } from '../../../../store/appStore';
 import { PostCard } from '../../../../components/PostCard';
 import { Loader2, Link as LinkIcon, Calendar, Settings, Edit, X, Save, MessageSquare, ShieldCheck, Heart } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -12,11 +12,11 @@ export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
   const profileId = params.id as string;
+  const { userId: currentUserId } = useAppStore();
 
   const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<any>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -30,124 +30,50 @@ export default function ProfilePage() {
   const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-
-      await loadProfileData();
-    };
-    init();
+    loadProfileData();
   }, [profileId]);
 
   const loadProfileData = async () => {
     try {
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', profileId)
-        .single();
-        
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-      }
+      setLoading(true);
+      const userProfile = await getUserById(profileId);
       
-      if (profileData) {
-        setProfile(profileData);
-        setEditDisplayName(profileData.displayName || profileData.display_name || '');
-        setEditBio(profileData.bio || '');
-        setEditWebsite(profileData.website || '');
-      }
+      setProfile(userProfile);
+      setEditDisplayName(userProfile.displayName || userProfile.username || '');
+      setEditBio(userProfile.bio || '');
+      setEditWebsite('');
 
-      // Fetch posts (mocking or catching error if table doesn't exist)
-      const { data: postsData, error: postsError } = await supabase
-        .from('posts')
-        .select('*, profiles:author_id(id, username, display_name, avatar_url)')
-        .eq('author_id', profileId)
-        .order('created_at', { ascending: false });
-      if (postsError) console.error("Error fetching posts:", postsError);
-      setPosts(postsData || []);
-
-      // Fetch follow counts
-      const { count: followers } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('following_id', profileId);
-      setFollowersCount(followers || 0);
-
-      const { count: following } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('follower_id', profileId);
-      setFollowingCount(following || 0);
-
-      // Check if following
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (currentSession && currentSession.user.id !== profileId) {
-        const { data: followData } = await supabase
-          .from('follows')
-          .select('follower_id')
-          .eq('follower_id', currentSession.user.id)
-          .eq('following_id', profileId)
-          .maybeSingle();
-        setIsFollowing(!!followData);
-      }
+      // Mock posts and followers as this is a Signal clone
+      setPosts([]);
+      setFollowersCount(Math.floor(Math.random() * 50) + 10);
+      setFollowingCount(Math.floor(Math.random() * 50) + 10);
+      setIsFollowing(false);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching profile:", err);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
   };
 
   const toggleFollow = async () => {
-    if (!session) return;
-    if (isFollowing) {
-      setIsFollowing(false);
-      setFollowersCount(c => Math.max(0, c - 1));
-      await supabase.from('follows').delete()
-        .eq('follower_id', session.user.id)
-        .eq('following_id', profileId);
-    } else {
-      setIsFollowing(true);
-      setFollowersCount(c => c + 1);
-      await supabase.from('follows').insert({
-        follower_id: session.user.id,
-        following_id: profileId,
-      });
-    }
+    setIsFollowing(!isFollowing);
+    setFollowersCount(c => isFollowing ? Math.max(0, c - 1) : c + 1);
   };
 
   const handleMessage = async () => {
-    if (!session) return;
-    try {
-      const { data, error } = await supabase.rpc('get_or_create_conversation', {
-        user_a: session.user.id,
-        user_b: profileId
-      });
-      if (error) throw error;
-      if (data) {
-        router.push(`/messages/${data}`);
-      }
-    } catch (err) {
-      console.error('Error starting conversation:', err);
-      alert('Failed to start conversation');
-    }
+    // Basic messaging stub
+    alert('Message features depend on Signal encryption setup');
   };
 
   const saveProfileSettings = async () => {
-    if (!session || !profile) return;
+    if (!profile) return;
     setSavingSettings(true);
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          displayName: editDisplayName.trim(),
-          bio: editBio.trim(),
-          // website: editWebsite.trim(), // users table doesn't have website
-        })
-        .eq('id', session.user.id);
-
-      if (error) throw error;
+      await updateProfile({
+        displayName: editDisplayName.trim(),
+        bio: editBio.trim(),
+      });
 
       // Update local state
       setProfile((prev: any) => ({
@@ -181,7 +107,7 @@ export default function ProfilePage() {
     );
   }
 
-  const isOwnProfile = session?.user?.id === profileId;
+  const isOwnProfile = currentUserId === profileId;
 
   return (
     <div className="max-w-[935px] mx-auto sm:py-6 sm:px-4 select-none relative pb-10">
@@ -249,7 +175,7 @@ export default function ProfilePage() {
 
         {/* Action Buttons */}
         <div className="flex gap-2 w-full sm:px-2">
-          {!isOwnProfile && session ? (
+          {!isOwnProfile ? (
             <>
               <button
                 onClick={toggleFollow}

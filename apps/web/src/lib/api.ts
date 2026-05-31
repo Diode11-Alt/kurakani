@@ -264,6 +264,17 @@ export async function deleteAccount() {
   }>('/users/me', { method: 'DELETE' });
 }
 
+export async function getUserById(id: string) {
+  return apiFetch<{
+    userId: string;
+    username: string;
+    displayName: string | null;
+    bio: string | null;
+    avatarUrl: string | null;
+    createdAt: string;
+  }>(`/users/${id}`);
+}
+
 // ─── Settings ─────────────────────────────────────────────
 
 export async function getPrivacySettings() {
