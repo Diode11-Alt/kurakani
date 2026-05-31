@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAppStore } from "../../store/appStore";
 import { Sidebar } from "./Sidebar";
 import { BottomNavBar } from "./BottomNavBar";
@@ -9,8 +9,11 @@ import { MobileHeader } from "./MobileHeader";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { jwt, isKeysGenerated } = useAppStore();
   const [mounted, setMounted] = useState(false);
+
+  const isMessages = pathname?.startsWith("/messages");
 
   useEffect(() => {
     setMounted(true);
@@ -56,10 +59,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <MobileHeader />
       
-      <main className="flex-1 md:ml-64 pt-20 md:pt-md pb-32 px-md md:px-xl overflow-y-auto relative z-10">
-        <div className="max-w-[1280px] mx-auto">
-          {children}
-        </div>
+      <main 
+        className={`flex-1 md:ml-[280px] relative z-10 flex flex-col h-screen ${
+          isMessages 
+            ? 'overflow-hidden' 
+            : 'pt-20 md:pt-8 pb-32 px-4 md:px-8 overflow-y-auto'
+        }`}
+      >
+        {isMessages ? (
+          children
+        ) : (
+          <div className="max-w-[1280px] mx-auto w-full">
+            {children}
+          </div>
+        )}
       </main>
 
       <BottomNavBar />
