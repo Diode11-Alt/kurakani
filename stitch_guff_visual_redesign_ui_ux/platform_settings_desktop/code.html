@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GUFF Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#e9e8e9",
+                    "surface-container-highest": "#e3e2e3",
+                    "inverse-on-surface": "#f2f0f1",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#dbdadb",
+                    "primary": "#094cb2",
+                    "on-secondary": "#ffffff",
+                    "on-surface": "#1b1c1d",
+                    "primary-fixed-dim": "#b1c5ff",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-fixed": "#211b00",
+                    "tertiary": "#6d5e00",
+                    "surface-tint": "#2259bf",
+                    "inverse-surface": "#303031",
+                    "secondary-fixed-dim": "#c2c7cc",
+                    "tertiary-container": "#bfab49",
+                    "surface-bright": "#faf9fa",
+                    "on-error": "#ffffff",
+                    "primary-container": "#3366cc",
+                    "surface-variant": "#e3e2e3",
+                    "on-primary-fixed": "#001946",
+                    "background": "#faf9fa",
+                    "on-secondary-fixed": "#171c20",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#434653",
+                    "inverse-primary": "#b1c5ff",
+                    "on-primary-container": "#e7ebff",
+                    "on-secondary-container": "#606569",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed-dim": "#dcc661",
+                    "tertiary-fixed": "#f9e37a",
+                    "outline-variant": "#c3c6d5",
+                    "on-secondary-fixed-variant": "#42474b",
+                    "surface": "#faf9fa",
+                    "primary-fixed": "#d9e2ff",
+                    "secondary-fixed": "#dfe3e8",
+                    "outline": "#737784",
+                    "secondary": "#5a5f63",
+                    "on-tertiary-container": "#4a3f00",
+                    "surface-container-low": "#f5f3f4",
+                    "on-tertiary-fixed-variant": "#524600",
+                    "on-background": "#1b1c1d",
+                    "secondary-container": "#dfe3e8",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed-variant": "#00419d",
+                    "surface-container": "#efedee"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Noto Serif", "serif"],
+                    "display": ["Noto Serif", "serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["Public Sans", "sans-serif"]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="bg-background/80 dark:bg-background/80 backdrop-blur-md text-primary dark:text-primary-fixed font-body text-body-lg w-full sticky top-0 z-40 border-b border-outline-variant/20 flex justify-between items-center px-xl py-6 lg:px-8">
+<div class="flex items-center gap-6">
+<span class="font-display text-2xl font-extrabold tracking-tight">GUFF</span>
+<div class="hidden md:flex gap-6">
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-70" href="#">Messages</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-70" href="#">Contacts</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-70" href="#">Groups</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-primary font-bold border-b-2 border-primary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-high overflow-hidden ml-2 cursor-pointer border border-outline-variant/20">
+<img alt="User profile" class="h-full w-full object-cover" data-alt="A close-up, high-quality portrait photo of a professional individual looking composed and direct. Soft, even lighting highlights facial features against a neutral, slightly warm backdrop, perfectly matching a premium, editorial digital curator style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3TUmLo5-9c8AzD7YX1qPFewJmMLGp35JiMw5Gc2AH5xGArVfjknJTdiul38jT8jn0WFeiIqkO7lxXDRvHZ7XUT4SQCER_aupq0YXRU-Zkd28IQPzrSc0eMkWqSMQlE0p4rmzbX9U-JLOsUSnoiKhXEbIztzch8YypxINQKdMbw_z4Huy1fqQBS1QzpXtgS9DnAD9rskdSVLr0psBtn2Ym8IJnCsQab7PGWLHkhoo1nhvKs7i1LH5MYs1BJRTaFYP3WRWk3DNpAueV"/>
+</div>
+</div>
+</nav>
+<div class="flex-1 flex w-full max-w-7xl mx-auto items-stretch h-[calc(100vh-80px)]">
+<!-- Side Navigation (Settings Specific) -->
+<aside class="w-64 shrink-0 flex flex-col py-8 pr-8 hidden md:flex h-full sticky top-[80px]">
+<nav class="flex flex-col gap-2 w-full">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold bg-surface-container hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label">Account</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">lock</span>
+<span class="font-label">Privacy</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="font-label">Security</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">hub</span>
+<span class="font-label">Nodes</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto py-8 px-4 sm:px-6 lg:px-8">
+<div class="max-w-3xl">
+<header class="mb-12">
+<h1 class="font-headline text-4xl font-bold text-on-surface mb-2 tracking-tight">Account Settings</h1>
+<p class="text-on-surface-variant text-lg">Manage your personal information and application preferences.</p>
+</header>
+<!-- Profile Section -->
+<section class="bg-surface-container-lowest rounded-xl p-8 mb-8 border border-outline-variant/15">
+<h2 class="font-headline text-2xl font-semibold mb-6">Profile Information</h2>
+<div class="flex flex-col sm:flex-row gap-8 items-start mb-8">
+<div class="h-24 w-24 rounded-full bg-surface-container-high overflow-hidden shrink-0 relative group border border-outline-variant/20">
+<img alt="Profile picture" class="h-full w-full object-cover" data-alt="A portrait of a person used as a profile picture. The style is clean, modern, and editorial, typical of a high-end application. Soft light, neutral background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtyG8I6NZs2MUeO8sXwQt3QQPF8xpCN_nLi-s1R3rgcpQrX5pLyVPUYWKtZFJXmDOStf_ucGSRv2GtuMhM1TJRnFlPVg_X1yPKi9GykdzHIdlDCQUNiVMBI0lCvD92BtjWwb4eL-7IIa9-t1VSp7I37ouIXEtK5Lpgqk7ofki-Cs7y8keVWsCubh9WOD8U56BneIynPP5l2sOsVqqw2a_QTGtPY1MDRJOsu5r1hcj0j1Q1rxafQGg4rs7vBWBqc8Uwc7YDpaPy5u1q"/>
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-white">photo_camera</span>
+</div>
+</div>
+<div class="flex-1 w-full space-y-4">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="font-label text-sm text-on-surface-variant">First Name</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-2.5 outline-none transition-all text-on-surface font-body" type="text" value="Secure"/>
+</div>
+<div class="space-y-1.5">
+<label class="font-label text-sm text-on-surface-variant">Last Name</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-2.5 outline-none transition-all text-on-surface font-body" type="text" value="User"/>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="font-label text-sm text-on-surface-variant">Display Handle</label>
+<div class="flex items-center">
+<span class="bg-surface-container-low border border-r-0 border-outline-variant/30 rounded-l-lg px-4 py-2.5 text-on-surface-variant font-body">@</span>
+<input class="flex-1 bg-surface-container-lowest border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary rounded-r-lg px-4 py-2.5 outline-none transition-all text-on-surface font-body" type="text" value="secure_user_99"/>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-1.5 mb-8">
+<label class="font-label text-sm text-on-surface-variant">Bio</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-2.5 outline-none transition-all text-on-surface font-body resize-none" rows="3">Cryptography enthusiast and privacy advocate.</textarea>
+</div>
+<div class="flex justify-end">
+<button class="bg-gradient-to-r from-primary to-primary-container text-on-primary px-6 py-2.5 rounded-lg font-label font-semibold hover:opacity-90 transition-opacity flex items-center gap-2">
+                            Save Profile
+                        </button>
+</div>
+</section>
+<!-- Security Quick Settings -->
+<section class="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/15">
+<h2 class="font-headline text-2xl font-semibold mb-6">Security Preferences</h2>
+<div class="space-y-6">
+<div class="flex items-center justify-between py-2">
+<div>
+<h3 class="font-label text-base font-semibold text-on-surface">Biometric Authentication</h3>
+<p class="text-sm text-on-surface-variant mt-1">Require FaceID or Fingerprint to open the app.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline-variant after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="h-px w-full bg-surface-container-highest"></div>
+<div class="flex items-center justify-between py-2">
+<div>
+<h3 class="font-label text-base font-semibold text-on-surface">Session Auto-Lock</h3>
+<p class="text-sm text-on-surface-variant mt-1">Lock app after period of inactivity.</p>
+</div>
+<select class="bg-surface-container-low border-none rounded-lg px-4 py-2 font-body text-sm outline-none cursor-pointer focus:ring-1 focus:ring-primary">
+<option>1 Minute</option>
+<option selected="">5 Minutes</option>
+<option>15 Minutes</option>
+<option>Never</option>
+</select>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Right Sidebar (Posture Summary) -->
+<aside class="w-80 shrink-0 hidden lg:block py-8 pl-8 overflow-y-auto">
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/15 sticky top-8">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">shield_person</span>
+<h3 class="font-headline text-lg font-semibold text-on-surface">Security Posture</h3>
+</div>
+<div class="mb-6 text-center">
+<div class="inline-flex items-center justify-center w-24 h-24 rounded-full border-4 border-primary/20 relative mb-4">
+<div class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent border-r-transparent rotate-45"></div>
+<span class="font-display text-3xl font-bold text-primary">A-</span>
+</div>
+<p class="text-sm text-on-surface-variant font-body">Your account is well secured, but there are a few recommendations.</p>
+</div>
+<div class="space-y-4">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-0.5">check_circle</span>
+<div>
+<p class="font-label text-sm text-on-surface">Two-Factor Enabled</p>
+<p class="text-xs text-on-surface-variant mt-0.5">Hardware key configured.</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-sm mt-0.5">check_circle</span>
+<div>
+<p class="font-label text-sm text-on-surface">E2E Active</p>
+<p class="text-xs text-on-surface-variant mt-0.5">All chats are encrypted.</p>
+</div>
+</div>
+<div class="flex items-start gap-3 bg-surface-container p-3 rounded-lg mt-4">
+<span class="material-symbols-outlined text-tertiary text-sm mt-0.5">warning</span>
+<div>
+<p class="font-label text-sm text-on-surface">Key Rotation Due</p>
+<p class="text-xs text-on-surface-variant mt-1 mb-2">Your primary encryption key is 90 days old.</p>
+<button class="text-xs font-semibold text-primary hover:underline font-label">Rotate Keys Now</button>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</body></html>

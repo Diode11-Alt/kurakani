@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "inverse-on-surface": "#283044",
+                  "surface-dim": "#0b1326",
+                  "tertiary-fixed": "#d8e3fb",
+                  "primary-fixed": "#e2dfff",
+                  "on-error-container": "#ffdad6",
+                  "surface-bright": "#31394d",
+                  "inverse-primary": "#4d44e3",
+                  "primary-fixed-dim": "#c3c0ff",
+                  "outline": "#918fa1",
+                  "on-tertiary": "#263143",
+                  "on-surface-variant": "#c7c4d8",
+                  "tertiary-fixed-dim": "#bcc7de",
+                  "on-secondary-fixed": "#07006c",
+                  "secondary-fixed": "#e1e0ff",
+                  "on-secondary-container": "#b0b2ff",
+                  "on-tertiary-container": "#d1dcf4",
+                  "surface-container-lowest": "#060e20",
+                  "on-primary": "#1d00a5",
+                  "primary": "#c3c0ff",
+                  "error-container": "#93000a",
+                  "on-primary-fixed-variant": "#3323cc",
+                  "primary-container": "#4f46e5",
+                  "on-tertiary-fixed": "#111c2d",
+                  "secondary": "#c0c1ff",
+                  "on-primary-container": "#dad7ff",
+                  "surface-container-highest": "#2d3449",
+                  "inverse-surface": "#dae2fd",
+                  "surface": "#0b1326",
+                  "tertiary": "#bcc7de",
+                  "on-error": "#690005",
+                  "surface-container-high": "#222a3d",
+                  "surface-container": "#171f33",
+                  "error": "#ffb4ab",
+                  "secondary-fixed-dim": "#c0c1ff",
+                  "background": "#0b1326",
+                  "surface-variant": "#2d3449",
+                  "secondary-container": "#3131c0",
+                  "on-surface": "#dae2fd",
+                  "surface-tint": "#c3c0ff",
+                  "outline-variant": "#464555",
+                  "on-secondary-fixed-variant": "#2f2ebe",
+                  "surface-container-low": "#131b2e",
+                  "on-primary-fixed": "#0f0069",
+                  "on-secondary": "#1000a9",
+                  "tertiary-container": "#566175",
+                  "on-background": "#dae2fd",
+                  "on-tertiary-fixed-variant": "#3c475a"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.125rem",
+                  "lg": "0.25rem",
+                  "xl": "0.5rem",
+                  "full": "0.75rem"
+          },
+          "spacing": {
+                  "gutter": "16px",
+                  "container-max": "1200px",
+                  "margin-md": "32px",
+                  "margin-sm": "16px",
+                  "unit": "4px"
+          },
+          "fontFamily": {
+                  "body-lg": ["Inter"],
+                  "label-md": ["JetBrains Mono"],
+                  "display": ["Inter"],
+                  "headline-md": ["Inter"],
+                  "headline-lg-mobile": ["Inter"],
+                  "headline-lg": ["Inter"],
+                  "body-md": ["Inter"]
+          },
+          "fontSize": {
+                  "body-lg": ["16px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                  "label-md": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                  "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                  "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                  "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                  "body-md": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #464555; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #918fa1; }
+    .chat-container { height: calc(100vh - 64px); }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar Implementation -->
+<nav class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-margin-md h-16 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary tracking-tighter">GUFF</span>
+<div class="hidden md:flex items-center bg-surface-container rounded-lg px-4 py-2 border border-outline-variant/30 w-80">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-3">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md w-full placeholder:text-outline" placeholder="Search secure channels..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center space-x-2 mr-4">
+<div class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-label-md text-label-md text-primary uppercase tracking-widest">Network Secure</span>
+</div>
+<button class="p-2 hover:bg-surface-container transition-colors rounded-lg text-on-surface-variant cursor-pointer">
+<span class="material-symbols-outlined">verified_user</span>
+</button>
+<button class="p-2 hover:bg-surface-container transition-colors rounded-lg text-on-surface-variant cursor-pointer">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-surface-container transition-colors rounded-lg text-on-surface-variant cursor-pointer">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant ml-2">
+<img alt="User Profile" class="h-full w-full object-cover" data-alt="A professional headshot of a modern executive in a high-tech corporate environment. The lighting is soft and directional, creating a clean and authoritative mood. The background is a blurred office with cool blue and slate tones, matching a sophisticated dark-mode UI aesthetic. The subject has a confident expression, emphasizing reliability and professional rigor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBn5kkoHAYcP9BArBPA99PLVVAHMOa2WlqxWHI3feHpsJMJRw7usR8Y6r8M_e1Mbkdmt7f4Brq-gXwNE1-RIwg-_JiGihMKwp-GgmAUl63DytXcaORJ6TDg25ulPKAKZ6po9sOpAKFIfhqnrLUgNAh2XCIIupWeNPsyvZX-Sz3TmbHsC91F5Bzxz3wi8elKUEvUsX_LoWu6wWYQMcmNCsIU3_CtiHWeRkeqoE1JDVeE6tbrytV3It5uNC-2qiBTgiSC_Q2bQPgkwSjL"/>
+</div>
+</div>
+</nav>
+<!-- SideNavBar Implementation (Desktop) -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-72 bg-surface-container dark:bg-surface-container border-r border-outline-variant dark:border-outline-variant flex flex-col py-6 hidden md:flex">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 mb-2">
+<div class="h-10 w-10 rounded bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div>
+<h2 class="font-label-md text-label-md text-on-surface font-bold">Secure Mesh</h2>
+<p class="text-[10px] text-outline font-label-md uppercase">Encrypted-01</p>
+</div>
+</div>
+<button class="w-full mt-4 py-2.5 px-4 bg-primary text-on-primary font-label-md rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">edit_square</span>
+        New Message
+      </button>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<div class="flex items-center gap-3 px-4 py-3 text-primary dark:text-primary font-bold border-r-2 border-primary hover:bg-surface-container-high cursor-pointer duration-200">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-label-md text-label-md">Messages</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer duration-200">
+<span class="material-symbols-outlined">dynamic_feed</span>
+<span class="font-label-md text-label-md">Feed</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer duration-200">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-label-md text-label-md">Explore</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer duration-200">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</div>
+</nav>
+<div class="px-4 py-6 border-t border-outline-variant/30 mt-auto">
+<div class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-sm">security</span>
+<span class="font-label-md text-label-md">Security</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg cursor-pointer">
+<span class="material-symbols-outlined text-sm">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</div>
+</div>
+</aside>
+<!-- Main Application Content (Dashboard) -->
+<main class="md:pl-72 pt-16 h-screen flex">
+<!-- Left Pane: Conversation List -->
+<section class="w-full md:w-96 border-r border-outline-variant bg-surface-container-low flex flex-col">
+<div class="p-6 border-b border-outline-variant/30 flex justify-between items-center">
+<h3 class="font-headline-md text-on-surface font-bold text-lg tracking-tight">Active Threads</h3>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">filter_list</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto">
+<!-- Conversation Item Active -->
+<div class="p-4 bg-surface-container-high border-r-2 border-primary cursor-pointer group">
+<div class="flex gap-4">
+<div class="relative">
+<img class="h-12 w-12 rounded-lg object-cover" data-alt="A close-up portrait of a tech professional in a sleek, minimalist environment. The aesthetic is clean and focused, with soft, cool-toned lighting that emphasizes a modern digital workplace. Deep slate and indigo tones define the shadows, creating a sense of professional authority and calm focus. High-fidelity skin textures and sharp details reflect a premium design standard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmX3V9u2GEbuOh2LcN_OezQ2Ij-0569843P4BRlGJeWhzuc7Q1ynZH3LypsYgnVNC9RSl0kC3MTGAg-ceEFodRg_1umJeIWAGc_bkrLvd7f7X9pX2OIMiSaQMJ2SJpHpXePG1hO4c7ZKBIMakksGzVEh4qhfnJAahYElGOvYf4XqpHcaHo3y4kNTKSRDVTJqYNN2yX7IQup6OLEyfUeS4QTfFErhEzlxzhAjL9BSRvumQ6NKXkB1-v6k_voLnaaeHnor0JfijjjHOp"/>
+<div class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-primary border-2 border-surface-container-high rounded-full"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<span class="font-body-md font-bold text-on-surface truncate">Alex Rivera</span>
+<span class="text-[10px] font-label-md text-primary">12:44 PM</span>
+</div>
+<p class="text-body-md text-on-surface-variant truncate">The encryption keys for the Project Zenith have been updated...</p>
+<div class="mt-2 flex items-center gap-2">
+<span class="font-label-md text-[10px] bg-secondary-container text-on-secondary-container px-1.5 py-0.5 rounded">ENCRYPTED</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Conversation Item Unread -->
+<div class="p-4 hover:bg-surface-container-highest transition-colors cursor-pointer border-r-2 border-transparent">
+<div class="flex gap-4">
+<div class="relative">
+<img class="h-12 w-12 rounded-lg object-cover grayscale opacity-80" data-alt="A portrait of a smiling woman in a professional, modern office setting. The lighting is bright and even, reinforcing a minimalist, corporate modern look. The color palette consists of neutral slates and soft indigos. The background is slightly out of focus to keep the attention on the subject, suggesting a high-stakes yet approachable workspace environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMace4Y2o2KvJ3XT_Jjk-uAvgzRy5Smc5PhbI1xvasox1dq-5e4L468EkdgwRj_1W7eV-JiaVAXwM_VXtVTmTFbzK8xT9Ha_9wLXoH3tW9NKown0YgrmPMRIWO9KVlpJtGTgKBqIuecfhuMrbK9bUoa2kde4Esmg4yz3xRt7eyAjB_ZPuyxiixzROZKSI-fkLmGfb89Ia11bupYsuw-CQ1J_BmEVU2MlvQeBF2hrM5OBDi5jG2HCOGVCkrPu4ocKgZdNNBF7r5SNen"/>
+<div class="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-outline border-2 border-surface-container-low rounded-full"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<span class="font-body-md font-bold text-on-surface truncate">Sarah Chen</span>
+<span class="text-[10px] font-label-md text-outline">Yesterday</span>
+</div>
+<p class="text-body-md text-primary font-semibold truncate">Drafting the security protocol for Q4...</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="font-label-md text-[10px] bg-surface-variant text-on-surface-variant px-1.5 py-0.5 rounded">PROTOCOL</span>
+<div class="h-2 w-2 rounded-full bg-primary"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- More Conversations -->
+<div class="p-4 hover:bg-surface-container-highest transition-colors cursor-pointer border-r-2 border-transparent">
+<div class="flex gap-4">
+<div class="h-12 w-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">group</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<span class="font-body-md font-bold text-on-surface truncate">DevOps War Room</span>
+<span class="text-[10px] font-label-md text-outline">Oct 24</span>
+</div>
+<p class="text-body-md text-on-surface-variant truncate">Marcus: Deploying to staging-01 now.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Pane: Chat Thread -->
+<section class="hidden md:flex flex-1 flex-col bg-surface-dim relative">
+<!-- Chat Header -->
+<header class="h-16 px-6 border-b border-outline-variant flex items-center justify-between bg-surface-container/50 backdrop-blur-md">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded bg-primary-container/20 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">shield_with_heart</span>
+</div>
+<div>
+<h4 class="font-body-md font-bold text-on-surface">Alex Rivera</h4>
+<div class="flex items-center gap-1.5">
+<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+<span class="text-[10px] font-label-md text-primary uppercase">Peer Verified</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:text-on-surface">call</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-on-surface">videocam</span>
+<div class="w-px h-6 bg-outline-variant mx-2"></div>
+<span class="material-symbols-outlined cursor-pointer hover:text-on-surface">info</span>
+</div>
+</header>
+<!-- Message History -->
+<div class="flex-1 overflow-y-auto p-gutter space-y-gutter flex flex-col">
+<!-- System Divider -->
+<div class="flex items-center gap-4 py-4">
+<div class="flex-1 h-px bg-outline-variant/30"></div>
+<span class="text-[10px] font-label-md text-outline uppercase tracking-widest">End-to-End Encrypted Session Started</span>
+<div class="flex-1 h-px bg-outline-variant/30"></div>
+</div>
+<!-- Received Message -->
+<div class="flex items-end gap-3 max-w-[80%]">
+<div class="flex flex-col gap-1">
+<div class="bg-surface-container-high border border-outline-variant p-4 rounded-xl rounded-bl-none text-on-surface shadow-sm">
+<p class="text-body-md">Hello, I've just finalized the security audit for the GUFF messaging architecture. We need to review the handshake protocol for the next update.</p>
+</div>
+<span class="text-[10px] font-label-md text-outline ml-1">12:30 PM</span>
+</div>
+</div>
+<!-- Sent Message -->
+<div class="flex flex-col items-end gap-1 self-end max-w-[80%]">
+<div class="bg-primary-container p-4 rounded-xl rounded-br-none text-on-primary-container shadow-sm">
+<p class="text-body-md">Understood. I've scheduled a session for tomorrow morning. Do you have the latest keys ready for comparison?</p>
+</div>
+<div class="flex items-center gap-1 mr-1">
+<span class="text-[10px] font-label-md text-outline">12:35 PM</span>
+<span class="material-symbols-outlined text-[12px] text-primary" style="font-variation-settings: 'FILL' 1;">done_all</span>
+</div>
+</div>
+<!-- Received Message -->
+<div class="flex items-end gap-3 max-w-[80%]">
+<div class="flex flex-col gap-1">
+<div class="bg-surface-container-high border border-outline-variant p-4 rounded-xl rounded-bl-none text-on-surface">
+<p class="text-body-md">Yes, the keys are attached here for your review in the secure vault. Please let me know once you've synced your terminal.</p>
+<div class="mt-4 p-3 bg-surface-container-highest rounded border border-outline-variant/50 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">key</span>
+<div class="flex-1">
+<p class="text-[11px] font-label-md text-on-surface truncate">ZENITH_KEY_V2.GUP</p>
+<p class="text-[9px] font-label-md text-outline">4.2 KB • Secure Payload</p>
+</div>
+<span class="material-symbols-outlined text-outline hover:text-on-surface cursor-pointer">download</span>
+</div>
+</div>
+<span class="text-[10px] font-label-md text-outline ml-1">12:44 PM</span>
+</div>
+</div>
+</div>
+<!-- Composer -->
+<footer class="p-6 bg-surface-container/30 border-t border-outline-variant">
+<div class="relative group">
+<div class="absolute -top-12 left-0 right-0 px-4 py-2 flex items-center gap-2 text-[10px] font-label-md text-primary opacity-0 group-focus-within:opacity-100 transition-opacity">
+<span class="h-1 w-1 bg-primary rounded-full"></span>
+            SECURE COMPOSITION MODE ACTIVE
+          </div>
+<div class="bg-surface-container-lowest border border-outline-variant focus-within:border-primary rounded-xl overflow-hidden transition-all shadow-inner">
+<textarea class="w-full bg-transparent border-none focus:ring-0 p-4 text-body-md text-on-surface resize-none h-24 placeholder:text-outline/50" placeholder="Write a secure message..."></textarea>
+<div class="px-4 py-3 flex items-center justify-between border-t border-outline-variant/30 bg-surface-container-low/50">
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-primary transition-colors cursor-pointer"><span class="material-symbols-outlined text-lg">attach_file</span></button>
+<button class="hover:text-primary transition-colors cursor-pointer"><span class="material-symbols-outlined text-lg">sentiment_satisfied</span></button>
+<button class="hover:text-primary transition-colors cursor-pointer"><span class="material-symbols-outlined text-lg">terminal</span></button>
+<div class="h-4 w-px bg-outline-variant/50"></div>
+<button class="hover:text-primary transition-colors cursor-pointer"><span class="material-symbols-outlined text-lg">timer</span></button>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2 rounded-lg font-label-md hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center gap-2">
+                Send
+                <span class="material-symbols-outlined text-sm">send</span>
+</button>
+</div>
+</div>
+</div>
+</footer>
+</section>
+<!-- Right Pane: User Context (SideNavBar Alt/Settings Variant from JSON) -->
+<aside class="hidden lg:flex w-80 bg-surface-container-high dark:bg-surface-container-high shadow-xl flex flex-col p-6 z-40 border-l border-outline-variant">
+<div class="flex flex-col items-center mb-8">
+<div class="h-24 w-24 rounded-full border-2 border-primary p-1 mb-4 relative">
+<img class="h-full w-full object-cover rounded-full" data-alt="A striking portrait of a male tech executive, highly detailed and focused. He is set against a dark, minimalist architectural background that reflects the 'Corporate Modern' aesthetic of the GUFF brand. The lighting highlights structured features, suggesting reliability and precision. The overall mood is one of quiet, high-stakes competence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBrviAiozP-x_Cjiq9GxujsHzMn2qs8kxWV031HiJFnrZL2-qLyYmzoTAyITOYoUHvWZ8a3oghCldLm9QEVadI3N15rih8x24E7CE4uujIt37v5f21ub-OWIw2MpXJvxWCeKGimPpmyKUXR2JXgLyMno4KWwW5jWbe3iVbCmXZ-Wrd2PSagFca3vRsWln89qdKaxId1jmNDIuiz3t0cthJq-e2H7HCV2Y2-Lb6rdNRBJUph2Jvn5Psh2uHkzzHy83B6KEWxv1Zl4yb"/>
+<div class="absolute bottom-1 right-1 h-6 w-6 bg-primary border-4 border-surface-container-high rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-on-primary" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+<h2 class="font-headline-md text-on-surface font-bold text-xl">Alex Rivera</h2>
+<p class="font-label-md text-primary text-[10px] tracking-[0.2em] uppercase mt-1">Lead Security Architect</p>
+</div>
+<nav class="space-y-4 mb-8">
+<div class="flex items-center justify-between text-on-surface-variant hover:text-on-surface cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">manage_accounts</span>
+<span class="font-body-md">Account Settings</span>
+</div>
+<span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100">chevron_right</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant hover:text-on-surface cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">lock</span>
+<span class="font-body-md font-bold text-primary">Privacy &amp; Keys</span>
+</div>
+<span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100">chevron_right</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant hover:text-on-surface cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">tune</span>
+<span class="font-body-md">Node Preferences</span>
+</div>
+<span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100">chevron_right</span>
+</div>
+</nav>
+<div class="bg-surface-container rounded-lg p-4 mb-6">
+<h5 class="text-[10px] font-label-md text-outline uppercase tracking-widest mb-3">Security Integrity</h5>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-body-md text-on-surface-variant">Session ID</span>
+<span class="font-label-md text-primary">82F-X0</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-body-md text-on-surface-variant">Entropy</span>
+<div class="flex gap-0.5">
+<div class="h-1 w-3 bg-primary rounded-full"></div>
+<div class="h-1 w-3 bg-primary rounded-full"></div>
+<div class="h-1 w-3 bg-primary rounded-full"></div>
+<div class="h-1 w-3 bg-outline-variant rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<button class="mt-auto w-full py-3 border border-error text-error font-label-md rounded-lg hover:bg-error/10 transition-colors">
+        Terminate Session
+      </button>
+</aside>
+</main>
+<!-- Interaction Script -->
+<script>
+    document.querySelectorAll('textarea').forEach(el => {
+      el.addEventListener('focus', () => {
+        el.parentElement.classList.add('border-primary');
+      });
+      el.addEventListener('blur', () => {
+        el.parentElement.classList.remove('border-primary');
+      });
+    });
+
+    // Custom Scroll Micro-interaction
+    const scrollContainer = document.querySelector('.overflow-y-auto');
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', () => {
+        // Implementation for subtle scroll effects if needed
+      });
+    }
+  </script>
+</body></html>

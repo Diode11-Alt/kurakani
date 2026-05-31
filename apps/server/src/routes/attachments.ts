@@ -3,6 +3,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { s3Client, BUCKET_NAME } from '../lib/s3';
 import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import crypto from 'crypto';
 import { db, schema } from '@signal/db';
 import { eq } from 'drizzle-orm';
@@ -21,16 +22,21 @@ router.post('/upload-url', requireAuth, async (req: AuthRequest, res) => {
     // Generate a random object key (UUID-like)
     const s3Key = crypto.randomUUID();
 
-    const command = new PutObjectCommand({
+    // Use createPresignedPost instead of getSignedUrl (PUT) to enforce strict size conditions
+    const { url, fields } = await createPresignedPost(s3Client, {
       Bucket: BUCKET_NAME,
       Key: s3Key,
-      ContentType: (contentType as string) || 'application/octet-stream',
+      Conditions: [
+        ['content-length-range', 0, 52428800], // 50MB limit
+        ['eq', '$Content-Type', (contentType as string) || 'application/octet-stream'],
+      ],
+      Fields: {
+        'Content-Type': (contentType as string) || 'application/octet-stream',
+      },
+      Expires: 300, // URL expires in 5 minutes
     });
 
-    // URL expires in 5 minutes
-    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
-
-    res.json({ uploadUrl, s3Key });
+    res.json({ uploadUrl: url, fields, s3Key });
   } catch (error) {
     console.error('Error generating upload URL:', error);
     res.status(500).json({ error: 'Server error generating upload URL' });

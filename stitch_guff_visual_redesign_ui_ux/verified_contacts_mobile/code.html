@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GUFF - Contacts</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Public+Sans:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e3e2e3",
+                        "secondary": "#5a5f63",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#d9e2ff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#094cb2",
+                        "on-secondary-container": "#606569",
+                        "on-primary-fixed": "#001946",
+                        "surface-container-high": "#e9e8e9",
+                        "on-primary": "#ffffff",
+                        "outline": "#737784",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#e7ebff",
+                        "background": "#faf9fa",
+                        "on-surface-variant": "#434653",
+                        "primary-fixed-dim": "#b1c5ff",
+                        "on-tertiary-fixed": "#211b00",
+                        "surface-bright": "#faf9fa",
+                        "on-background": "#1b1c1d",
+                        "inverse-on-surface": "#f2f0f1",
+                        "tertiary-container": "#bfab49",
+                        "tertiary": "#6d5e00",
+                        "surface-container": "#efedee",
+                        "inverse-primary": "#b1c5ff",
+                        "tertiary-fixed-dim": "#dcc661",
+                        "secondary-fixed": "#dfe3e8",
+                        "on-primary-fixed-variant": "#00419d",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#c2c7cc",
+                        "surface": "#faf9fa",
+                        "on-secondary-fixed-variant": "#42474b",
+                        "primary-container": "#3366cc",
+                        "on-surface": "#1b1c1d",
+                        "on-tertiary-fixed-variant": "#524600",
+                        "surface-container-low": "#f5f3f4",
+                        "tertiary-fixed": "#f9e37a",
+                        "surface-dim": "#dbdadb",
+                        "inverse-surface": "#303031",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#c3c6d5",
+                        "surface-container-highest": "#e3e2e3",
+                        "on-secondary-fixed": "#171c20",
+                        "on-tertiary-container": "#4a3f00",
+                        "secondary-container": "#dfe3e8",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#2259bf"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Noto Serif"],
+                        "display": ["Noto Serif"],
+                        "body": ["Inter"],
+                        "label": ["Public Sans"]
+                    },
+                    "fontSize": {}
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface-bright dark:bg-surface-dim docked full-width top-0 bg-surface-container-low dark:bg-surface-container-high flat no shadows flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50 pt-safe">
+<button class="text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:opacity-80 transition-opacity p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline italic text-2xl text-primary dark:text-inverse-primary tracking-tight">Alexandria</h1>
+<button class="text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:opacity-80 transition-opacity p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">search</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow px-6 py-8 pb-24 md:max-w-2xl md:mx-auto w-full">
+<!-- Header & Action -->
+<div class="mb-10 text-center">
+<h2 class="font-headline text-3xl font-bold mb-4">Contacts</h2>
+<p class="text-on-surface-variant text-sm mb-6 max-w-sm mx-auto">Verified peers and encrypted groups within the Alexandria network.</p>
+<button class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary-container text-on-primary px-6 py-3 rounded-xl font-label font-semibold tracking-wide hover:opacity-90 transition-opacity w-full sm:w-auto shadow-sm">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+                New Secure Contact
+            </button>
+</div>
+<!-- Alpha Group: A -->
+<section class="mb-8">
+<h3 class="font-headline text-xl text-tertiary mb-4 border-b border-surface-container-highest pb-2 sticky top-[72px] bg-surface/90 backdrop-blur-sm z-10 pt-2">A</h3>
+<div class="space-y-2">
+<!-- Contact Card -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-surface" data-alt="A close up portrait of a young woman with a neutral expression, serving as a profile picture in a sleek, light-mode interface. The lighting is soft and even, highlighting her features against a minimal background. The overall aesthetic is professional, clean, and aligns with a high-end editorial design language. Deep blues and archival golds are subtly integrated into the UI around the image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBNIgz6fiatE4SVR_AO0WcUgmGJ6Zk7XufDoIOmXU9Qdk0XTzQeZI9M-HxdRsGR4QRtEhXJsVtcKbJiFp2CtPqt6LykbkRXgCa-lwe8cNQ_CBYHer1fOQOiOm73c4NKkRyCm0xxLcQoM9oWy_AyBNiTPqsOdDfw8IhFAqQTgLb_swAkNSR2W8W-lhYFAOaDpAHsNMp6t5dvFS3rKrcRIk0TbY3ZVn6TQxp7nDuvqHRSnJzD_2X5MJplF3dABnGeV9HJXp0KIRbDFKr"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-[#10b981] border-2 border-surface rounded-full"></span>
+</div>
+<div>
+<h4 class="font-medium text-base group-hover:text-primary transition-colors">Alice Chen</h4>
+<div class="flex items-center gap-1 text-xs text-tertiary-container mt-0.5">
+<span class="material-symbols-outlined text-[14px] fill">verified</span>
+<span class="font-label">Peer Verified</span>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-surface-variant rounded-full">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Contact Card -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="relative">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-headline text-xl">
+                                AW
+                            </div>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-outline border-2 border-surface rounded-full"></span>
+</div>
+<div>
+<h4 class="font-medium text-base group-hover:text-primary transition-colors">Arthur Wellesley</h4>
+<p class="text-xs text-on-surface-variant mt-0.5">Last seen 2h ago</p>
+</div>
+</div>
+<button class="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-surface-variant rounded-full">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Alpha Group: G -->
+<section class="mb-8">
+<h3 class="font-headline text-xl text-tertiary mb-4 border-b border-surface-container-highest pb-2 sticky top-[72px] bg-surface/90 backdrop-blur-sm z-10 pt-2">G</h3>
+<div class="space-y-2">
+<!-- Group Card -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container transition-colors cursor-pointer group border border-outline-variant/15">
+<div class="flex items-center gap-4">
+<div class="relative w-12 h-12">
+<div class="absolute top-0 left-0 w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center border-2 border-surface z-10">
+<span class="material-symbols-outlined text-[16px]">group</span>
+</div>
+<img class="absolute bottom-0 right-0 w-8 h-8 rounded-full border-2 border-surface object-cover" data-alt="A profile picture of a man, subtly integrated into a group chat icon cluster. The image is small, clean, and professional, lit softly to fit a high-end, light-themed digital curator aesthetic. The surrounding UI uses tones of archival gold and primary blue. It conveys a sense of secure, verified peer connection." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxT9_ACVqN6AVFJMy976e-0pzGLeLB-tzOzQ-FKcVGnYTxwU1ESxvRESodZI8dwMEzsgPRTmjqr7EfekYMj62JRqQgWGl2gpbGT-oY_E52w4F7ZaRf84jOUwsFz91s4EDld0ZPPyodm3QxGw34IUTZKuzk8OSPMfH2xPQxEtn46TVlryZRapH3YfOP5ClmbPCY7XTsBscVMxcCi5UBGNR8npof76BqaPva8xVZVHvikQbsiI7H4Bhpzf8i7Sc5nWsFRUMNjj1Blpdp"/>
+</div>
+<div>
+<h4 class="font-medium text-base group-hover:text-primary transition-colors">Global Strategy Sync</h4>
+<div class="flex items-center gap-1 text-xs text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+<span>Encrypted Group • 8 Members</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Alpha Group: M -->
+<section class="mb-8">
+<h3 class="font-headline text-xl text-tertiary mb-4 border-b border-surface-container-highest pb-2 sticky top-[72px] bg-surface/90 backdrop-blur-sm z-10 pt-2">M</h3>
+<div class="space-y-2">
+<!-- Contact Card -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-surface" data-alt="A headshot of a smiling professional woman, used as a contact avatar in a premium mobile application. The lighting is bright and even, suited for a sophisticated light mode UI. The context is a verified peer network, emphasizing clarity, trust, and a refined editorial style using deep blues and subtle surface tonal shifts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHBlTqefJybcIYtNbKpiAzMPcQpS0Dcz6rLmwzaxG5lkPdrPTxZEjeOhO_ecQV1NSIGmdrDLmUtZMW71eLngSogobaWNBNi8llZfisLimtRRzpW7XsZSNdANnWiADG0HvwBkrCDhOft-LgZVREw--OBG0OSZnFJb7ygaOr18Y3im9GXlTlgl5BsYWEU2H_SFeAog010TM1JZvpGIzk1JfekS1TB64-47rH8GA2sZ6Vw2zmLw5ILaZwUcBstRh2024vgo7eJC59lpoV"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-[#f59e0b] border-2 border-surface rounded-full"></span>
+</div>
+<div>
+<h4 class="font-medium text-base group-hover:text-primary transition-colors">Maria Rodriguez</h4>
+<div class="flex items-center gap-1 text-xs text-tertiary-container mt-0.5">
+<span class="material-symbols-outlined text-[14px] fill">verified</span>
+<span class="font-label">Peer Verified</span>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-surface-variant rounded-full">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-bright/80 dark:bg-surface-dim/80 backdrop-blur-xl bg-surface-container-lowest dark:bg-surface-container-highest flat no shadows fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe docked full-width bottom-0 rounded-t-full md:hidden">
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim opacity-60 hover:text-primary transition-all scale-95 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1">newspaper</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Feed</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim opacity-60 hover:text-primary transition-all scale-95 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1">explore</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:text-primary transition-all scale-95 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1 fill">chat_bubble</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Messages</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim opacity-60 hover:text-primary transition-all scale-95 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1">account_circle</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Profile</span>
+</a>
+</nav>
+</body></html>

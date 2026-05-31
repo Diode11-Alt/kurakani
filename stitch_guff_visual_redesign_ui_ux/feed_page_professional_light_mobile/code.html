@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GUFF Feed</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;family=Noto+Serif:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#00419d",
+                        "surface": "#faf8ff",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#001946",
+                        "primary-fixed-dim": "#b1c5ff",
+                        "on-tertiary-fixed-variant": "#004c6e",
+                        "inverse-on-surface": "#eef0ff",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#d0e1fb",
+                        "inverse-surface": "#283044",
+                        "surface-container-high": "#e2e7ff",
+                        "on-surface-variant": "#434653",
+                        "on-background": "#131b2e",
+                        "surface-container-highest": "#dae2fd",
+                        "inverse-primary": "#b1c5ff",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-bright": "#faf8ff",
+                        "on-secondary-container": "#54647a",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#d3e4fe",
+                        "primary-container": "#3366cc",
+                        "tertiary-fixed-dim": "#89ceff",
+                        "primary": "#094cb2",
+                        "background": "#faf8ff",
+                        "surface-tint": "#2259bf",
+                        "on-tertiary-container": "#deefff",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#e7ebff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#d9e2ff",
+                        "outline": "#737784",
+                        "on-surface": "#131b2e",
+                        "surface-variant": "#dae2fd",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "surface-container": "#eaedff",
+                        "surface-container-low": "#f2f3ff",
+                        "outline-variant": "#c3c6d5",
+                        "tertiary": "#005880",
+                        "on-tertiary-fixed": "#001e2f",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-secondary-fixed": "#0b1c30",
+                        "tertiary-fixed": "#c9e6ff",
+                        "secondary": "#505f76",
+                        "surface-dim": "#d2d9f4",
+                        "tertiary-container": "#0072a3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "unit": "4px",
+                        "max-width-content": "800px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "margin-desktop": "32px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "xl": "40px"
+                    },
+                    "fontFamily": {
+                        "mono-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Noto Serif"],
+                        "headline-lg-mobile": ["Noto Serif"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Noto Serif"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Noto Serif"]
+                    },
+                    "fontSize": {
+                        "mono-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #faf8ff; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md antialiased pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="w-full sticky top-0 z-50 bg-surface border-b border-outline-variant flex items-center justify-between px-margin-mobile h-16 w-full">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">security</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">GUFF</h1>
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">search</span>
+</button>
+</header>
+<main class="max-w-max-width-content mx-auto w-full md:pt-md">
+<!-- Stories Tray -->
+<section class="w-full overflow-x-auto hide-scrollbar py-sm border-b border-outline-variant md:border-none md:mb-md bg-surface-container-lowest">
+<div class="flex gap-md px-margin-mobile w-max">
+<div class="flex flex-col items-center gap-xs cursor-pointer group">
+<div class="w-16 h-16 rounded-full p-[2px] border-2 border-primary border-dashed relative">
+<img class="w-full h-full rounded-full object-cover" data-alt="Close up portrait of a professional man in his late 30s with a neat beard, wearing a tailored navy suit jacket over a crisp white shirt. The background is a sleek, brightly lit corporate office environment. The lighting is soft and flattering, creating a high-end, trustworthy corporate modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgWcf4t0k4bs-OZR-2tNDyE81qLG0RJPyk4DggAp9e572GBQxs4x1ijh8pumrGuSg4NcLsPW12hHdiJSsh1XZ1xxejKiuVSnJf_S1XJEAJFfig_I0mtJktpCWiDWNWUalmqyFX7zE_j5ksBi4ywQ_RxrjCq9vgyGaz_pxZGRDuemqiwIsrVK85j5iLPCjQ1W-B1BFDEzOL2s1JgkiyZ8L0vXjgzumBhQun33xr-llBTKQbk74lDQejWt3wosaZCzVi5-jNyg4WHT6u"/>
+<div class="absolute bottom-0 right-0 bg-primary text-on-primary rounded-full w-5 h-5 flex items-center justify-center border border-surface">
+<span class="material-symbols-outlined" style="font-size: 14px;">add</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">My Status</span>
+</div>
+<div class="flex flex-col items-center gap-xs cursor-pointer group">
+<div class="w-16 h-16 rounded-full p-[2px] border-2 border-primary group-hover:scale-105 transition-transform">
+<img class="w-full h-full rounded-full object-cover" data-alt="Professional headshot of a young woman with dark hair pulled back, wearing a minimalist black turtleneck. She is looking confidently at the camera. The background is a stark, clean white wall, typical of a modern corporate portrait. The overall aesthetic is highly professional, clean, and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0l_2ajT0gQly0jN_fsAwSLOXn_ehl7YM7HC3bnFzP9LDOpSvOOkNVpy3SAJ3WI-3TNIJ2u-_eMjZdwjIZ7mmI4Zrzzi28AOq1MdUDBKheo_KgLdM5GCuGnaltsUJTWTvmp7NMPupfN4zBfwpIUl_nR3SXNaFzRy71-tysjQfA8orXnDJ9RVt_1bJVKvywQF8lG3Ey7kagtJf1ZTv--WOITZ0wMIKRbaY3BPFsxQ8f0lB6aA60VpYkWRbZugQc55YFp5BOP6kMIS7F"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface">E. Carter</span>
+</div>
+<div class="flex flex-col items-center gap-xs cursor-pointer group">
+<div class="w-16 h-16 rounded-full p-[2px] border-2 border-outline-variant group-hover:scale-105 transition-transform">
+<img class="w-full h-full rounded-full object-cover" data-alt="Portrait of a senior executive male with grey hair, wearing a sharp grey suit. The setting is a minimalist, light-filled boardroom with subtle hints of glass and steel in the background. The lighting is even and bright, conveying authority and clarity within a modern corporate environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhAbooaCbNKgKeKp3KglKPb3JeK2TGvSOGtXNdZxQ69R29xhD4oDb2c6awVYpfFD_cI43pYXmgpuYl0D5lblsbm9E18DNq1VBbo8-EulKhuFKo0iN6LNmq2xr5CWOf2RBV3VJtS5MAReM-ElLShfpqqJ3oCaQ9jfkCVYzcx9Hm0lbE5PXRHk4ul7mXGXtXl913l_rSnq_xSSW75aiEiLZ737gyFWQiOEQ-pkkfWclGioDAH-JpitKKeqEfvabyKThNacguoNSAPjIs"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">J. Sterling</span>
+</div>
+<div class="flex flex-col items-center gap-xs cursor-pointer group">
+<div class="w-16 h-16 rounded-full p-[2px] border-2 border-primary group-hover:scale-105 transition-transform">
+<img class="w-full h-full rounded-full object-cover" data-alt="Portrait of a female professional in a modern office space, wearing a white blouse. She has a subtle, confident smile. The background is slightly out of focus, showing structural elements of a contemporary building. The lighting is natural and crisp, reinforcing a clean, high-end corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZyT2EH3QAy0OsrfagY644sq4WRCLCUtZQwPfWEPmkalNlLhVr3qqdJbJhM1LMiWP8knuhnzolGOw6iWribcWKgMQvJ7XtbUU8ONDt51ds7saOn3xjZzZfsuMXWvuDWt9baqn5qI2dz5isZwpRPz9XQDpB6EZGRs15QAGfD1JKtHd0hSU5Xp8wQw1vZ6GJTQ_jwiMwWQ174ycjcX5AuPCMAYdTq46kZZS8D9m0j4sdx8ftukFOehoDrcIDyOmmarJWIXt5FM5Xu-m1"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface">M. Davis</span>
+</div>
+</div>
+</section>
+<!-- Feed List -->
+<div class="flex flex-col gap-sm md:gap-lg md:px-margin-desktop">
+<!-- Card 1 -->
+<article class="bg-surface-container-lowest md:rounded-xl border-y md:border border-outline-variant overflow-hidden">
+<div class="p-md">
+<!-- Header -->
+<div class="flex items-center justify-between mb-sm">
+<div class="flex items-center gap-sm">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Professional headshot of a young woman with dark hair pulled back, wearing a minimalist black turtleneck. She is looking confidently at the camera. The background is a stark, clean white wall, typical of a modern corporate portrait. The overall aesthetic is highly professional, clean, and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBB5utJgGHTvoyBGiR3Oq5RSbARq9jdBfbe24eFbaWdwaCEUi6oHrfmTzFRt0dM5_t4eMlViEJk2mTpvmFKUacGRSXFLI4_25mDZ4nz6MJZGWtXo-mGIrfxBNu5SHY58kO5_MtRuM2lTBdoSWoyqRv5BlLTcHB8iV_gfLSl3mj9m4A9Djr_w5zTOnaoHuk_YGKlO5g6N3ScYVQJDKvRVqLiM1cT_ZstCpvZzvblXA4Ld9ugVsOESgpW125s54USrs1Y3doZioz2jXfQ"/>
+<div>
+<h3 class="font-headline-md text-[18px] leading-[24px] text-on-surface m-0">E. Carter</h3>
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="font-mono-sm text-mono-sm text-outline">10:42 AM</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-mono-sm text-mono-sm text-primary flex items-center gap-[2px]">
+<span class="material-symbols-outlined" style="font-size: 14px;">lock</span> SECURE
+                                    </span>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high p-1 rounded transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<!-- Content -->
+<p class="font-body-md text-body-md text-on-surface mb-md">
+                        The Q3 compliance audit has concluded. Please review the attached documentation regarding the new data retention protocols. All team leads must verify receipt by EOD.
+                    </p>
+<div class="rounded-lg overflow-hidden border border-outline-variant mb-md">
+<img class="w-full h-auto object-cover" data-alt="A low angle, high-resolution architectural photograph of a modern corporate skyscraper against a clear, bright sky. The building features a sleek, repetitive grid of glass and steel, embodying structural rigor and corporate efficiency. The lighting is bright and high-key, perfectly aligning with a clean, light-mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqTfD41JWiOXJjmMaroIYzeKCFd73Ha86aiv93lrx2JNaybE0DzAnTE30LoUyhwUmEjHl6EsZqvq5OvVVzwsJD8j8sSSbJaxboMSR-j4mfD3Wm3amRBb9ynBZ-4WwSmac_ZG34nezDS1lWwNstiyYtRFRvHPof3xoigmxP-_JraaEvTosuXCrnnFLqqbE5Mt_0FQIHLiy6Oh9dPIGn30NhbJ4XMgezitS2N3ji9a2n4OgYJavIk1MM1tNFglR1pkS2pGOqRVmpEacD"/>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-lg border-t border-surface-container-high pt-sm">
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined group-active:scale-90 transition-transform">thumb_up</span>
+<span class="font-label-sm text-label-sm">12</span>
+</button>
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined group-active:scale-90 transition-transform">chat_bubble</span>
+<span class="font-label-sm text-label-sm">3</span>
+</button>
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors ml-auto group">
+<span class="material-symbols-outlined group-active:scale-90 transition-transform">share</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 2 (Text Only) -->
+<article class="bg-surface-container-lowest md:rounded-xl border-y md:border border-outline-variant overflow-hidden relative">
+<!-- Inner Stroke for Verification -->
+<div class="absolute inset-0 border border-primary/20 pointer-events-none md:rounded-xl"></div>
+<div class="p-md relative">
+<!-- Header -->
+<div class="flex items-center justify-between mb-sm">
+<div class="flex items-center gap-sm">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Portrait of a senior executive male with grey hair, wearing a sharp grey suit. The setting is a minimalist, light-filled boardroom with subtle hints of glass and steel in the background. The lighting is even and bright, conveying authority and clarity within a modern corporate environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFu87DkiKt7Y3rtHGAuAdjDbYyCMZ_UhkuNfLzR6w6JGYygBjGMKcFNK5cZc02qNLoPtlFpXoOh2k_i9xmBiYEshABFO_5sW-yIdKc8XASP50hlru3U5ob4TQ862XAECbQs8mqX7y3lSNoA2oBIc3TB20jX0cSYNh4likikf4fl_iHBvdvQUgVgIMh-Pzwcryr4VGmjyjcd-5YybsrIpgoOtkTUaS3BQePHtC01cyo7B1bBtgfTG8i9CGIsIiNUy0IBQE27qUtXVbt"/>
+<div>
+<h3 class="font-headline-md text-[18px] leading-[24px] text-on-surface m-0">J. Sterling</h3>
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="font-mono-sm text-mono-sm text-outline">09:15 AM</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-mono-sm text-mono-sm text-primary flex items-center gap-[2px]">
+<span class="material-symbols-outlined" style="font-size: 14px;">verified_user</span> VERIFIED
+                                    </span>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high p-1 rounded transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<!-- Content -->
+<p class="font-body-md text-body-md text-on-surface mb-md">
+                        Server migration to the secure cluster completed at 0400 hours. Latency metrics are currently nominal. We will continue monitoring through the weekend. Log fingerprint: <span class="font-mono-sm text-mono-sm bg-surface-container-high px-1 rounded text-on-surface-variant">0x7F8B</span>.
+                    </p>
+<!-- Actions -->
+<div class="flex items-center gap-lg border-t border-surface-container-high pt-sm">
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined group-active:scale-90 transition-transform">thumb_up</span>
+<span class="font-label-sm text-label-sm">45</span>
+</button>
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined group-active:scale-90 transition-transform">chat_bubble</span>
+<span class="font-label-sm text-label-sm">8</span>
+</button>
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors ml-auto group">
+<span class="material-symbols-outlined group-active:scale-90 transition-transform">share</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 bg-surface h-16 border-t border-outline-variant z-50">
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-2 scale-95 active:scale-90 transition-transform w-12 h-12">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-highest transition-all scale-95 active:scale-90 transition-transform w-12 h-12 rounded-full">
+<span class="material-symbols-outlined">explore</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-highest transition-all scale-95 active:scale-90 transition-transform w-12 h-12 rounded-full">
+<span class="material-symbols-outlined">add_box</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-highest transition-all scale-95 active:scale-90 transition-transform w-12 h-12 rounded-full">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-highest transition-all scale-95 active:scale-90 transition-transform w-12 h-12 rounded-full">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</nav>
+</body></html>

@@ -1,7 +1,7 @@
 import { KeyHelper } from '@privacyresearch/libsignal-protocol-typescript';
-import { WebWebSignalStore } from './WebSignalStore';
+import { WebSignalStore } from './WebSignalStore';
 
-export async function generateSignalRegistrationPayload(store: WebWebSignalStore) {
+export async function generateSignalRegistrationPayload(store: WebSignalStore) {
   // 1. Generate Registration ID
   const registrationId = KeyHelper.generateRegistrationId();
   await store.saveLocalRegistrationId(registrationId);
@@ -16,8 +16,10 @@ export async function generateSignalRegistrationPayload(store: WebWebSignalStore
   await store.storeSignedPreKey(signedPreKeyId, signedPreKey.store);
 
   // 4. Generate 100 One-Time Pre-Keys (OTPKs) (Ids 1 to 100)
-  const preKeys = await KeyHelper.generatePreKeys(1, 100);
-  for (const preKey of preKeys) {
+  const preKeys = [];
+  for (let i = 1; i <= 100; i++) {
+    const preKey = await KeyHelper.generatePreKey(i);
+    preKeys.push(preKey);
     await store.storePreKey(preKey.keyId, preKey.keyPair);
   }
 

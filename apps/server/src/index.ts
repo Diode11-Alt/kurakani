@@ -68,13 +68,17 @@ app.use(express.json({ limit: '100kb' }));
 app.use(morgan('combined')); // Production-grade structured logging
 
 // Global Rate Limiting
+const isMemoryRedis = !process.env.REDIS_URL || process.env.REDIS_URL === 'memory';
+
 const apiLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX || '1000'),
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore({
-    sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
+  ...(isMemoryRedis ? {} : {
+    store: new RedisStore({
+      sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
+    })
   }),
 });
 app.use('/api/', apiLimiter);
@@ -86,8 +90,10 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many authentication attempts. Try again later.' },
-  store: new RedisStore({
-    sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
+  ...(isMemoryRedis ? {} : {
+    store: new RedisStore({
+      sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
+    })
   }),
 });
 

@@ -22,7 +22,7 @@ export const registerSchema = z.object({
     oneTimePreKeys: z.array(z.object({
       keyId: z.number().int(),
       publicKey: z.string().min(1),
-    })).optional(),
+    })).max(100).optional(),
   }),
 });
 
@@ -44,7 +44,7 @@ export const loginSchema = z.object({
     oneTimePreKeys: z.array(z.object({
       keyId: z.number().int(),
       publicKey: z.string().min(1),
-    })).optional(),
+    })).max(100).optional(),
   }),
 });
 
