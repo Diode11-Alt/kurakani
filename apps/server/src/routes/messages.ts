@@ -90,8 +90,19 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       .set({ updatedAt: new Date() })
       .where(eq(schema.conversations.id, convId));
 
-    // Queue for offline delivery via Redis
+    // Queue for offline delivery via Redis or push immediately if online
     const isOnline = await redis.get(`presence:${recipientId}`);
+    
+    const wsPayload = {
+      type: 'message:receive',
+      id: message.id,
+      conversationId: convId,
+      fromUserId: dbSenderId,
+      ciphertext,
+      ciphertextType,
+      sentAt: message.sentAt,
+    };
+
     if (!isOnline) {
       await redis.lpush(`messages:pending:${recipientId}`, JSON.stringify({
         messageId: message.id,
@@ -101,6 +112,13 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
         ciphertextType,
         contentType,
         sentAt: message.sentAt,
+      }));
+    } else {
+      // Publish to global pub/sub channel for cross-server WebSocket delivery
+      const { pubClient } = require('../lib/redis');
+      pubClient.publish('ws:messages', JSON.stringify({ 
+        targetUserId: recipientId, 
+        payload: wsPayload 
       }));
     }
 

@@ -1,16 +1,7 @@
 // ─── Kurakani Crypto Package ──────────────────────────────────────────
 // Core E2EE primitives for the Signal-like messaging platform.
 
-// X3DH key agreement + message encryption/decryption
-export {
-  x3dhSenderCalculate,
-  x3dhReceiverCalculate,
-  establishSessionAsInitiator,
-  establishSessionAsReceiver,
-  encryptMessage,
-  decryptMessage,
-  type SenderSessionResult,
-} from './x3dh';
+
 
 // HKDF key derivation
 export { hkdf, concat } from './hkdf';

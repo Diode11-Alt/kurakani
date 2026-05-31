@@ -15,6 +15,7 @@ import turnRoutes from './routes/turn';
 import usersRoutes from './routes/users';
 import settingsRoutes from './routes/settings';
 import utilsRoutes from './routes/utils';
+import groupRoutes from './routes/groups';
 import { requireAuth } from './middleware/auth';
 import { initS3 } from './lib/s3';
 import { setupSignaling } from './signaling';
@@ -92,6 +93,7 @@ app.use('/api/attachments', attachmentRoutes);
 app.use('/api/turn', requireAuth, turnRoutes);
 app.use('/api/users', requireAuth, usersRoutes);
 app.use('/api/settings', requireAuth, settingsRoutes);
+app.use('/api/groups', requireAuth, groupRoutes);
 app.use('/api/utils', utilsRoutes);
 
 // ─── Health Check ─────────────────────────────────────────

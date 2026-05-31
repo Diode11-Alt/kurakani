@@ -9,14 +9,14 @@ import { eq } from 'drizzle-orm';
 
 const router = Router();
 
-// GET /api/attachments/upload-url
+// POST /api/attachments/upload-url
 // Request a pre-signed URL to upload an encrypted file
-router.get('/upload-url', requireAuth, async (req: AuthRequest, res) => {
+router.post('/upload-url', requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { contentType, size } = req.query;
+    const { contentType, size } = req.body;
     
     // Generate a random object key (UUID-like)
     const s3Key = crypto.randomUUID();
