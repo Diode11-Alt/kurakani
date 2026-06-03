@@ -500,7 +500,7 @@ export default function ChatThreadPage() {
     try {
       const { data: messagesData, error } = await supabase
         .from("messages")
-        .select("*, message_reactions(*)")
+        .select("*")
         .eq("conversation_id", conversationId)
         .lt("sent_at", nextCursor)
         .order("sent_at", { ascending: false })
@@ -508,25 +508,42 @@ export default function ChatThreadPage() {
 
       if (error) throw error;
 
+      let allReactions: any[] = [];
+      if (messagesData && messagesData.length > 0) {
+        const messageIds = messagesData.map((m) => m.id);
+        const { data: reactionsData } = await supabase
+          .from("message_reactions")
+          .select("*")
+          .in("message_id", messageIds);
+        if (reactionsData) {
+          allReactions = reactionsData;
+        }
+      }
+
       const mData = messagesData.reverse();
 
-      const newMessages = mData.map((m) => ({
-        id: m.id,
-        conversationId: m.conversation_id,
-        senderId: m.sender_id,
-        plaintext: m.content || "[Empty message]",
-        mediaUrl: m.media_url || null,
-        contentType: (m.media_url ? "attachment" : "text") as
-          | "text"
-          | "media"
-          | "attachment",
-        status: "sent" as const,
-        sentAt: new Date(m.sent_at),
-        deliveredAt: m.delivered_at ? new Date(m.delivered_at) : null,
-        readAt: m.read_at ? new Date(m.read_at) : null,
-        replyToMessageId: m.reply_to_message_id || null,
-        reactions: m.message_reactions || [],
-      }));
+      const newMessages = mData.map((m) => {
+        const messageReactions = allReactions.filter(
+          (r) => r.message_id === m.id,
+        );
+        return {
+          id: m.id,
+          conversationId: m.conversation_id,
+          senderId: m.sender_id,
+          plaintext: m.content || "[Empty message]",
+          mediaUrl: m.media_url || null,
+          contentType: (m.media_url ? "attachment" : "text") as
+            | "text"
+            | "media"
+            | "attachment",
+          status: "sent" as const,
+          sentAt: new Date(m.sent_at),
+          deliveredAt: m.delivered_at ? new Date(m.delivered_at) : null,
+          readAt: m.read_at ? new Date(m.read_at) : null,
+          replyToMessageId: m.reply_to_message_id || null,
+          reactions: messageReactions || [],
+        };
+      });
 
       setMessages((prev) => {
         // filter out duplicates just in case

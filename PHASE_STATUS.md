@@ -1,63 +1,68 @@
 # Kurakani Project Status
 
-This document tracks the completion of Phase 1 and outlines the plan for Phase 2, keeping in mind the current Monorepo architecture (Next.js, React Native, Node.js Server, PostgreSQL, Drizzle ORM).
+This document tracks the completion of Phase 1 and outlines the comprehensive plan for Phase 2, keeping in mind the current Monorepo architecture (Next.js, React Native, Supabase).
 
-## Completed: Phase 1 – Stability & Core UX Improvements
+## Completed: Phase 1 – Stability, Core UX & Supabase Migration
 
-Phase 1 focused on tightening the user experience and ensuring robust connections and message states across the Web and Mobile apps.
+Phase 1 focused on tightening the user experience, eliminating legacy Node.js/Express infrastructure, migrating fully to Supabase, and ensuring robust connections and message states across the Web and Mobile apps.
 
-✅ **1. Authentication Enhancements**
-- Backend handles secure refresh token rotation and hashing.
-- Frontends (Web and Mobile) implement Axios interceptors to seamlessly catch `401 Unauthorized` responses and silently refresh the session without logging the user out.
+✅ **1. Backend Architecture Migration (Supabase)**
+- Completely replaced the legacy Node.js/Axios backend with **Supabase Auth and Realtime WebSockets**.
+- Implemented secure Row Level Security (RLS) policies for all tables (`users`, `messages`, `message_reactions`, `conversations`).
+- Eliminated all hardcoded `localhost:4000` references in the mobile app, tying networking to `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SOCKET_URL` instead.
 
-✅ **2. Error Handling & Feedback**
-- Centralized error response format `{ success: false, message, errors }` implemented across backend APIs.
-- Global Toast notifications integrated (`react-hot-toast` for Web, `react-native-toast-message` for Mobile).
-- Offline detection banners actively track network connection drops on both platforms.
+✅ **2. Authentication Enhancements**
+- Backend handles secure JWT sessions via Supabase.
+- Seamless session management across Next.js Server-Side Rendering (SSR) and React Native clients.
 
-✅ **3. State Management Cleanup**
-- Zustand stores successfully split into distinct slices (`authStore`, `chatStore`, `messageStore`, `uiStore`) on both Web and Mobile to prevent prop drilling and re-render issues.
+✅ **3. Secure Storage (Mobile)**
+- Migrated the message and token caching in the React Native app from unencrypted `AsyncStorage` to the OS-level secure enclave using `react-native-encrypted-storage`.
+- Developed a custom local indexing mechanism to allow asynchronous query of encrypted storage keys.
 
-✅ **4. Optimistic UI & Message Status**
+✅ **4. Optimistic UI & True Message Delivery Status**
 - Messages immediately render with a `sending` status before receiving confirmation from the server.
-- Real read receipts feature: Opening a chat actively marks all previously unread messages as read in the database via the `PUT /api/messages/conversations/:id/read` endpoint, sending a WebSocket confirmation back to the original sender to display double-checkmarks.
+- Global Realtime Listeners now actively subscribe to the `messages` table in the background. Incoming messages are instantly marked as `delivered_at` without the user having to actively open the chat.
+- Double-ticks accurately reflect the transition from Sent (Single Tick) -> Delivered (Double Gray Ticks) -> Read (Double Blue Ticks).
 
-✅ **5. Typing Indicator Throttle**
-- Typing event emission is throttled to once every 2 seconds, with an automatic stop timer preventing infinite typing animations if the user drops off.
+✅ **5. State Management Cleanup & Validation**
+- Zustand stores successfully split into distinct slices (`authStore`, `chatStore`, `messageStore`, `uiStore`) on both Web and Mobile.
+- Added strict client-side limits (4,000 characters for messages, 2,000 characters for posts) to ensure UI integrity and prevent oversized database payloads.
 
 ✅ **6. Pagination for Messages**
 - Cursor-based infinite scroll cleanly loads older messages without breaking the scroll position (using `onScroll` for Web and `onEndReached` for Mobile FlatList).
+- Resolved PostgREST relationship caching bugs on infinite scroll payload fetching.
 
 ---
 
 ## Next Up: Phase 2 – Collaboration Features & Scale
 
-Phase 2 will tackle pushing updates to offline devices, polishing real-time media uploads, and expanding group management capabilities.
+Phase 2 will tackle pushing updates to offline devices, polishing real-time media uploads, and expanding group management capabilities using our modernized Supabase stack.
 
-### 1. Push Notifications (Client & Server)
+### 1. Push Notifications (Client & Supabase Edge Functions)
 * **Goal:** Alert users of incoming messages when they are entirely offline or have the app backgrounded.
 * **Tasks:**
-  - **Server:** Trigger FCM (`firebase-admin`) when a message is queued for offline delivery.
+  - **Server:** Implement Supabase Database Webhooks / Edge Functions to trigger Firebase Cloud Messaging (FCM) when a message is queued for offline delivery.
   - **Web:** Set up a Service Worker to receive Firebase Web Push notifications. Request notification permissions from the user.
-  - **Mobile:** Integrate Firebase Cloud Messaging into React Native. Handle foreground, background, and quit states, routing the user to the correct `ChatScreen` upon clicking the notification.
+  - **Mobile:** Integrate `expo-notifications` or Firebase Cloud Messaging into React Native. Handle foreground, background, and quit states, routing the user to the correct `ChatScreen` upon clicking the notification.
 
 ### 2. Video Calling Polish
 * **Goal:** Finalize the WebRTC Video and Audio calling UI that is currently in scaffolding.
 * **Tasks:**
-  - Connect the WebRTC signaling logic via existing Socket.io channels.
+  - Connect the WebRTC signaling logic via existing Supabase Realtime Presence and Broadcast channels.
   - Complete the UI overlay for incoming calls (Ringing Screen).
-  - Handle call states (Accepted, Rejected, Missed).
+  - Handle call states (Accepted, Rejected, Missed) natively on Web and Mobile.
 
-### 3. Group Chat Admin Controls
-* **Goal:** Give group admins more control over their spaces.
-* **Tasks:**
-  - Implement "Transfer Admin Role".
-  - Generate Group Invite Links with expiry functionality.
-  - Ensure users who leave can still view the chat history up until the point they left.
-
-### 4. File Upload Improvements
-* **Goal:** Make sending media faster and more reliable.
+### 3. File Upload & Storage Improvements
+* **Goal:** Make sending media faster, more reliable, and tied to Supabase Storage.
 * **Tasks:**
   - Client-side image resizing and compression before upload (to save bandwidth).
+  - Connect message attachments directly to Supabase Storage Buckets.
   - Add a visible progress bar for uploads on both Web and Mobile.
   - Implement paste-from-clipboard support on Web.
+
+### 4. Group Chat Admin Controls
+* **Goal:** Give group admins more control over their spaces.
+* **Tasks:**
+  - Implement "Transfer Admin Role" leveraging Supabase RLS.
+  - Generate Group Invite Links with expiry functionality.
+  - Ensure users who leave can still view the chat history up until the point they left.
