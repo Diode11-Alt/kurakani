@@ -1,0 +1,371 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);color:var(--color-text-primary)}
+.report{padding:1.5rem 0}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:2rem}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.85rem 1rem}
+.metric-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.metric-val{font-size:22px;font-weight:500}
+.metric-val.crit{color:var(--color-text-danger)}
+.metric-val.warn{color:var(--color-text-warning)}
+.metric-val.ok{color:var(--color-text-success)}
+.section{margin-bottom:2rem}
+.section-title{font-size:15px;font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:8px}
+.finding{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);margin-bottom:.6rem;overflow:hidden}
+.finding-header{display:flex;align-items:flex-start;gap:10px;padding:.75rem 1rem;cursor:pointer;user-select:none}
+.finding-header:hover{background:var(--color-background-secondary)}
+.badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.badge.crit{background:var(--color-background-danger);color:var(--color-text-danger)}
+.badge.high{background:var(--color-background-warning);color:var(--color-text-warning)}
+.badge.med{background:var(--color-background-info);color:var(--color-text-info)}
+.badge.logic{background:#EAF3DE;color:#3B6D11}
+.badge.perf{background:#EEEDFE;color:#534AB7}
+.badge.qual{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.finding-title{font-size:13px;font-weight:500;flex:1}
+.finding-file{font-size:11px;color:var(--color-text-secondary);margin-top:2px;font-family:var(--font-mono)}
+.finding-body{display:none;padding:.75rem 1rem;border-top:0.5px solid var(--color-border-tertiary);font-size:13px;line-height:1.65}
+.finding-body.open{display:block}
+.finding-body p{margin-bottom:.5rem;color:var(--color-text-secondary)}
+.finding-body code{font-family:var(--font-mono);font-size:12px;background:var(--color-background-secondary);padding:1px 5px;border-radius:3px;color:var(--color-text-primary)}
+.finding-body .fix{margin-top:.6rem;padding:.6rem .85rem;background:var(--color-background-secondary);border-left:3px solid var(--color-border-success);border-radius:0 4px 4px 0;font-size:12px;color:var(--color-text-secondary)}
+.finding-body .fix strong{color:var(--color-text-primary);display:block;margin-bottom:3px;font-weight:500}
+.chevron{margin-left:auto;font-size:16px;color:var(--color-text-secondary);transition:transform .2s;flex-shrink:0}
+.chevron.open{transform:rotate(180deg)}
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;flex-wrap:wrap}
+.tab{font-size:12px;padding:4px 12px;border-radius:20px;border:0.5px solid var(--color-border-secondary);cursor:pointer;color:var(--color-text-secondary);background:transparent;transition:all .15s}
+.tab.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:transparent}
+.cat{display:none}
+.cat.active{display:block}
+.all-link{font-size:12px;color:var(--color-text-info);cursor:pointer;text-decoration:underline}
+</style>
+
+<div class="report">
+<h2 style="font-size:18px;font-weight:500;margin-bottom:4px">Kurakani — Deep Code Audit</h2>
+<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem">Full-stack E2EE social/messaging app. Monorepo: Next.js web + React Native mobile + Supabase backend + shared crypto packages.</p>
+
+<div class="summary-grid">
+  <div class="metric"><div class="metric-label">Critical security</div><div class="metric-val crit">4</div></div>
+  <div class="metric"><div class="metric-label">High security</div><div class="metric-val warn">4</div></div>
+  <div class="metric"><div class="metric-label">Logic bugs</div><div class="metric-val warn">6</div></div>
+  <div class="metric"><div class="metric-label">Quality / perf</div><div class="metric-val ok">7</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showCat('all')">All (21)</button>
+  <button class="tab" onclick="showCat('sec')">🔴 Security (8)</button>
+  <button class="tab" onclick="showCat('logic')">🟡 Logic bugs (6)</button>
+  <button class="tab" onclick="showCat('qual')">🔵 Quality (7)</button>
+</div>
+
+<div id="cat-all" class="cat active">
+
+<!-- ───────── SECURITY ───────── -->
+<div class="section">
+<div class="section-title">🔴 Security</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge crit">CRITICAL</span>
+    <div><div class="finding-title">Attachments stored publicly — all files world-readable</div><div class="finding-file">supabase/migrations/…_signal_init.sql + security_hardening.sql</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The initial migration creates the <code>attachments</code> Storage bucket with <code>public = true</code> and a <code>"Allow public read access on attachments"</code> policy. Even though the security hardening migration later flips the bucket to private, the migrations run sequentially — any deployment gap exposes all uploaded media publicly. More importantly, the fix relies on running a later migration; if any deployment step is missed, real user files are publicly accessible without authentication.</p>
+    <div class="fix"><strong>Fix</strong>Create the bucket private from day one: <code>values ('attachments', 'attachments', false)</code>. Never use a public bucket for user content. The security hardening migration is now also redundant and can be simplified.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge crit">CRITICAL</span>
+    <div><div class="finding-title">WebSocket connects with no auth token — getAccessToken() always returns null</div><div class="finding-file">apps/web/src/lib/socket.ts:19</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The <code>SocketManager.connect()</code> calls <code>getAccessToken()</code> from <code>api.ts</code> — but that function was deprecated and returns <code>null</code> unconditionally after the Supabase migration. So <code>if (!token) return;</code> on line 19 prevents any WebSocket connection from ever being established. Any code path that falls back to this socket (e.g. real-time call signalling) silently does nothing.</p>
+    <div class="fix"><strong>Fix</strong>Replace with <code>const { data: { session } } = await supabase.auth.getSession(); const token = session?.access_token;</code> before calling connect. Or migrate all real-time to Supabase Realtime channels (which already handle auth) and delete the legacy WebSocket layer entirely.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge crit">CRITICAL</span>
+    <div><div class="finding-title">Any authenticated user can mark any OTPK as used (race attack breaks E2EE)</div><div class="finding-file">supabase/migrations/…_signal_init.sql — one_time_pre_keys UPDATE policy</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The initial migration creates: <code>CREATE POLICY "Users can update one time pre-keys (mark as used)" ON one_time_pre_keys FOR UPDATE USING (true);</code> — any logged-in user can mark every other user's OTPKs as used. This exhausts OTPKs, forcing session establishment without forward secrecy. The security hardening migration fixes this, but only if it runs.</p>
+    <div class="fix"><strong>Fix</strong>The correct policy is in the hardening migration: <code>USING (auth.uid() = user_id)</code>. Ensure this migration always runs before any production traffic. Also add a server-side function to atomically fetch-and-mark a key so the client never directly writes <code>used = true</code>.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge crit">CRITICAL</span>
+    <div><div class="finding-title">Group admin transfer has no server-side ownership check</div><div class="finding-file">apps/web/src/app/(app)/messages/[id]/page.tsx:544</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p><code>handleTransferAdmin</code> directly updates <code>conversation_members.role = 'admin'</code> for any <code>user_id</code> via Supabase client. The RLS policy for <code>conversation_members FOR UPDATE</code> only checks <code>auth.uid() = user_id</code> (own row) — meaning any member could update their own role to <code>admin</code> by crafting a direct Supabase call, bypassing the UI check. The UI gate (<code>member.role === 'admin'</code>) is purely client-side and trivially bypassed.</p>
+    <div class="fix"><strong>Fix</strong>Add an RLS policy that restricts <code>role</code> column updates to existing admins only: <code>WITH CHECK (EXISTS(SELECT 1 FROM conversation_members WHERE conversation_id = ... AND user_id = auth.uid() AND role = 'admin'))</code>. Or use a Supabase Edge Function / Postgres function with <code>SECURITY DEFINER</code> to enforce this server-side.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge high">HIGH</span>
+    <div><div class="finding-title">Plaintext phone number sent to Supabase auth metadata before hashing</div><div class="finding-file">apps/web/src/app/(auth)/register/page.tsx:47</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>Registration passes <code>phone_number: phoneNumber</code> raw in <code>supabase.auth.signUp options.data</code>. Supabase stores this in <code>auth.users.raw_user_meta_data</code>. The hashing only happens inside the <code>handle_new_user()</code> trigger when copying to <code>public.users.phone_hash</code> — but the plaintext version remains in <code>auth.users</code> forever and is accessible via Supabase Auth admin APIs.</p>
+    <div class="fix"><strong>Fix</strong>Hash the phone number client-side before passing it to Supabase, or omit it entirely from auth metadata and pass only a pre-hashed value. Also set the default pepper via <code>ALTER DATABASE postgres SET app.phone_pepper = '...'</code> in a secrets-managed migration instead of hardcoding <code>'kurakani_default_pepper'</code>.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge high">HIGH</span>
+    <div><div class="finding-title">Mobile app uses a completely separate, legacy JWT auth system</div><div class="finding-file">apps/mobile/src/lib/api.ts, apps/mobile/src/screens/*</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The mobile app stores <code>signal_token</code> and <code>accessToken</code> in unencrypted <code>AsyncStorage</code> and hits a separate Express backend at <code>localhost:4000</code>. The web app has migrated fully to Supabase, but the mobile app hasn't. This means: (1) two separate auth systems with different sessions and session invalidation, (2) JWT tokens stored in AsyncStorage (not the OS secure enclave), (3) the backend at port 4000 may not exist in production, silently failing all mobile API calls.</p>
+    <div class="fix"><strong>Fix</strong>Migrate mobile to Supabase Auth (<code>@supabase/supabase-js</code> for React Native). Use <code>react-native-encrypted-storage</code> (already used in <code>SignalStore</code>) for session tokens instead of AsyncStorage. Remove the Express backend dependency from mobile entirely.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge high">HIGH</span>
+    <div><div class="finding-title">conversation_members SELECT policy is infinitely recursive</div><div class="finding-file">supabase/migrations/…_signal_init.sql</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The policy reads: <code>USING (EXISTS (SELECT 1 FROM conversation_members cm WHERE cm.conversation_id = conversation_members.conversation_id AND cm.user_id = auth.uid()))</code>. The subquery references the same table that the policy is on — Supabase/Postgres will detect this and return an error or silently break. This is the classic RLS self-referential recursion bug.</p>
+    <div class="fix"><strong>Fix</strong>Use a security-definer helper function or restructure: <code>USING (EXISTS (SELECT 1 FROM conversation_members cm JOIN conversations c ON c.id = cm.conversation_id WHERE c.id = conversation_members.conversation_id AND cm.user_id = auth.uid()))</code> — or better, set <code>SET search_path = public</code> and use a <code>SECURITY DEFINER</code> view.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge high">HIGH</span>
+    <div><div class="finding-title">File upload: no server-side MIME type validation, content-type trusted from client</div><div class="finding-file">apps/web/src/app/(app)/messages/[id]/page.tsx:571</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p><code>uploadToS3</code> passes <code>file.type</code> (client-supplied MIME string) directly as the Supabase Storage <code>contentType</code>. An attacker can set <code>file.type = "text/html"</code> on a JavaScript payload and upload it. The storage bucket allows <code>image/*, video/*, audio/*</code> via the file input UI — but that's a browser-only guard. Since attachments render with <code>&lt;img src={m.mediaUrl}&gt;</code> and <code>&lt;audio src={m.mediaUrl}&gt;</code>, XSS via stored HTML/SVG is a real vector if the bucket allows direct serving.</p>
+    <div class="fix"><strong>Fix</strong>Validate MIME type server-side via a Supabase Storage Transform or Edge Function that inspects the file magic bytes. Restrict the bucket's allowed MIME types. Ensure the CDN serves files with <code>Content-Disposition: attachment</code> for non-image types. Never render <code>mediaUrl</code> as <code>&lt;img&gt;</code> without validating the URL and MIME type.</div>
+  </div>
+</div>
+
+</div>
+
+<!-- ───────── LOGIC ───────── -->
+<div class="section">
+<div class="section-title">🟡 Logic bugs</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge logic">LOGIC</span>
+    <div><div class="finding-title">Every login regenerates Signal identity — breaks E2EE history for all existing sessions</div><div class="finding-file">apps/web/src/app/(auth)/login/page.tsx:58–82</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>On every login the app calls <code>generateSignalRegistrationPayload(store)</code> and then inserts fresh <code>identity_keys</code>, <code>signed_pre_keys</code>, and 100 new <code>one_time_pre_keys</code>. This is wrong: identity keys must be stable across sessions. Regenerating them means: (1) all existing sessions with contacts are broken — contacts have the old identity key and will fail to decrypt, (2) 100 new OTPKs flood the DB on every login, (3) the <code>INSERT</code> on <code>identity_keys</code> fails silently because of the <code>UNIQUE(user_id, device_id)</code> constraint and the code logs a warning but continues.</p>
+    <div class="fix"><strong>Fix</strong>On login, check if the local <code>WebSignalStore.isInitialized()</code>. If yes, skip key generation. Only generate a new identity if the store is empty (first device use). Restore keys from a backup if the store is cleared. The registration flow (new account) correctly generates keys; login should reuse them.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge logic">LOGIC</span>
+    <div><div class="finding-title">Sender's own past messages always show as "Sent Message" — history is lost</div><div class="finding-file">apps/web/src/app/(app)/messages/[id]/page.tsx:317</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>In <code>loadMessages()</code>, when iterating history: <code>if (m.sender_id === currentUserId) { payload = { content: 'Sent Message', media_url: null }; }</code>. Since Signal E2EE is one-directional (you encrypt to the recipient's keys, not your own), the sender can't decrypt their own messages from the ciphertext in the database. But showing "Sent Message" placeholder breaks UX entirely — past conversations look like gibberish. The same bug exists in <code>loadMoreMessages()</code>.</p>
+    <div class="fix"><strong>Fix</strong>Store a plaintext copy (or a copy encrypted to the sender's own key) of sent messages in the local Dexie DB at send time. On <code>handleSendMessage</code>, immediately persist the plaintext to <code>db.local_messages</code> before sending (already done for the optimistic add). The <code>loadMessages</code> function should query Dexie first, and only fall back to decryption for received messages.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge logic">LOGIC</span>
+    <div><div class="finding-title">Group chats are architecturally broken — encryption only works for 1-on-1</div><div class="finding-file">apps/web/src/app/(app)/messages/[id]/page.tsx:183, 505</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p><code>const other = conv.members.find((m: any) => m.id !== currentUserId)</code> picks the first non-self member. In a group of 3+, this is only one person. Encryption then calls <code>encryptMessage(store, otherUser.id, 1, payloadString)</code> — encrypting to only one recipient. All other group members receive ciphertext they cannot decrypt. The Group Settings modal also appears in the UI but returns "Group invites not supported in MVP" — the feature is partially built but non-functional.</p>
+    <div class="fix"><strong>Fix</strong>Either (a) disable group chats in the UI and remove the dead UI code, or (b) implement proper group E2EE using Signal's Sender Key mechanism: generate a group sending chain, distribute the sender key to all members, and encrypt each message once to the group key. This is a significant feature, not a quick fix.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge logic">LOGIC</span>
+    <div><div class="finding-title">Typing indicators broadcast on a new unsubscribed channel instance</div><div class="finding-file">apps/web/src/app/(app)/messages/[id]/page.tsx:443</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The <code>useEffect</code> for real-time creates a channel: <code>const channel = supabase.channel('room:' + conversationId)</code>. But typing indicator sends use a separate call: <code>supabase.channel('room:' + conversationId).send(...)</code> — this creates a <em>new</em>, unsubscribed channel instance each time. Supabase channels must be subscribed before you can broadcast. The typing events are silently dropped.</p>
+    <div class="fix"><strong>Fix</strong>Store the channel reference in a <code>useRef</code>: <code>const channelRef = useRef(null)</code>. Assign on creation: <code>channelRef.current = supabase.channel(...).subscribe()</code>. In <code>handleInputChange</code> use <code>channelRef.current?.send(...)</code>.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge logic">LOGIC</span>
+    <div><div class="finding-title">sanitizeMessage() is defined but never called — plaintext renders unsanitized</div><div class="finding-file">apps/web/src/lib/sanitize.ts vs apps/web/src/app/(app)/messages/[id]/page.tsx</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>A DOMPurify sanitizer is correctly implemented in <code>sanitize.ts</code>, but the chat thread renders messages as: <code>&lt;p className="font-sans"&gt;{m.plaintext}&lt;/p&gt;</code> — raw JSX text interpolation, bypassing sanitization entirely. Because React escapes plain text children by default this prevents innerHTML XSS, but it also means decrypted HTML tags appear literally as text rather than being stripped. Any intentional rich-text rendering would need this.</p>
+    <div class="fix"><strong>Fix</strong>If rich text is desired: use <code>dangerouslySetInnerHTML={{ __html: sanitizeMessage(m.plaintext) }}</code>. If it's not desired, keep plain text and remove <code>sanitize.ts</code> to avoid confusion. Also: the <code>sanitizeMessage</code> function returns <code>''</code> on the server (SSR guard) — this needs a fallback for server rendering.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge logic">LOGIC</span>
+    <div><div class="finding-title">OTPK race condition — two simultaneous sessions can grab the same key</div><div class="finding-file">apps/web/src/app/(app)/messages/[id]/page.tsx:488–509</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>Session establishment fetches an OTPK with <code>.eq('used', false).limit(1)</code> and then marks it used in a separate request. Two users opening a chat with the same person at the same time both get the same OTPK, and both mark it used after the fact. This violates the one-time property of OTPKs and weakens forward secrecy.</p>
+    <div class="fix"><strong>Fix</strong>Use a Postgres function with <code>FOR UPDATE SKIP LOCKED</code> to atomically fetch-and-mark a key in one transaction: <code>SELECT id, key_id, public_key FROM one_time_pre_keys WHERE user_id=$1 AND used=false LIMIT 1 FOR UPDATE SKIP LOCKED</code>, then immediately update in the same transaction. Expose this as a Supabase RPC.</div>
+  </div>
+</div>
+
+</div>
+
+<!-- ───────── QUALITY ───────── -->
+<div class="section">
+<div class="section-title">🔵 Code quality & performance</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge perf">PERF</span>
+    <div><div class="finding-title">searchUsers() interpolates query into .or() — potential ReDoS / injection</div><div class="finding-file">apps/web/src/lib/api.ts:88</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p><code>.or('username.ilike.%${query}%,display_name.ilike.%${query}%')</code> — the query string is interpolated directly. Supabase's <code>.or()</code> parses this string server-side. A user could inject malformed filter syntax (<code>id.eq.*</code>, escaping the <code>%</code> context). Additionally, leading/trailing wildcard <code>%query%</code> means a two-character search scans the entire table without an index. The username column has an index, but <code>ilike</code> with leading wildcard disables it.</p>
+    <div class="fix"><strong>Fix</strong>Sanitize the query: strip special characters (<code>%</code>, <code>_</code>, backslash) before interpolation. Consider using <code>.textSearch()</code> (full-text search) or a <code>LIKE 'query%'</code> prefix match instead of <code>%query%</code> to use indexes. Add a minimum query length of 2 characters before firing the search.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge qual">QUALITY</span>
+    <div><div class="finding-title">arrayBufferToBase64 is duplicated in 3 separate files</div><div class="finding-file">packages/crypto/src/keys.ts, packages/crypto/src/session.ts, apps/web/src/lib/crypto/registration.ts</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The same ~6-line <code>arrayBufferToBase64</code> function is copy-pasted in three places. This is the shared crypto package — the function should be exported once from <code>packages/crypto/src/index.ts</code> and imported everywhere else.</p>
+    <div class="fix"><strong>Fix</strong>Export from <code>packages/crypto/src/index.ts</code>: <code>export function arrayBufferToBase64(buf: ArrayBuffer): string</code>. Use <code>import { arrayBufferToBase64 } from '@signal/crypto'</code> in all consumers. Also note: the browser-native <code>Uint8Array.prototype</code> + <code>btoa</code> approach works but is slow for large buffers — consider <code>Buffer.from(buf).toString('base64')</code> in Node or the TextDecoder approach in browsers.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge qual">QUALITY</span>
+    <div><div class="finding-title">Sealed sender and attachment encryption are fully implemented but never used</div><div class="finding-file">packages/crypto/src/sealed-sender.ts, apps/web/src/lib/crypto/attachments.ts</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The <code>sealed-sender.ts</code> module (which hides sender identity from the server) and the <code>attachments.ts</code> (which encrypts file data before upload) are well-implemented but have zero call sites. Attachments are uploaded in plaintext to Supabase Storage — their URLs are sent as media_url inside the E2EE message, but the file bytes themselves are unencrypted.</p>
+    <div class="fix"><strong>Fix</strong>For attachments: call <code>encryptAttachment(fileBytes)</code> before <code>uploadToS3</code>, upload the encrypted bytes, then send the key+IV inside the Signal message payload. For sealed sender: integrate into the message send flow if sender anonymity is a design goal. If not, document that it's planned and add a TODO so it's not forgotten.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge qual">QUALITY</span>
+    <div><div class="finding-title">Schema fragmentation — two separate parallel schema evolutions with DROP TABLE conflicts</div><div class="finding-file">supabase/migrations/ (4 migration files)</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The migrations folder has two separate lineages: (1) a social platform schema (profiles, follows, posts, likes, comments) and (2) a messaging schema (users, conversations, messages) — and both start with <code>DROP TABLE IF EXISTS messages CASCADE; DROP TABLE IF EXISTS conversations CASCADE;</code>. Running all migrations in order will drop and recreate tables multiple times. The <code>profiles</code> table and <code>users</code> table are separate but both have triggers mapping from <code>auth.users</code> — two <code>handle_new_user()</code> functions that conflict.</p>
+    <div class="fix"><strong>Fix</strong>Consolidate into one authoritative schema. Decide whether <code>profiles</code> or <code>users</code> is the source of truth for user data (not both). Delete the conflicting social-platform migration or merge it. Ensure migration files are numbered and ordered correctly for idempotent replay.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge qual">QUALITY</span>
+    <div><div class="finding-title">password_hash column stored in users table as 'supabase_auth' dummy value</div><div class="finding-file">supabase/migrations/…_auth_trigger.sql</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The <code>users</code> table has a <code>password_hash VARCHAR(255) NOT NULL</code> column. Since Supabase Auth handles passwords, the trigger inserts <code>'supabase_auth'</code> as a dummy value. This is confusing (someone might think it's the real hash), wastes space, and makes the schema misleading. A later migration drops the NOT NULL constraint but the column remains.</p>
+    <div class="fix"><strong>Fix</strong>Drop the <code>password_hash</code> column entirely: <code>ALTER TABLE users DROP COLUMN password_hash;</code>. Supabase Auth is the source of truth for credentials — there's no need to duplicate or shadow it in <code>public.users</code>.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge qual">QUALITY</span>
+    <div><div class="finding-title">No password complexity or minimum length validation on registration</div><div class="finding-file">apps/web/src/app/(auth)/register/page.tsx</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p>The password field has <code>required</code> only — no minlength, no pattern, no strength check. Supabase's default minimum is 6 characters. A user can register with password <code>"123456"</code> with no warning. For a security-focused E2EE app this is a significant UX/security gap.</p>
+    <div class="fix"><strong>Fix</strong>Add <code>minLength={12}</code> to the password input, a real-time strength meter, and enforce minimum requirements in Supabase Auth settings (Dashboard → Auth → Password strength). Consider passphrase guidance since the app already uses "passphrase" branding.</div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header" onclick="toggle(this)">
+    <span class="badge qual">QUALITY</span>
+    <div><div class="finding-title">Legacy auth shim with deprecated no-ops keeps dead code in the critical path</div><div class="finding-file">apps/web/src/lib/api.ts:1–14, apps/web/src/lib/socket.ts:1</div></div>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="finding-body">
+    <p><code>setTokens</code>, <code>getAccessToken</code>, <code>getRefreshToken</code>, <code>clearTokens</code> are all exported as <code>@deprecated</code> no-ops. <code>socket.ts</code> still imports and calls <code>getAccessToken()</code> which returns <code>null</code>, breaking the WebSocket connection silently. Dead deprecated code in production is a maintenance hazard and caused a real bug here.</p>
+    <div class="fix"><strong>Fix</strong>Delete all deprecated shims. Fix <code>socket.ts</code> to use Supabase session token directly. Run a codebase-wide search for any other consumers of the deprecated functions and update or remove them.</div>
+  </div>
+</div>
+
+</div>
+</div><!-- end cat-all -->
+
+<div id="cat-sec" class="cat"></div>
+<div id="cat-logic" class="cat"></div>
+<div id="cat-qual" class="cat"></div>
+
+</div>
+
+<script>
+function toggle(header){
+  const body=header.nextElementSibling;
+  const chev=header.querySelector('.chevron');
+  const open=body.classList.toggle('open');
+  chev.classList.toggle('open',open);
+}
+function showCat(cat){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.cat').forEach(c=>c.classList.remove('active'));
+  if(cat==='all'){
+    document.getElementById('cat-all').classList.add('active');
+    return;
+  }
+  const map={sec:['crit','high'],logic:['logic'],qual:['qual','perf']};
+  const types=map[cat]||[];
+  const container=document.getElementById('cat-'+cat);
+  const all=document.getElementById('cat-all');
+  container.innerHTML='';
+  all.querySelectorAll('.finding').forEach(f=>{
+    const badge=f.querySelector('.badge');
+    if(types.includes(badge.className.split(' ').find(c=>c!=='badge'))){
+      container.appendChild(f.cloneNode(true));
+    }
+  });
+  container.querySelectorAll('.finding-header').forEach(h=>{
+    h.addEventListener('click',function(){toggle(this)});
+  });
+  container.classList.add('active');
+}
+</script>

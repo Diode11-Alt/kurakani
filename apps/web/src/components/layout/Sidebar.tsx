@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStore";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, userId, setJwt, setUserId } = useAuthStore();
+  const router = useRouter();
+  const { user, userId, clearAuth } = useAuthStore();
 
   const handleLogout = () => {
-    setJwt(null);
-    setUserId(null);
-    window.location.href = "/login";
+    clearAuth();
+    router.push("/login");
   };
 
   const navItems = [

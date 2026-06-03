@@ -60,32 +60,36 @@ export default function LoginPage() {
       
       // Upload new keys for this device session only if they were just generated
       if (!isInit && basePayload) {
-        // 1. Identity Key (upsert/insert)
-        const { error: idError } = await supabase.from('identity_keys').insert({
-          user_id: user.id,
-          device_id: currentDeviceId,
-          identity_key: basePayload.identityKey
-        });
-        if (idError) console.warn("Identity key might exist:", idError.message);
+        try {
+          const { error: idKeyError } = await supabase.from("identity_keys").insert({
+            user_id: user.id,
+            device_id: currentDeviceId,
+            identity_key: basePayload.identityKey,
+          });
+          // Ignore duplicate key error if we already uploaded keys for this device (code 23505)
+          if (idKeyError && idKeyError.code !== '23505') throw idKeyError;
 
-        // 2. Signed Pre-Key
-        await supabase.from('signed_pre_keys').insert({
-          user_id: user.id,
-          device_id: currentDeviceId,
-          key_id: basePayload.signedPreKey.keyId,
-          public_key: basePayload.signedPreKey.publicKey,
-          signature: basePayload.signedPreKey.signature
-        });
+          const { error: spkError } = await supabase.from("signed_pre_keys").insert({
+            user_id: user.id,
+            device_id: currentDeviceId,
+            key_id: basePayload.signedPreKey.keyId,
+            public_key: basePayload.signedPreKey.publicKey,
+            signature: basePayload.signedPreKey.signature,
+          });
+          if (spkError && spkError.code !== '23505') throw spkError;
 
-        // 3. One-Time Pre-Keys
-        const preKeysToInsert = basePayload.oneTimePreKeys.map((pk: any) => ({
-          user_id: user.id,
-          device_id: currentDeviceId,
-          key_id: pk.keyId,
-          public_key: pk.publicKey,
-          used: false
-        }));
-        await supabase.from('one_time_pre_keys').insert(preKeysToInsert);
+          await supabase.from("one_time_pre_keys").insert(
+            basePayload.oneTimePreKeys.map((pk: any) => ({
+              user_id: user.id,
+              device_id: currentDeviceId,
+              key_id: pk.keyId,
+              public_key: pk.publicKey,
+              used: false,
+            }))
+          );
+        } catch (keyErr: any) {
+          console.error("Key upload failed (may already exist):", keyErr);
+        }
       }
 
       setKeysGenerated(true);

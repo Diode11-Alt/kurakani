@@ -71,30 +71,31 @@ USING (EXISTS (SELECT 1 FROM conversation_members WHERE conversation_id = conver
 
 CREATE POLICY "Users can create conversations" ON conversations FOR INSERT WITH CHECK (auth.uid() = created_by);
 
+-- Security definer function to avoid infinite recursion
+CREATE OR REPLACE FUNCTION is_conversation_member(conv_id UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM conversation_members WHERE conversation_id = conv_id AND user_id = auth.uid()
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
 -- Conversation Members RLS
 CREATE POLICY "Users can see members of their conversations" ON conversation_members FOR SELECT
 USING (
-  conversation_id IN (
-    SELECT c.id FROM conversations c
-    JOIN conversation_members cm ON c.id = cm.conversation_id
-    WHERE cm.user_id = auth.uid()
-  )
+  user_id = auth.uid() OR
+  is_conversation_member(conversation_id)
 );
 
 CREATE POLICY "Members can add other members to their conversations"
   ON conversation_members FOR INSERT
   WITH CHECK (
+    user_id = auth.uid() OR
+    is_conversation_member(conversation_id) OR
     EXISTS (
-      SELECT 1 FROM conversation_members cm
-      WHERE cm.conversation_id = conversation_members.conversation_id
-        AND cm.user_id = auth.uid()
-    )
-    OR EXISTS (
       SELECT 1 FROM conversations c
       WHERE c.id = conversation_members.conversation_id
         AND c.created_by = auth.uid()
     )
-    OR auth.uid() = conversation_members.user_id
   );
 
 CREATE POLICY "Users can update their own membership" ON conversation_members FOR UPDATE USING (auth.uid() = user_id);
