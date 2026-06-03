@@ -17,7 +17,7 @@ export interface LocalMessage {
   senderId: string;
   plaintext: string;
   mediaUrl: string | null;
-  contentType: 'text' | 'media' | 'attachment';
+  contentType: 'text' | 'media' | 'attachment' | 'call_log';
   status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | 'error';
   sentAt: Date;
   readAt?: Date | null;

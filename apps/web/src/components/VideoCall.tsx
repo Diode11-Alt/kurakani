@@ -59,6 +59,12 @@ export function VideoCall({
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
+  const callStateRef = useRef(callState);
+  useEffect(() => { callStateRef.current = callState; }, [callState]);
+
+  const durationRef = useRef(duration);
+  useEffect(() => { durationRef.current = duration; }, [duration]);
+
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const signalChannelRef = useRef<any>(null);
@@ -236,7 +242,25 @@ export function VideoCall({
     stopRingtone();
   };
 
-  const endCallAndClose = () => {
+  const saveCallLog = async (reason: string) => {
+    try {
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: currentUserId,
+        content: reason,
+        content_type: 'call_log',
+        ciphertext: reason,
+        ciphertext_type: 0
+      });
+    } catch (e) {
+      console.error('Failed to log call', e);
+    }
+  };
+
+  const endCallAndClose = (reason?: string) => {
+    if (reason && !incomingOfferPayload) {
+      saveCallLog(reason);
+    }
     setCallState('ended');
     stopMediaAndConnection();
     if (document.fullscreenElement) {
@@ -439,12 +463,12 @@ export function VideoCall({
 
           case 'decline':
             console.log('Call declined');
-            endCallAndClose();
+            endCallAndClose('Call declined');
             break;
 
           case 'hangup':
             console.log('Call hung up by remote peer');
-            endCallAndClose();
+            endCallAndClose(callStateRef.current === 'connected' ? `Call ended - ${formatDuration(durationRef.current)}` : 'Missed call');
             break;
 
           case 'camera-toggle':
@@ -605,8 +629,8 @@ export function VideoCall({
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      console.log(`Broadcasting offer to user-calls-${otherUser.id}`);
-      const invitationChannel = supabase.channel(`user-calls-${otherUser.id}`);
+      console.log(`Broadcasting offer to user-global-${otherUser.id}`);
+      const invitationChannel = supabase.channel(`user-global-${otherUser.id}`);
       invitationChannel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await invitationChannel.send({
@@ -716,7 +740,7 @@ export function VideoCall({
         },
       });
     }
-    endCallAndClose();
+    endCallAndClose('Call declined');
   };
 
   const hangUpCall = () => {
@@ -730,7 +754,7 @@ export function VideoCall({
         },
       });
     }
-    endCallAndClose();
+    endCallAndClose(callStateRef.current === 'connected' ? `Call ended - ${formatDuration(durationRef.current)}` : 'Missed call');
   };
 
   const toggleMute = () => {

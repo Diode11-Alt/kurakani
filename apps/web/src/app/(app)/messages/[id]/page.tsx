@@ -296,7 +296,7 @@ export default function ChatThreadPage() {
             senderId: msg.sender_id,
             plaintext: msg.content || "[Empty message]",
             mediaUrl: msg.media_url || null,
-            contentType: msg.media_url ? "attachment" : "text",
+            contentType: msg.content_type === "call_log" ? "call_log" : (msg.media_url ? "attachment" : "text"),
             status: "sent",
             sentAt: new Date(msg.sent_at),
             deliveredAt: msg.delivered_at ? new Date(msg.delivered_at) : null,
@@ -462,10 +462,11 @@ export default function ChatThreadPage() {
           senderId: m.sender_id,
           plaintext: m.content || "[Empty message]",
           mediaUrl: m.media_url || null,
-          contentType: (m.media_url ? "attachment" : "text") as
+          contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url ? "attachment" : "text")) as
             | "text"
             | "media"
-            | "attachment",
+            | "attachment"
+            | "call_log",
           status: "sent" as const,
           sentAt: new Date(m.sent_at),
           deliveredAt: m.delivered_at ? new Date(m.delivered_at) : null,
@@ -532,10 +533,11 @@ export default function ChatThreadPage() {
           senderId: m.sender_id,
           plaintext: m.content || "[Empty message]",
           mediaUrl: m.media_url || null,
-          contentType: (m.media_url ? "attachment" : "text") as
+          contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url ? "attachment" : "text")) as
             | "text"
             | "media"
-            | "attachment",
+            | "attachment"
+            | "call_log",
           status: "sent" as const,
           sentAt: new Date(m.sent_at),
           deliveredAt: m.delivered_at ? new Date(m.delivered_at) : null,
@@ -632,7 +634,8 @@ export default function ChatThreadPage() {
       contentType: (mediaUrl ? "attachment" : "text") as
         | "text"
         | "media"
-        | "attachment",
+        | "attachment"
+        | "call_log",
       status: "sending" as const,
       sentAt: new Date(),
       replyToMessageId: replyingToMessage?.id || null,
@@ -1010,11 +1013,20 @@ export default function ChatThreadPage() {
                     </span>
                   </div>
                 )}
-                <div
-                  className={`flex flex-col relative group ${isSelf ? "items-end" : "items-start"} mb-1`}
-                  onMouseEnter={() => setHoveredMessageId(m.id)}
-                  onMouseLeave={() => setHoveredMessageId(null)}
-                >
+
+                {m.contentType === 'call_log' ? (
+                  <div className="flex justify-center my-4">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--color-on-surface-variant)] bg-[var(--color-surface-container-low)] px-4 py-2 rounded-2xl border border-[var(--color-outline-variant)] shadow-sm">
+                      <Phone className="w-3.5 h-3.5" />
+                      {m.plaintext}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`flex flex-col relative group ${isSelf ? "items-end" : "items-start"} mb-1`}
+                    onMouseEnter={() => setHoveredMessageId(m.id)}
+                    onMouseLeave={() => setHoveredMessageId(null)}
+                  >
                   {/* Hover Reaction Picker */}
                   {hoveredMessageId === m.id && (
                     <div
@@ -1179,6 +1191,7 @@ export default function ChatThreadPage() {
                     )}
                   </div>
                 </div>
+                )}
               </div>
             );
           })
