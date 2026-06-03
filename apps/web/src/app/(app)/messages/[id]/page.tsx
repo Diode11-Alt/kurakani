@@ -407,11 +407,20 @@ export default function ChatThreadPage() {
       
       const mData = messagesData.reverse();
 
-      const decryptedMessages = await Promise.all(mData.map(async (m: any) => {
-        let payload = { content: '[Encrypted Message]', media_url: null };
+      // Get all message IDs we already have locally
+      const localMsgIds = new Set(
+        (await db.local_messages.where('conversationId').equals(conversationId).toArray()).map(m => m.id)
+      );
+
+      const newMessages = [];
+      
+      for (const m of mData) {
+        if (localMsgIds.has(m.id)) continue;
+
+        let payload = { content: '[Encrypted Message]', media_url: null as string | null };
         try {
           if (m.sender_id === currentUserId) {
-            payload = { content: 'Sent Message', media_url: null };
+            payload = { content: '📨 Sent message (encrypted)', media_url: null };
           } else if (signalStoreRef.current) {
             const decryptedJson = await decryptMessage(
               signalStoreRef.current,
@@ -426,10 +435,12 @@ export default function ChatThreadPage() {
           console.error("Failed to decrypt past message in loadMore", err);
           if (err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted')) {
             payload.content = '[Identity Key changed. Connection not trusted.]';
+          } else {
+            payload.content = '[Session expired — re-establish to decrypt]';
           }
         }
 
-        return {
+        newMessages.push({
           id: m.id,
           conversationId: m.conversation_id,
           senderId: m.sender_id,
@@ -439,14 +450,16 @@ export default function ChatThreadPage() {
           status: 'sent' as const,
           sentAt: new Date(m.sent_at),
           readAt: m.read_at ? new Date(m.read_at) : null
-        };
-      }));
+        });
+      }
 
-      await db.transaction('rw', db.local_messages, async () => {
-        for (const msg of decryptedMessages) {
-          await db.local_messages.put(msg);
-        }
-      });
+      if (newMessages.length > 0) {
+        await db.transaction('rw', db.local_messages, async () => {
+          for (const msg of newMessages) {
+            await db.local_messages.put(msg);
+          }
+        });
+      }
       
       setHasMore(mData.length === 20);
       if (mData.length > 0) {
@@ -533,7 +546,14 @@ export default function ChatThreadPage() {
 
       if (error) throw new Error(error.message);
       
-      await db.local_messages.update(tempId, { id: data.id, status: 'sent', sentAt: new Date(data.sent_at) });
+      // Dexie doesn't allow primary key updates, so delete temp and insert real
+      await db.local_messages.delete(tempId);
+      await db.local_messages.add({ 
+        ...optimisticMsg, 
+        id: data.id, 
+        status: 'sent', 
+        sentAt: new Date(data.sent_at) 
+      });
     } catch (err) {
       console.error('Error sending message:', err);
       await db.local_messages.update(tempId, { status: 'error' });
