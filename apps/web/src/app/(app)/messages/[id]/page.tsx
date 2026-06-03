@@ -494,9 +494,13 @@ export default function ChatThreadPage() {
                   {/* Media attachment */}
                   {m.mediaUrl && (
                     <div className="mb-2 max-w-xs rounded-xl overflow-hidden">
-                      {m.plaintext === 'Voice Note 🎤' || m.mediaUrl.match(/\.(mp3|wav|ogg|webm|m4a|aac|mp4)(\?|$)/i) ? (
+                      {m.plaintext === 'Voice Note 🎤' || m.mediaUrl.match(/\.(mp3|wav|ogg|m4a|aac)(\?|$)/i) ? (
                         <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-black/5">
                           <audio src={m.mediaUrl} controls className="w-full h-10 min-w-[200px] max-w-[240px] focus:outline-none rounded-lg" />
+                        </div>
+                      ) : m.mediaUrl.match(/\.(mp4|webm|mov)(\?|$)/i) ? (
+                        <div className="bg-black/5 p-1 rounded-xl backdrop-blur-sm border border-black/10">
+                          <video src={m.mediaUrl} controls className="w-full max-h-64 object-cover rounded-lg focus:outline-none bg-black" />
                         </div>
                       ) : (
                         <img src={m.mediaUrl} alt="" className="max-h-48 object-cover w-full rounded-xl border border-black/5" />
