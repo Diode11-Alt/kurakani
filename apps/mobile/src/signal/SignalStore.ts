@@ -1,28 +1,35 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Utility to store messages
 export const saveMessage = async (msg: any) => {
   if (!msg.id) msg.id = Date.now().toString(); // Ensure ID exists
-  await AsyncStorage.setItem(
-    `msg_${msg.conversationId}_${msg.id}`,
-    JSON.stringify(msg)
-  );
+  const key = `msg_${msg.conversationId}_${msg.id}`;
+  await EncryptedStorage.setItem(key, JSON.stringify(msg));
+
+  const indexKey = `msg_index_${msg.conversationId}`;
+  const indexStr = await EncryptedStorage.getItem(indexKey);
+  const messageKeys: string[] = indexStr ? JSON.parse(indexStr) : [];
+  if (!messageKeys.includes(key)) {
+    messageKeys.push(key);
+    await EncryptedStorage.setItem(indexKey, JSON.stringify(messageKeys));
+  }
 };
 
 export const getMessages = async (conversationId: string) => {
-  const allKeys = await AsyncStorage.getAllKeys();
-  const prefix = `msg_${conversationId}_`;
-  const messageKeys = allKeys.filter(k => k.startsWith(prefix));
+  // EncryptedStorage doesn't have getAllKeys natively, we can use AsyncStorage for indexing
+  // Wait, EncryptedStorage does not support getAllKeys or multiGet.
+  // We need to store an index of messages per conversation in EncryptedStorage.
+  const indexStr = await EncryptedStorage.getItem(`msg_index_${conversationId}`);
+  const messageKeys: string[] = indexStr ? JSON.parse(indexStr) : [];
   
   if (messageKeys.length === 0) return [];
   
-  const results = await AsyncStorage.multiGet(messageKeys);
-  const messages = results
-    .map(req => req[1] ? JSON.parse(req[1]) : null)
-    .filter(Boolean)
-    .sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
-    
+  const messages = [];
+  for (const key of messageKeys) {
+    const val = await EncryptedStorage.getItem(key);
+    if (val) messages.push(JSON.parse(val));
+  }
+  
+  messages.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
   return messages;
 };
 

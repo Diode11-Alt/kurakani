@@ -1,24 +1,24 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import Toast from 'react-native-toast-message';
 
-export const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:4000/api';
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL || '';
 
 async function getAccessToken(): Promise<string | null> {
-  return await AsyncStorage.getItem('signal_token');
+  return await EncryptedStorage.getItem('signal_token');
 }
 
 async function getRefreshToken(): Promise<string | null> {
-  return await AsyncStorage.getItem('signal_refresh_token');
+  return await EncryptedStorage.getItem('signal_refresh_token');
 }
 
 export async function setTokens(access: string, refresh: string) {
-  await AsyncStorage.setItem('signal_token', access);
-  await AsyncStorage.setItem('signal_refresh_token', refresh);
+  await EncryptedStorage.setItem('signal_token', access);
+  await EncryptedStorage.setItem('signal_refresh_token', refresh);
 }
 
 export async function clearTokens() {
-  await AsyncStorage.removeItem('signal_token');
-  await AsyncStorage.removeItem('signal_refresh_token');
+  await EncryptedStorage.removeItem('signal_token');
+  await EncryptedStorage.removeItem('signal_refresh_token');
 }
 
 async function refreshAccessToken(refreshToken?: string): Promise<boolean> {

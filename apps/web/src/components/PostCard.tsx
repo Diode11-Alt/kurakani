@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabase';
 import { Heart, MessageSquare, Share2, Bookmark, MoreHorizontal, Trash2, ShieldCheck, Check, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -251,9 +252,10 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
 
       {/* Content */}
       {post.content && (
-        <p className="px-4 py-2 text-sm text-[var(--color-on-surface)] leading-relaxed whitespace-pre-wrap">
-          {post.content}
-        </p>
+        <div 
+          className="px-4 py-2 text-sm text-[var(--color-on-surface)] leading-relaxed whitespace-pre-wrap"
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+        />
       )}
 
       {/* Media Content */}
@@ -343,7 +345,10 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
                         @{c.users?.username}
                       </span>
                     </div>
-                    <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">{c.content}</p>
+                    <div 
+                      className="text-xs text-[var(--color-on-surface-variant)] mt-1 whitespace-pre-wrap"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.content) }}
+                    />
                   </div>
                 </div>
               ))

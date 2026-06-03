@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { colors } from '../theme/colors';
+import { API_BASE } from '../lib/api';
 
 export default function AccountScreen({ navigation }: any) {
   async function handleLogout() {
@@ -12,7 +13,9 @@ export default function AccountScreen({ navigation }: any) {
         text: 'Log Out',
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userId']);
+          await EncryptedStorage.removeItem('accessToken');
+          await EncryptedStorage.removeItem('refreshToken');
+          await EncryptedStorage.removeItem('userId');
           await EncryptedStorage.clear();
           navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         },
@@ -31,13 +34,15 @@ export default function AccountScreen({ navigation }: any) {
           style: 'destructive',
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem('accessToken');
-              const apiBase = 'http://localhost:4000/api'; // TODO: from config
+              const token = await EncryptedStorage.getItem('accessToken');
+              const apiBase = API_BASE;
               await fetch(`${apiBase}/users/me`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` },
               });
-              await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userId']);
+              await EncryptedStorage.removeItem('accessToken');
+          await EncryptedStorage.removeItem('refreshToken');
+          await EncryptedStorage.removeItem('userId');
               await EncryptedStorage.clear();
               navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
             } catch {

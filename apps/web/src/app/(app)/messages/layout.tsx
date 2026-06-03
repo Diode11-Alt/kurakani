@@ -10,6 +10,8 @@ import { establishSessionAsInitiator, encryptMessage } from '@signal/crypto';
 import { db } from '../../../lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { supabase } from '../../../lib/supabase';
+import { useUIStore } from '../../../store/uiStore';
+import toast from 'react-hot-toast';
 
 // Decrypting messages in the sidebar is unsafe in Signal protocol because decryption 
 // advances the cryptographic ratchet. We just show an encrypted indicator.
@@ -26,6 +28,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const [searching, setSearching] = useState(false);
   
   const { session: authSession, userId } = useAuthStore();
+  const { onlineUsers } = useUIStore();
 
   const pathname = usePathname();
   const router = useRouter();
@@ -98,49 +101,57 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         
       if (membersError || !allMembers) return;
 
-      // 3. For each conversation, find the latest message 
-      //    (we do this individually for simplicity, could be optimized via RPC if needed)
-      const enriched = await Promise.all(
-        myMemberships.map(async (row) => {
-          // Depending on Supabase SDK version, inner join might be an array or object.
-          // Usually it's an object if it's a 1:1 relation, but conversations is a 1:1 from member's perspective.
-          const c: any = Array.isArray(row.conversations) ? row.conversations[0] : row.conversations;
-          
-          const members = allMembers.filter(m => m.conversation_id === c.id);
-          const otherUserMember = members.find(m => m.user_id !== userId);
-          const otherUser = otherUserMember?.users || { username: 'Unknown' };
+      // 3. Fetch conversation summaries instead of N+1 queries
+      const { data: summaries, error: sumErr } = await supabase
+        .from('conversation_summaries')
+        .select('*')
+        .in('conversation_id', convIds);
+        
+      if (sumErr || !summaries) return;
 
-          // Fetch last message from remote
-          const { data: lastMsgData } = await supabase
-            .from('messages')
-            .select('*')
-            .eq('conversation_id', c.id)
-            .order('sent_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+      // 4. Fetch unread counts
+      const { data: unreadData } = await supabase
+        .from('messages')
+        .select('conversation_id')
+        .in('conversation_id', convIds)
+        .neq('sender_id', userId)
+        .is('read_at', null);
+        
+      const unreadMap: Record<string, number> = {};
+      if (unreadData) {
+        unreadData.forEach(m => {
+          unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1;
+        });
+      }
 
-          let decryptedLastMsg = null;
-          if (lastMsgData) {
-            decryptedLastMsg = {
-              ...lastMsgData,
-              senderId: lastMsgData.sender_id,
-              sentAt: lastMsgData.sent_at,
-              readAt: lastMsgData.read_at,
-              content: lastMsgData.sender_id === userId ? 'You sent a message' : 'Encrypted Message 🔒'
-            };
-          }
+      const enriched = summaries.map((c) => {
+        const members = allMembers.filter(m => m.conversation_id === c.conversation_id);
+        const otherUserMember = members.find(m => m.user_id !== userId);
+        const otherUser = otherUserMember?.users || { username: 'Unknown' };
 
-          return {
-            id: c.id,
-            type: c.type,
-            name: c.name,
-            avatarUrl: c.avatar_url,
-            last_message_at: lastMsgData?.sent_at || c.updated_at,
-            otherUser: otherUser as any,
-            lastMessage: decryptedLastMsg,
+        let decryptedLastMsg = null;
+        if (c.last_message_id) {
+          decryptedLastMsg = {
+            id: c.last_message_id,
+            conversation_id: c.conversation_id,
+            senderId: c.last_message_sender_id,
+            sentAt: c.last_message_sent_at,
+            readAt: c.last_message_read_at,
+            content: c.last_message_content || (c.last_message_media_url ? 'Attachment 📎' : 'Empty message')
           };
-        })
-      );
+        }
+
+        return {
+          id: c.conversation_id,
+          type: c.conversation_type,
+          name: c.conversation_name,
+          avatarUrl: c.conversation_avatar_url,
+          last_message_at: c.last_message_sent_at || c.conversation_updated_at,
+          unreadCount: unreadMap[c.conversation_id] || 0,
+          otherUser: otherUser as any,
+          lastMessage: decryptedLastMsg,
+        };
+      });
 
       enriched.sort((a, b) => {
         const timeA = new Date(a.last_message_at).getTime();
@@ -156,7 +167,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
             name: conv.name || null,
             avatarUrl: conv.avatarUrl || null,
             updatedAt: new Date(conv.last_message_at),
-            unreadCount: 0,
+            unreadCount: conv.unreadCount,
             otherUser: {
               id: (conv.otherUser as any).id || 'unknown',
               username: (conv.otherUser as any).username || 'Unknown',
@@ -302,7 +313,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       router.push(`/messages/${conversationId}`);
     } catch (err) {
       console.error('Error creating conversation:', err);
-      alert('Failed to start conversation');
+      toast.error('Failed to start conversation');
     }
   };
 
@@ -371,18 +382,26 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
             </div>
           ) : conversations.length === 0 ? (
-            <div className="text-center py-16 px-4">
-              <MessageSquare className="w-10 h-10 mx-auto text-[var(--color-on-surface-variant)] mb-3" />
-              <p className="font-semibold text-[var(--color-on-surface-variant)] text-sm">No conversations yet</p>
-              <p className="text-xs text-[var(--color-outline-variant)] mt-1">Search users above to start messaging!</p>
+            <div className="flex flex-col items-center justify-center py-24 px-4 h-full text-center mt-10">
+              <div className="w-20 h-20 bg-[var(--color-primary-container)] rounded-full flex items-center justify-center mb-5 shadow-inner">
+                <MessageSquare className="w-10 h-10 text-[var(--color-on-primary-container)]" />
+              </div>
+              <h3 className="font-bold text-xl text-[var(--color-on-surface)]">No messages yet</h3>
+              <p className="text-sm text-[var(--color-on-surface-variant)] mt-2 max-w-[220px] mb-8">
+                Connect with friends and start your first secure conversation.
+              </p>
+              <button 
+                onClick={() => document.querySelector<HTMLInputElement>('input[placeholder="Search users..."]')?.focus()}
+                className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-container)] transition-colors flex items-center gap-2 rounded-full px-6 py-3 font-semibold text-sm shadow-md active:scale-95"
+              >
+                <Search className="w-4 h-4" />
+                Find people
+              </button>
             </div>
           ) : (
             conversations.map((c) => {
               const active = activeId === c.id;
-              const hasUnread =
-                c.lastMessage &&
-                c.lastMessage.senderId !== userId &&
-                !c.lastMessage.readAt;
+              const hasUnread = c.unreadCount && c.unreadCount > 0;
 
               const timeDisplay = c.lastMessage
                 ? formatDistanceToNowStrict(new Date(c.lastMessage.sentAt), { addSuffix: false })
@@ -413,7 +432,9 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                         c.otherUser?.username?.[0]?.toUpperCase() || '?'
                       )}
                     </div>
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                    {onlineUsers[c.otherUser?.id] && (
+                      <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[var(--color-surface)] rounded-full z-10 shadow-sm"></div>
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -437,9 +458,11 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                     </p>
                   </div>
 
-                  {hasUnread && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-primary)] flex-shrink-0" />
-                  )}
+                  {hasUnread ? (
+                    <div className="w-5 h-5 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-sm">
+                      {c.unreadCount > 99 ? '99+' : c.unreadCount}
+                    </div>
+                  ) : null}
                 </button>
               );
             })

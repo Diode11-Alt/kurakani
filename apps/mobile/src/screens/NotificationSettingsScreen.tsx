@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import { colors } from '../theme/colors';
+import { API_BASE } from '../lib/api';
 
 export default function NotificationSettingsScreen() {
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -11,8 +12,8 @@ export default function NotificationSettingsScreen() {
 
   async function loadSettings() {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const res = await fetch('http://localhost:4000/api/settings/notifications', {
+      const token = await EncryptedStorage.getItem('accessToken');
+      const res = await fetch(`${API_BASE}/settings/notifications`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -25,8 +26,8 @@ export default function NotificationSettingsScreen() {
 
   async function updateSetting(key: string, value: boolean) {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      await fetch('http://localhost:4000/api/settings/notifications', {
+      const token = await EncryptedStorage.getItem('accessToken');
+      await fetch(`${API_BASE}/settings/notifications`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: value }),

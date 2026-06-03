@@ -8,6 +8,7 @@ import { Loader2, Link as LinkIcon, Calendar, Settings, Edit, X, Save, MessageSq
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
   const params = useParams();
@@ -152,7 +153,7 @@ export default function ProfilePage() {
       setShowSettings(false);
     } catch (err) {
       console.error(err);
-      alert('Failed to update profile');
+      toast.error('Failed to update profile');
     } finally {
       setSavingSettings(false);
     }

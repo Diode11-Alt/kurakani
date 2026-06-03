@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 
 export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<void>) {
   const [isRecording, setIsRecording] = useState(false);
@@ -46,7 +47,7 @@ export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<
       }, 1000);
     } catch (err) {
       console.error('Error starting audio recording:', err);
-      alert('Could not access microphone');
+      toast.error('Could not access microphone');
     }
   }, [onUpload]);
 

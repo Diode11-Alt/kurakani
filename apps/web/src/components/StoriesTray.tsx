@@ -227,7 +227,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
           <input
             ref={fileRef}
             type="file"
-            accept="image/*,video/*"
+            accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
             onChange={handleFileUpload}
             className="hidden"
             disabled={uploading}

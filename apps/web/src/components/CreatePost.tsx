@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Image, Video, Smile, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-
+import imageCompression from 'browser-image-compression';
 export function CreatePost({ userId, userProfile, onPostCreated }: {
   userId: string;
   userProfile: any;
@@ -38,13 +38,31 @@ export function CreatePost({ userId, userProfile, onPostCreated }: {
 
   const handlePost = async () => {
     if (!content.trim() && mediaFiles.length === 0) return;
+    if (content.trim().length > 2000) {
+      toast.error('Post is too long (max 2000 characters)');
+      return;
+    }
     setPosting(true);
 
     try {
       // Upload media files to Supabase Storage
       const mediaUrls: string[] = [];
-      for (const file of mediaFiles) {
-        const ext = file.name.split('.').pop();
+      for (let file of mediaFiles) {
+        if (file.type.startsWith('image/')) {
+          try {
+            const options = {
+              maxSizeMB: 1,
+              maxWidthOrHeight: 1920,
+              useWebWorker: true
+            };
+            file = await imageCompression(file, options);
+          } catch (error) {
+            console.error("Image compression error:", error);
+            // Fallback to original file if compression fails
+          }
+        }
+        
+        const ext = file.name.split('.').pop() || 'jpg';
         const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { error } = await supabase.storage.from('posts').upload(path, file);
         if (error) throw error;
@@ -154,7 +172,7 @@ export function CreatePost({ userId, userProfile, onPostCreated }: {
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*,video/*"
+                accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
                 multiple
                 onChange={handleFileSelect}
                 className="hidden"

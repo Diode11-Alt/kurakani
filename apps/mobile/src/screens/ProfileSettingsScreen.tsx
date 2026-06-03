@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import { colors } from '../theme/colors';
+import { API_BASE } from '../lib/api';
 
 export default function ProfileSettingsScreen({ navigation }: any) {
   const [username, setUsername] = useState('');
@@ -15,8 +16,8 @@ export default function ProfileSettingsScreen({ navigation }: any) {
 
   async function loadProfile() {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const res = await fetch('http://localhost:4000/api/users/me', {
+      const token = await EncryptedStorage.getItem('accessToken');
+      const res = await fetch(`${API_BASE}/users/me`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -31,8 +32,8 @@ export default function ProfileSettingsScreen({ navigation }: any) {
   async function saveProfile() {
     setSaving(true);
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const res = await fetch('http://localhost:4000/api/users/me', {
+      const token = await EncryptedStorage.getItem('accessToken');
+      const res = await fetch(`${API_BASE}/users/me`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ displayName, bio, username }),

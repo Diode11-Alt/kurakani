@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 interface AuthState {
   jwt: string | null;
@@ -26,57 +26,61 @@ export const useAuthStore = create<AuthState>((set) => ({
   isKeysGenerated: false,
   user: null,
   init: async () => {
-    const jwt = await AsyncStorage.getItem('signal_token');
-    const refreshToken = await AsyncStorage.getItem('signal_refresh_token');
-    const userId = await AsyncStorage.getItem('signal_userId');
-    const deviceIdStr = await AsyncStorage.getItem('signal_deviceId');
-    const isKeysGenerated = await AsyncStorage.getItem('signal_isKeysGenerated');
-    const userStr = await AsyncStorage.getItem('signal_user');
-    set({
-      jwt,
-      refreshToken,
-      userId,
-      deviceId: deviceIdStr ? parseInt(deviceIdStr, 10) : null,
-      isKeysGenerated: isKeysGenerated === 'true',
-      user: userStr ? JSON.parse(userStr) : null,
-    });
+    try {
+      const jwt = await EncryptedStorage.getItem('signal_token');
+      const refreshToken = await EncryptedStorage.getItem('signal_refresh_token');
+      const userId = await EncryptedStorage.getItem('signal_userId');
+      const deviceIdStr = await EncryptedStorage.getItem('signal_deviceId');
+      const isKeysGenerated = await EncryptedStorage.getItem('signal_isKeysGenerated');
+      const userStr = await EncryptedStorage.getItem('signal_user');
+      set({
+        jwt,
+        refreshToken,
+        userId,
+        deviceId: deviceIdStr ? parseInt(deviceIdStr, 10) : null,
+        isKeysGenerated: isKeysGenerated === 'true',
+        user: userStr ? JSON.parse(userStr) : null,
+      });
+    } catch (e) {
+      console.error('Failed to init EncryptedStorage', e);
+    }
   },
   setJwt: (jwt) => {
-    if (jwt) AsyncStorage.setItem('signal_token', jwt);
-    else AsyncStorage.removeItem('signal_token');
+    if (jwt) EncryptedStorage.setItem('signal_token', jwt).catch(console.error);
+    else EncryptedStorage.removeItem('signal_token').catch(console.error);
     set({ jwt });
   },
   setRefreshToken: (refreshToken) => {
-    if (refreshToken) AsyncStorage.setItem('signal_refresh_token', refreshToken);
-    else AsyncStorage.removeItem('signal_refresh_token');
+    if (refreshToken) EncryptedStorage.setItem('signal_refresh_token', refreshToken).catch(console.error);
+    else EncryptedStorage.removeItem('signal_refresh_token').catch(console.error);
     set({ refreshToken });
   },
   setUserId: (userId) => {
-    if (userId) AsyncStorage.setItem('signal_userId', userId);
-    else AsyncStorage.removeItem('signal_userId');
+    if (userId) EncryptedStorage.setItem('signal_userId', userId).catch(console.error);
+    else EncryptedStorage.removeItem('signal_userId').catch(console.error);
     set({ userId });
   },
   setDeviceId: (deviceId) => {
-    if (deviceId) AsyncStorage.setItem('signal_deviceId', deviceId.toString());
-    else AsyncStorage.removeItem('signal_deviceId');
+    if (deviceId) EncryptedStorage.setItem('signal_deviceId', deviceId.toString()).catch(console.error);
+    else EncryptedStorage.removeItem('signal_deviceId').catch(console.error);
     set({ deviceId });
   },
   setKeysGenerated: (status) => {
-    AsyncStorage.setItem('signal_isKeysGenerated', String(status));
+    EncryptedStorage.setItem('signal_isKeysGenerated', String(status)).catch(console.error);
     set({ isKeysGenerated: status });
   },
   setUser: (user) => {
-    if (user) AsyncStorage.setItem('signal_user', JSON.stringify(user));
-    else AsyncStorage.removeItem('signal_user');
+    if (user) EncryptedStorage.setItem('signal_user', JSON.stringify(user)).catch(console.error);
+    else EncryptedStorage.removeItem('signal_user').catch(console.error);
     set({ user });
   },
   clearAuth: () => {
-    AsyncStorage.removeItem('signal_token');
-    AsyncStorage.removeItem('signal_refresh_token');
-    AsyncStorage.removeItem('signal_userId');
-    AsyncStorage.removeItem('signal_deviceId');
-    AsyncStorage.removeItem('signal_isKeysGenerated');
-    AsyncStorage.removeItem('signal_user');
+    EncryptedStorage.removeItem('signal_token').catch(console.error);
+    EncryptedStorage.removeItem('signal_refresh_token').catch(console.error);
+    EncryptedStorage.removeItem('signal_userId').catch(console.error);
+    EncryptedStorage.removeItem('signal_deviceId').catch(console.error);
+    EncryptedStorage.removeItem('signal_isKeysGenerated').catch(console.error);
+    EncryptedStorage.removeItem('signal_user').catch(console.error);
     set({ jwt: null, refreshToken: null, userId: null, deviceId: null, isKeysGenerated: false, user: null });
   }
 }));

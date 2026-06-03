@@ -190,4 +190,66 @@
     border: 1px solid var(--color-outline-variant);
     border-radius: 1rem;
   }
+
+  /* ══ Message Bubbles (iMessage Style) ══ */
+  .msg-bubble-sent {
+    position: relative;
+    border-radius: 20px;
+    border-bottom-right-radius: 4px;
+    background: var(--color-primary);
+    color: white;
+  }
+  .msg-bubble-sent::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: var(--color-primary);
+    border-bottom-left-radius: 16px;
+    z-index: -1;
+  }
+  .msg-bubble-sent::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    right: -10px;
+    width: 10px;
+    height: 20px;
+    background: var(--color-surface);
+    border-bottom-left-radius: 10px;
+    z-index: -1;
+  }
+
+  .msg-bubble-received {
+    position: relative;
+    border-radius: 20px;
+    border-bottom-left-radius: 4px;
+    background: var(--color-surface-container);
+    color: var(--color-on-surface);
+    /* border intentionally omitted for tail rendering */
+  }
+  .msg-bubble-received::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -8px;
+    width: 20px;
+    height: 20px;
+    background: var(--color-surface-container);
+    border-bottom-right-radius: 16px;
+    z-index: -1;
+  }
+  .msg-bubble-received::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: -10px;
+    width: 10px;
+    height: 20px;
+    background: var(--color-surface);
+    border-bottom-right-radius: 10px;
+    z-index: -1;
+  }
 }

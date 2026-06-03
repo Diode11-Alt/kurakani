@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [botField, setBotField] = useState(""); // Honeypot
   
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
@@ -25,6 +26,13 @@ export default function RegisterPage() {
     setError("");
     setFieldErrors({});
     setLoading(true);
+
+    if (botField) {
+      // Honeypot tripped: silently "succeed" to fool the bot, but do nothing
+      await new Promise(r => setTimeout(r, 1500));
+      router.replace("/feed");
+      return;
+    }
 
     try {
       // Determine device ID using cryptographically secure randomness
@@ -92,6 +100,20 @@ export default function RegisterPage() {
       )}
 
       <form className="space-y-5" onSubmit={handleRegister}>
+        {/* Honeypot field (hidden from screen readers and visual layout) */}
+        <div aria-hidden="true" style={{ display: 'none', position: 'absolute', left: '-9999px' }}>
+          <label htmlFor="website">Website</label>
+          <input 
+            id="website" 
+            type="text" 
+            name="website" 
+            tabIndex={-1} 
+            autoComplete="off" 
+            value={botField}
+            onChange={(e) => setBotField(e.target.value)}
+          />
+        </div>
+
         {/* Username */}
         <div className="space-y-2">
           <label className="text-sm font-semibold text-[var(--color-on-surface)] ml-1" htmlFor="name">Display Name</label>

@@ -71,8 +71,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
-        // We could sync this to uiStore if we needed to know WHO is online globally, 
-        // but for now we just track our own presence
+        const state = presenceChannel.presenceState();
+        const onlineUsersMap: Record<string, boolean> = {};
+        for (const id in state) {
+          onlineUsersMap[id] = true;
+        }
+        useUIStore.getState().setOnlineUsers(onlineUsersMap);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -105,33 +109,35 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('guff-start-call', handleStartCall);
   }, []);
 
-  // Listen for incoming calls via Supabase Broadcast
+  // Listen for incoming calls and mark messages as delivered via Supabase Broadcast & Realtime
   useEffect(() => {
     if (!session?.user?.id) return;
 
     const userId = session.user.id;
-    const incomingChannel = supabase.channel(`user-calls-${userId}`);
+    const incomingChannel = supabase.channel(`user-global-${userId}`);
 
     incomingChannel
       .on('broadcast', { event: 'signal' }, ({ payload }) => {
         if (payload.type === 'offer' && payload.senderId !== userId) {
           console.log('[AppShell] Incoming call from:', payload.callerProfile?.username);
-
-          // Get the latest state directly from the store to avoid stale closures
           const currentCall = useUIStore.getState().activeCall;
-
-          // Don't interrupt an existing call
-          if (currentCall) {
-            console.log('[AppShell] Already in a call, ignoring incoming');
-            return;
-          }
-
+          if (currentCall) return;
           setActiveCall({
             conversationId: payload.conversationId,
             callType: payload.callType || 'video',
             otherUser: payload.callerProfile || { username: 'Unknown' },
             incomingOfferPayload: payload,
           });
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
+        const msg = payload.new;
+        if (msg.sender_id !== userId && !msg.delivered_at) {
+          // Send Delivery Receipt
+          await supabase
+            .from('messages')
+            .update({ delivered_at: new Date().toISOString() })
+            .eq('id', msg.id);
         }
       })
       .subscribe();

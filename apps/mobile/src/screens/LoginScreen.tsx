@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import { useSocket } from '../signal/SocketContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
@@ -46,8 +46,8 @@ export default function LoginScreen({ navigation }: Props) {
         const signedPreKey = await KeyHelper.generateSignedPreKey(identityKeyPair, 1);
 
         const store = new SignalProtocolStore();
-        await AsyncStorage.setItem('keys:localRegistrationId', registrationId.toString());
-        await AsyncStorage.setItem('keys:localIdentity', JSON.stringify({
+        await EncryptedStorage.setItem('keys:localRegistrationId', registrationId.toString());
+        await EncryptedStorage.setItem('keys:localIdentity', JSON.stringify({
           pubKey: { __type: 'ArrayBuffer', data: bufferToBase64(identityKeyPair.pubKey) },
           privKey: { __type: 'ArrayBuffer', data: bufferToBase64(identityKeyPair.privKey) }
         }));
@@ -91,14 +91,14 @@ export default function LoginScreen({ navigation }: Props) {
           used: false
         }]);
 
-        await AsyncStorage.setItem('signal_user', JSON.stringify(authData.user));
+        await EncryptedStorage.setItem('signal_user', JSON.stringify(authData.user));
       } else {
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: `${username}@example.com`,
           password: phone,
         });
         if (authError) throw new Error(authError.message);
-        await AsyncStorage.setItem('signal_user', JSON.stringify(authData.user));
+        await EncryptedStorage.setItem('signal_user', JSON.stringify(authData.user));
       }
       
       connect();

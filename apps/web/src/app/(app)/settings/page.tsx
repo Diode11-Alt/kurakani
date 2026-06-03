@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { 
   User, Shield, Bell, Smartphone, Trash2, LogOut,
   ChevronRight, Eye, EyeOff, Check, X, Loader2, Save
@@ -82,7 +83,7 @@ export default function SettingsPage() {
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error("Failed to save settings", err);
-      alert("Failed to save changes. Please try again.");
+      toast.error("Failed to save changes. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -96,7 +97,7 @@ export default function SettingsPage() {
       router.push('/login');
     } catch (err) {
       console.error("Logout failed", err);
-      alert("Failed to log out.");
+      toast.error("Failed to log out.");
       setLoading(false);
     }
   }
@@ -110,7 +111,7 @@ export default function SettingsPage() {
         router.push('/login');
       } catch (err) {
         console.error("Delete account failed", err);
-        alert("Failed to delete account. Please try again.");
+        toast.error("Failed to delete account. Please try again.");
         setLoading(false);
       }
     }

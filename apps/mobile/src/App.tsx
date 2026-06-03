@@ -4,6 +4,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import RootNavigator from './navigation/RootNavigator';
 import { StatusBar } from 'expo-status-bar';
 import { SocketProvider } from './signal/SocketContext';
+import { API_BASE } from './lib/api';
 import { useFonts } from 'expo-font';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { NotoSerif_700Bold, NotoSerif_900Black } from '@expo-google-fonts/noto-serif';
@@ -13,7 +14,7 @@ import { useNetInfo } from '@react-native-community/netinfo';
 import { WifiOff } from 'lucide-react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -89,9 +90,9 @@ export default function App() {
     // Register push token
     registerForPushNotificationsAsync().then(token => {
       if (token) {
-        AsyncStorage.getItem('signal_token').then(jwt => {
+        EncryptedStorage.getItem('signal_token').then(jwt => {
           if (jwt) {
-            fetch('http://localhost:4000/api/users/push-token', {
+            fetch(`${API_BASE}/users/push-token`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

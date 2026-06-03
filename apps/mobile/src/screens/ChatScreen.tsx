@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, Linking, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, Linking, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { colors } from '../theme/colors';
+import { API_BASE } from '../lib/api';
 import { typography } from '../theme/typography';
 import { Send, Mic, ArrowLeft, MoreVertical, Plus, Timer, Check, CheckCheck } from 'lucide-react-native';
 import { getMessages, saveMessage, CryptoStore } from '../signal/SignalStore';
 import { useSocket } from '../signal/SocketContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import { decryptMessage, encryptMessage } from '@signal/crypto';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { base64ToBuffer } from '../signal/utils';
+import { supabase } from '../lib/supabase';
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -29,11 +31,12 @@ export default function ChatScreen() {
   useEffect(() => {
     const markConversationRead = async () => {
       try {
-        const token = await AsyncStorage.getItem('signal_token');
-        await fetch(`http://localhost:4000/api/messages/conversations/${activeContact}/read`, {
-          method: 'PUT',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        await supabase
+          .from('messages')
+          .update({ read_at: new Date().toISOString() })
+          .eq('conversation_id', activeContact)
+          .eq('sender_id', activeContact)
+          .is('read_at', null);
       } catch (e) {
         console.error('Failed to mark conversation read', e);
       }
@@ -93,11 +96,10 @@ export default function ChatScreen() {
           
           // Mark as read
           try {
-            const token = await AsyncStorage.getItem('signal_token');
-            await fetch(`http://localhost:4000/api/messages/${newMsg.id}/read`, {
-              method: 'PUT',
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
+            await supabase
+              .from('messages')
+              .update({ read_at: new Date().toISOString() })
+              .eq('id', newMsg.id);
           } catch (e) {
             console.error('Failed to mark read', e);
           }
@@ -138,8 +140,8 @@ export default function ChatScreen() {
     
     // Attempt initial fetch from API
     try {
-      const token = await AsyncStorage.getItem('signal_token');
-      const res = await fetch(`http://localhost:4000/api/messages/conversations/${activeContact}/messages`, {
+      const token = await EncryptedStorage.getItem('signal_token');
+      const res = await fetch(`${API_BASE}/messages/conversations/${activeContact}/messages`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -153,8 +155,8 @@ export default function ChatScreen() {
     if (loadingMore || !nextCursor) return;
     setLoadingMore(true);
     try {
-      const token = await AsyncStorage.getItem('signal_token');
-      const res = await fetch(`http://localhost:4000/api/messages/conversations/${activeContact}/messages?before=${nextCursor}`, {
+      const token = await EncryptedStorage.getItem('signal_token');
+      const res = await fetch(`${API_BASE}/messages/conversations/${activeContact}/messages?before=${nextCursor}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -224,7 +226,7 @@ export default function ChatScreen() {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (permissionResult.granted === false) {
-      alert("You've refused to allow this app to access your photos!");
+      Alert.alert('Permission Denied', "You've refused to allow this app to access your photos!");
       return;
     }
 
@@ -276,8 +278,8 @@ export default function ChatScreen() {
     const urls = plaintext.match(urlRegex);
     if (urls && urls.length > 0) {
       try {
-        const token = await AsyncStorage.getItem('signal_token');
-        const res = await fetch(`http://localhost:4000/api/utils/link-preview?url=${encodeURIComponent(urls[0])}`, {
+        const token = await EncryptedStorage.getItem('signal_token');
+        const res = await fetch(`${API_BASE}/utils/link-preview?url=${encodeURIComponent(urls[0])}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {

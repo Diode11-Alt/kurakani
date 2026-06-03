@@ -26,21 +26,32 @@ export default function FeedPage() {
         .single();
       setProfile(profileData);
 
-      await fetchPosts();
+      await fetchPosts(session);
     };
     init();
   }, []);
 
-  async function fetchPosts() {
+  async function fetchPosts(currentSession = session) {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*, users:author_id(id, username, display_name, avatar_url)')
-      .order('created_at', { ascending: false })
-      .limit(50);
+    if (currentSession) {
+      const { data: followsData } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', currentSession.user.id);
+      
+      const followedIds = followsData ? followsData.map(f => f.following_id) : [];
+      followedIds.push(currentSession.user.id);
 
-    if (!error && data) {
-      setPosts(data);
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*, users:author_id(id, username, display_name, avatar_url)')
+        .in('author_id', followedIds)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (!error && data) {
+        setPosts(data);
+      }
     }
     setLoading(false);
   };
@@ -74,8 +85,23 @@ export default function FeedPage() {
 
       {/* Posts */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
+        <div className="space-y-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass-card rounded-3xl p-5 animate-pulse">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-[var(--color-surface-container-highest)]" />
+                <div className="space-y-2">
+                  <div className="h-4 bg-[var(--color-surface-container-highest)] rounded w-24" />
+                  <div className="h-3 bg-[var(--color-surface-container-highest)] rounded w-16" />
+                </div>
+              </div>
+              <div className="h-20 bg-[var(--color-surface-container-highest)] rounded-xl mb-4" />
+              <div className="flex gap-4">
+                <div className="h-8 w-16 bg-[var(--color-surface-container-highest)] rounded-full" />
+                <div className="h-8 w-16 bg-[var(--color-surface-container-highest)] rounded-full" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : posts.length === 0 ? (
         <div className="text-center py-16 glass-card rounded-3xl">

@@ -1,5 +1,6 @@
 "use client";
 import { IncomingCallToast } from './IncomingCallToast';
+import toast from 'react-hot-toast';
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
@@ -564,7 +565,7 @@ export function VideoCall({
 
   const startOutgoingCall = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("WebRTC Calling requires a secure context (HTTPS) or a supported browser. Please make sure you are accessing the app via HTTPS (e.g., https://localhost:3000 or https://192.168.100.234:3000) and that camera/microphone permissions are allowed.");
+      toast.error("WebRTC Calling requires a secure context (HTTPS) or a supported browser. Please make sure you are accessing the app via HTTPS (e.g., https://localhost:3000 or https://192.168.100.234:3000) and that camera/microphone permissions are allowed.");
       endCallAndClose();
       return;
     }
@@ -628,7 +629,7 @@ export function VideoCall({
       });
     } catch (err) {
       console.error('Error starting outgoing call:', err);
-      alert('Could not access camera or microphone');
+      toast.error('Could not access camera or microphone');
       endCallAndClose();
     }
   };
@@ -638,7 +639,7 @@ export function VideoCall({
     canSendCandidatesRef.current = true;
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("WebRTC Calling requires a secure context (HTTPS) or a supported browser. Please access the site via HTTPS.");
+      toast.error("WebRTC Calling requires a secure context (HTTPS) or a supported browser. Please access the site via HTTPS.");
       declineCall();
       return;
     }
@@ -699,7 +700,7 @@ export function VideoCall({
       flushLocalCandidates();
     } catch (err) {
       console.error('Error accepting call:', err);
-      alert('Could not access camera or microphone');
+      toast.error('Could not access camera or microphone');
       declineCall();
     }
   };

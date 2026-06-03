@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import { colors } from '../theme/colors';
+import { API_BASE } from '../lib/api';
 
 export default function PrivacySettingsScreen() {
   const [lastSeen, setLastSeen] = useState('everyone');
@@ -12,8 +13,8 @@ export default function PrivacySettingsScreen() {
 
   async function loadSettings() {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const res = await fetch('http://localhost:4000/api/settings/privacy', {
+      const token = await EncryptedStorage.getItem('accessToken');
+      const res = await fetch(`${API_BASE}/settings/privacy`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -27,8 +28,8 @@ export default function PrivacySettingsScreen() {
 
   async function updateSetting(key: string, value: any) {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      await fetch('http://localhost:4000/api/settings/privacy', {
+      const token = await EncryptedStorage.getItem('accessToken');
+      await fetch(`${API_BASE}/settings/privacy`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: value }),

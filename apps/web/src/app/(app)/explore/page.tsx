@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Search, Loader2, ShieldCheck, Check, Terminal, Brain, Eye, MessageSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '../../../store/authStore';
 
 export default function ExplorePage() {
   const [query, setQuery] = useState('');
@@ -11,34 +12,37 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(false);
   const [followedUserIds, setFollowedUserIds] = useState<Set<string>>(new Set());
   const router = useRouter();
+  const { userId } = useAuthStore();
 
-  // Mock initial suggested experts for a premium look when query is empty
-  const defaultExperts = [
-    {
-      id: 'default-1',
-      username: 'julian_v',
-      display_name: 'Julian Vane',
-      bio: 'Cryptography enthusiast and lead developer of the OpenShield project. Exploring private networks.',
-      avatar_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDomovHpSqPQzN_s8PrIqjahg8GRBJGBRX6VC5jbAgOoVgeUpETslSNOO6Y0Ll0RiyhRL4dhH7QBIqfUhELn7I1TeqaYnT6ZEVhURQD04GCUi-siFDIW3BcedYncmXNfQcspjB8D8RBVSB852e-FRcmKGBB8MK4diLkQBiRIGmLKNL1l0s27QuvbF9k-IAAvCkYozKRLY-bLvO2zxN9hfJ4OMw07ncf5d6_CD2yHur_YfSGIYXih2nGJ3V5_mZwEwP6V5gk4vI_-HEq',
-      verified: true
-    },
-    {
-      id: 'default-2',
-      username: 'erossi_design',
-      display_name: 'Elena Rossi',
-      bio: "Visual designer focused on human-centric communication systems. Currently building GUFF's icon library.",
-      avatar_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDoR1LGQZNbs7FpalYIJFQwwVqJCFVsbH9vZZ1khs9c_XM4s0_sgoztgq3kyZGnentp9d2JjFWxon97SAlg1uBaOrKdIyGjHUVgUbFpCIojQ0qFdw87HgvQn9kl_-pY6l7TRkSaq6AMzAu_zZkEDsgngaqCZj4gk9tHYdQYNs1TN05VOcD8YR6QGBKbJ3AkqzFjUw2gx88I0wS6VjbGF9CaSP_U3KE2prliO6uxlcatMtQVDCgraovkiu-o3zfLqXmm7zUgH2S2W8OK',
-      verified: false
-    },
-    {
-      id: 'default-3',
-      username: 'mchen_secure',
-      display_name: 'Mark Chen',
-      bio: 'Security auditor. I find the holes so others don\'t. ☕ Coffee and zero-knowledge proofs.',
-      avatar_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC8qFpIfWkunOEhNeVne1C69cIOP_e-iTzc8MYTgvSHGds_LyhDkWhWEbMKul8IXTC6oVs47EkjXm6slLc_OEPm4jjxJygDHY_D4YDjAtVl3B4xletEBEMHXnLq601LyoqOZct01-JLoLCrVCAWU2vbQzF5PWJZdnvgfpGxjK9v9UFOwXUdcJO0DVToA3HsDVv9LLsmCEHbvfgAKsT69_a1X7lEYKMifDh_pWBU6V2nobiJbnhRSjE5qcnffCI80BcvBEq_NWxtck3U',
-      verified: true
+  useEffect(() => {
+    if (userId) {
+      supabase.from('follows').select('following_id').eq('follower_id', userId).then(({ data }) => {
+        if (data) {
+          setFollowedUserIds(new Set(data.map(d => d.following_id)));
+        }
+      });
     }
-  ];
+  }, [userId]);
+
+  const [defaultExperts, setDefaultExperts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadExperts = async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('*')
+        .neq('id', userId)
+        .limit(3);
+      
+      if (data) {
+        setDefaultExperts(data);
+      }
+    };
+    
+    if (userId) {
+      loadExperts();
+    }
+  }, [userId]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,16 +64,23 @@ export default function ExplorePage() {
     }
   };
 
-  const toggleFollow = (id: string) => {
+  const toggleFollow = async (id: string) => {
+    if (!userId) return;
+    const isFollowing = followedUserIds.has(id);
+    
+    // Optimistic update
     setFollowedUserIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (isFollowing) next.delete(id);
+      else next.add(id);
       return next;
     });
+
+    if (isFollowing) {
+      await supabase.from('follows').delete().eq('follower_id', userId).eq('following_id', id);
+    } else {
+      await supabase.from('follows').insert({ follower_id: userId, following_id: id });
+    }
   };
 
   return (
