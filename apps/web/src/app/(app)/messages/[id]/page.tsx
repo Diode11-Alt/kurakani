@@ -10,7 +10,6 @@ import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import imageCompression from 'browser-image-compression';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 
@@ -18,6 +17,9 @@ import { WebSignalStore } from '../../../../lib/crypto/WebSignalStore';
 import { establishSessionAsInitiator, encryptMessage, decryptMessage } from '@signal/crypto';
 import { supabase } from '@/lib/supabase';
 import { fetchKeyBundle } from '@/lib/api';
+
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 export default function ChatThreadPage() {
   const params = useParams();
@@ -35,7 +37,6 @@ export default function ChatThreadPage() {
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -48,89 +49,9 @@ export default function ChatThreadPage() {
   const typingTimeoutRef = useRef<any>(null);
   const signalStoreRef = useRef<WebSignalStore | null>(null);
 
-  // Voice note recorder state & refs
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const recordingTimerRef = useRef<any>(null);
-
-
-
-  useEffect(() => {
-    return () => {
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-    };
-  }, []);
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        let mimeType = 'audio/webm';
-        let ext = 'webm';
-        if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4';
-          ext = 'mp4';
-        }
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        if (audioBlob.size > 0) {
-          await uploadVoiceNote(audioBlob, ext);
-        }
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingDuration(0);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
-    } catch (err) {
-      console.error('Error starting audio recording:', err);
-      alert('Could not access microphone');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-    }
-  };
-
-  const cancelRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.ondataavailable = null;
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      setIsRecording(false);
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-    }
-  };
-
-  const uploadToS3 = async (file: File | Blob, contentType: string): Promise<string> => {
-    const ext = contentType.split('/')[1] || 'bin';
-    const s3Key = `${currentUserId}-${Date.now()}.${ext}`;
-    
-    const { error } = await supabase.storage.from('attachments').upload(s3Key, file, { contentType });
-    if (error) throw error;
-    
-    const { data: { publicUrl } } = supabase.storage.from('attachments').getPublicUrl(s3Key);
-    return publicUrl;
-  };
-
-  const uploadVoiceNote = async (blob: Blob, ext: string = 'webm') => {
-    setUploading(true);
+  const { uploading, handleFileUpload: uploadFileHook, uploadToS3 } = useFileUpload(currentUserId || null);
+  
+  const handleVoiceNoteUpload = async (blob: Blob, ext: string) => {
     try {
       const mimeType = blob.type || 'audio/webm';
       const downloadUrl = await uploadToS3(blob, mimeType);
@@ -138,16 +59,19 @@ export default function ChatThreadPage() {
     } catch (err) {
       console.error('Error uploading voice note:', err);
       alert('Failed to send voice note');
-    } finally {
-      setUploading(false);
     }
   };
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const {
+    isRecording,
+    recordingDuration,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+    formatDuration
+  } = useAudioRecorder(handleVoiceNoteUpload);
+
+
 
   useEffect(() => {
     const init = async () => {
@@ -560,35 +484,25 @@ export default function ChatThreadPage() {
     }
   };
 
-  const handleGenerateInvite = async () => {
+  const reestablishSession = async () => {
+    if (!signalStoreRef.current || !otherUser?.id) return;
+    
     try {
-      // In a real app this would generate a signed JWT or insert a short-lived token to DB.
-      toast.success('Group invites not supported in MVP Supabase migration yet');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to generate invite link');
-    }
-  };
-
-  const handleTransferAdmin = async (newAdminId: string) => {
-    try {
-      // Just update the conversation_members role directly
-      const { error } = await supabase.from('conversation_members')
-        .update({ role: 'admin' })
-        .eq('conversation_id', conversationId)
-        .eq('user_id', newAdminId);
-        
-      if (error) throw error;
+      const sessionString = otherUser.id + '.1';
+      // Clear the broken session
+      await signalStoreRef.current.removeSession(sessionString);
       
-      // Demote self
-      await supabase.from('conversation_members')
-        .update({ role: 'member' })
-        .eq('conversation_id', conversationId)
-        .eq('user_id', currentUserId);
-
-      toast.success('Admin role transferred');
-      setShowGroupSettings(false);
+      // Fetch new keys
+      const keyBundle = await fetchKeyBundle(otherUser.id);
+      
+      // Establish new session
+      await establishSessionAsInitiator(signalStoreRef.current, otherUser.id, 1, keyBundle);
+      toast.success('Secure session re-established! Refreshing messages...');
+      
+      // Reload page to re-decrypt messages
+      window.location.reload();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to transfer admin');
+      toast.error('Failed to re-establish session: ' + err.message);
     }
   };
 
@@ -596,29 +510,12 @@ export default function ChatThreadPage() {
     const file = 'target' in e ? e.target.files?.[0] : e;
     if (!file || !authSession) return;
 
-    setUploading(true);
     try {
-      let uploadFile: File | Blob = file;
-      if (file.type.startsWith('image/')) {
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        };
-        try {
-          uploadFile = await imageCompression(file, options);
-        } catch (error) {
-          console.error('Compression error', error);
-        }
-      }
-
-      const downloadUrl = await uploadToS3(uploadFile, file.type || 'application/octet-stream');
+      const downloadUrl = await uploadFileHook(file);
       await handleSendMessage({ preventDefault: () => {} } as any, downloadUrl, 'Attachment 📎');
     } catch (err) {
       console.error('File upload error:', err);
       alert('Failed to upload file');
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -715,17 +612,7 @@ export default function ChatThreadPage() {
                   >
                     View Profile
                   </button>
-                  {conversation?.type === 'group' && (
-                    <button 
-                      onClick={() => {
-                        setShowDropdown(false);
-                        setShowGroupSettings(true);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors"
-                    >
-                      Group Settings
-                    </button>
-                  )}
+
                 </div>
               </>
             )}
@@ -772,7 +659,20 @@ export default function ChatThreadPage() {
                     </div>
                   )}
 
-                  {m.plaintext && m.plaintext !== 'Voice Note 🎤' && m.plaintext !== 'Attachment 📎' && <p className="font-sans">{m.plaintext}</p>}
+                  {m.plaintext && m.plaintext !== 'Voice Note 🎤' && m.plaintext !== 'Attachment 📎' && (
+                    <div className="font-sans">
+                      <p>{m.plaintext}</p>
+                      {(m.plaintext.includes('[Identity Key changed') || m.plaintext.includes('[Session expired')) && !isSelf && (
+                        <button
+                          onClick={reestablishSession}
+                          className="mt-3 w-full bg-red-500/10 text-red-600 border border-red-500/30 hover:bg-red-500/20 text-xs font-bold py-2 px-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Shield className="w-3.5 h-3.5" />
+                          Re-establish Secure Session
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Message Meta Info */}
@@ -905,90 +805,7 @@ export default function ChatThreadPage() {
         )}
       </div>
 
-      {/* Group Settings Modal */}
-      {showGroupSettings && conversation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-[var(--color-surface)] rounded-2xl shadow-2xl border border-[var(--color-outline-variant)] overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="p-4 border-b border-[var(--color-outline-variant)] flex justify-between items-center bg-[var(--color-surface-container)]">
-              <h2 className="text-lg font-bold text-[var(--color-on-surface)]">Group Settings</h2>
-              <button onClick={() => setShowGroupSettings(false)} className="text-[var(--color-outline-variant)] hover:text-white transition-colors">
-                <Trash2 className="w-5 h-5 opacity-0" /> {/* Spacer */}
-                <span className="text-sm font-medium">Close</span>
-              </button>
-            </div>
-            
-            <div className="p-4 overflow-y-auto space-y-6">
-              {/* Invite Link Section */}
-              {conversation.members?.find((m: any) => m.id === currentUserId)?.role === 'admin' && (
-                <div className="space-y-3 bg-[var(--color-surface-container)] p-4 rounded-xl border border-[var(--color-outline-variant)]">
-                  <h3 className="text-sm font-semibold text-[var(--color-on-surface)] flex items-center gap-2">
-                    <LinkIcon className="w-4 h-4 text-[var(--color-primary)]" />
-                    Invite Link
-                  </h3>
-                  {inviteToken ? (
-                    <div className="bg-[var(--color-surface-container-lowest)] p-3 rounded-lg border border-[var(--color-primary)]/30 flex justify-between items-center break-all">
-                      <span className="text-xs text-[var(--color-primary)] font-mono">{`${window.location.origin}/join/${inviteToken}`}</span>
-                      <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/join/${inviteToken}`);
-                          toast.success('Copied!');
-                        }}
-                        className="ml-2 text-xs bg-[var(--color-primary)]/20 text-[var(--color-primary)] px-2 py-1 rounded hover:bg-[var(--color-primary)]/30"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={handleGenerateInvite}
-                      className="w-full py-2 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-white text-sm font-medium rounded-lg transition-colors"
-                    >
-                      Generate Invite Link
-                    </button>
-                  )}
-                </div>
-              )}
 
-              {/* Members List */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-[var(--color-on-surface)] flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[var(--color-on-surface-variant)]" />
-                  Members ({conversation.members?.length})
-                </h3>
-                <div className="space-y-2">
-                  {conversation.members?.map((member: any) => (
-                    <div key={member.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--color-surface-container)] transition-colors border border-transparent hover:border-[var(--color-outline-variant)]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                          {member.username?.[0]?.toUpperCase() || '?'}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-[var(--color-on-surface)]">
-                            {member.username} {member.id === currentUserId && '(You)'}
-                          </span>
-                          <span className="text-[10px] text-[var(--color-outline-variant)] capitalize flex items-center gap-1">
-                            {member.role}
-                            {member.role === 'admin' && <Crown className="w-3 h-3 text-yellow-500" />}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {conversation.members?.find((m: any) => m.id === currentUserId)?.role === 'admin' && member.id !== currentUserId && (
-                        <button 
-                          onClick={() => handleTransferAdmin(member.id)}
-                          className="text-[10px] bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface-variant)] px-2 py-1 rounded border border-[var(--color-outline-variant)] hover:text-white hover:border-white transition-colors"
-                        >
-                          Make Admin
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

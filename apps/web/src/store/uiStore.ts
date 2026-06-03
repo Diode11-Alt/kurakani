@@ -1,12 +1,19 @@
 import { create } from 'zustand';
 
+export interface ActiveCallState {
+  conversationId: string;
+  callType: 'video' | 'audio';
+  otherUser: any;
+  incomingOfferPayload?: any;
+}
+
 interface UIState {
   isOnline: boolean;
   registrationStatus: 'unregistered' | 'registering' | 'registered';
-  activeCall: { callId: string; type: 'audio' | 'video'; peerId: string } | null;
+  activeCall: ActiveCallState | null;
   setOnlineStatus: (status: boolean) => void;
   setRegistrationStatus: (status: 'unregistered' | 'registering' | 'registered') => void;
-  setActiveCall: (call: { callId: string; type: 'audio' | 'video'; peerId: string } | null) => void;
+  setActiveCall: (call: ActiveCallState | null) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({

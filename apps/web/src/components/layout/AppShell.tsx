@@ -9,18 +9,13 @@ import { MobileHeader } from "./MobileHeader";
 import { VideoCall } from "../../components/VideoCall";
 import { supabase } from "../../lib/supabase";
 
-interface ActiveCallState {
-  conversationId: string;
-  callType: 'video' | 'audio';
-  otherUser: any;
-  incomingOfferPayload?: any;
-}
+import { useUIStore } from "../../store/uiStore";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { session: authSession, isKeysGenerated } = useAuthStore();
+  const { activeCall, setActiveCall } = useUIStore();
   const [mounted, setMounted] = useState(false);
-  const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
@@ -56,13 +51,50 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     registerPushToken();
   }, [authSession, isKeysGenerated, mounted, router]);
 
-  // Get Supabase session for incoming call listener
+  // Get Supabase session for incoming call listener and Presence
   useEffect(() => {
     if (!mounted) return;
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       if (s) setSession(s);
     });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, [mounted]);
+
+  // Supabase Presence Tracking
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const presenceChannel = supabase.channel('global-presence', {
+      config: {
+        presence: { key: session.user.id }
+      }
+    });
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        // We could sync this to uiStore if we needed to know WHO is online globally, 
+        // but for now we just track our own presence
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            online_at: new Date().toISOString(),
+            user_id: session.user.id
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [session?.user?.id]);
 
   // Listen for outgoing call events from chat thread page
   useEffect(() => {
@@ -93,8 +125,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         if (payload.type === 'offer' && payload.senderId !== userId) {
           console.log('[AppShell] Incoming call from:', payload.callerProfile?.username);
 
+          // Get the latest state directly from the store to avoid stale closures
+          const currentCall = useUIStore.getState().activeCall;
+
           // Don't interrupt an existing call
-          if (activeCall) {
+          if (currentCall) {
             console.log('[AppShell] Already in a call, ignoring incoming');
             return;
           }
@@ -112,7 +147,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => {
       supabase.removeChannel(incomingChannel);
     };
-  }, [session?.user?.id, activeCall]);
+  }, [session?.user?.id]);
 
   // Prevent SSR flash of unauthenticated content
   if (!mounted || !authSession || !isKeysGenerated) {
