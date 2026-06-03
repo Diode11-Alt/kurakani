@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { KeyHelper } from '@privacyresearch/libsignal-protocol-typescript';
 import { WebSignalStore } from './WebSignalStore';
 

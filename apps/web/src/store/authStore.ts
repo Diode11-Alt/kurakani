@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { clearTokens } from '../lib/api'; // Remove if completely removing api.ts later
+import type { Session } from '@supabase/supabase-js';
 
 interface AuthState {
-  session: any | null;
+  session: Session | null;
   userId: string | null;
   deviceId: number | null;
   isKeysGenerated: boolean;
   user: { name?: string; phone?: string; email?: string } | null;
-  setSession: (session: any | null) => void;
+  setSession: (session: Session | null) => void;
   setDeviceId: (id: number | null) => void;
   setKeysGenerated: (status: boolean) => void;
-  setUser: (user: any) => void;
+  setUser: (user: AuthState['user']) => void;
   clearAuth: () => void;
 }
 
@@ -47,8 +47,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window !== 'undefined') {
       localStorage.removeItem('deviceId');
       localStorage.removeItem('isKeysGenerated');
-      clearTokens();
     }
+    // Single auth system: Supabase only
     await supabase.auth.signOut();
     set({ session: null, userId: null, deviceId: null, isKeysGenerated: false, user: null });
   }
@@ -64,4 +64,3 @@ if (typeof window !== 'undefined') {
     useAuthStore.getState().setSession(session);
   });
 }
-

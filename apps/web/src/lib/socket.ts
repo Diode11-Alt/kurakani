@@ -28,13 +28,18 @@ class SocketManager {
     this.isIntentionalClose = false;
 
     try {
-      this.ws = new WebSocket(`${wsUrl}?token=${token}`);
+      this.ws = new WebSocket(wsUrl);
     } catch {
       this.scheduleReconnect();
       return;
     }
 
     this.ws.onopen = () => {
+      // Send auth as first message instead of in URL (CWE-598 fix)
+      const authToken = getAccessToken();
+      if (authToken && this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: 'auth', token: authToken }));
+      }
       console.log('[WS] Connected');
       this.reconnectAttempts = 0;
       this.startPing();

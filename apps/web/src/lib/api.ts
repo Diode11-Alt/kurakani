@@ -1,375 +1,239 @@
 /**
- * Typed API client for Kurakani backend.
- * Wraps fetch with auth headers and error handling.
+ * API client for Kurakani — now fully backed by Supabase.
+ * Legacy JWT token system has been removed (CRIT-05).
+ * All operations go through the Supabase client SDK.
  */
 
-import { get, set, del } from 'idb-keyval';
+import { supabase } from './supabase';
 
-const API_BASE = typeof window !== 'undefined'
-  ? (process.env.NEXT_PUBLIC_API_URL || `${window.location.protocol}//${window.location.hostname}:4000/api`)
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
-
-export async function setTokens(access: string, refresh: string) {
-  if (typeof window !== 'undefined') {
-    await set('accessToken', access);
-    await set('refreshToken', refresh);
-  }
-}
-
-export async function getAccessToken(): Promise<string | null> {
-  if (typeof window !== 'undefined') {
-    return await get<string>('accessToken') || null;
-  }
-  return null;
-}
-
-export async function getRefreshToken(): Promise<string | null> {
-  if (typeof window !== 'undefined') {
-    return await get<string>('refreshToken') || null;
-  }
-  return null;
-}
-
-export async function clearTokens() {
-  if (typeof window !== 'undefined') {
-    await del('accessToken');
-    await del('refreshToken');
-  }
-}
-
-async function refreshAccessToken(refreshToken?: string): Promise<boolean> {
-  const rt = refreshToken || (await getRefreshToken());
-  if (!rt) return false;
-
-  try {
-    const res = await fetch(`${API_BASE}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: rt }),
-    });
-
-    if (!res.ok) return false;
-
-    const data = await res.json();
-    await setTokens(data.accessToken, data.refreshToken);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-import toast from 'react-hot-toast';
-
-export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = await getAccessToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-
-  // Auto-refresh on 401
-  if (res.status === 401 && token && !path.includes('/auth/refresh')) {
-    const refreshed = await refreshAccessToken();
-    if (refreshed) {
-      const newToken = await getAccessToken();
-      headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-    }
-  }
-
-  if (!res.ok) {
-    let errorMessage = res.statusText || 'API request failed';
-    try {
-      const errorData = await res.json();
-      if (errorData.message) errorMessage = errorData.message;
-      else if (errorData.error) errorMessage = errorData.error;
-    } catch (e) {
-      // ignore json parse error
-    }
-    
-    // Auto-logout and redirect if we get a 401 (meaning refresh failed or no token)
-    if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
-      if (typeof window !== 'undefined') {
-        await clearTokens();
-        window.location.href = '/login';
-        return {} as T; // Return dummy to stop execution
-      }
-    }
-
-    // Show toast for non-auth endpoints or specific errors
-    if (!path.includes('/auth/refresh')) {
-      toast.error(errorMessage);
-    }
-    throw new Error(errorMessage);
-  }
-
-  return res.json();
-}
+// ─── Legacy JWT Shim (no-ops for backward compat during migration) ────────
+/** @deprecated No longer stores JWT tokens — Supabase handles auth */
+export async function setTokens(_access: string, _refresh: string) { /* no-op */ }
+/** @deprecated Returns null — use supabase.auth.getSession() */
+export async function getAccessToken(): Promise<string | null> { return null; }
+/** @deprecated Returns null — use supabase.auth.getSession() */
+export async function getRefreshToken(): Promise<string | null> { return null; }
+/** @deprecated No-op — use supabase.auth.signOut() */
+export async function clearTokens() { /* no-op */ }
 
 // ─── Auth ─────────────────────────────────────────────────
 
-export async function register(data: {
-  email: string;
-  password: string;
-  username: string;
-  phoneNumber?: string;
-  serverPayload: Record<string, unknown>;
-}) {
-  const result = await apiFetch<{
-    success: boolean;
-    accessToken: string;
-    refreshToken: string;
-    user: { id: string; email: string; username: string; registrationId: number };
-  }>('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-  await setTokens(result.accessToken, result.refreshToken);
-  return result;
-}
-
-export async function login(data: {
-  email: string;
-  password: string;
-  serverPayload: Record<string, unknown>;
-}) {
-  const result = await apiFetch<{
-    success: boolean;
-    accessToken: string;
-    refreshToken: string;
-    user: { id: string; email: string; username: string; registrationId: number };
-  }>('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-  await setTokens(result.accessToken, result.refreshToken);
-  return result;
-}
-
 export async function logout() {
-  try {
-    await apiFetch('/auth/logout', { method: 'POST' });
-  } finally {
-    await clearTokens();
-  }
-}
-
-// ─── Keys ─────────────────────────────────────────────────
-
-export async function fetchKeyBundle(userId: string) {
-  return apiFetch<{
-    identityKey: string;
-    registrationId: number;
-    signedPreKey: { keyId: number; publicKey: string; signature: string };
-    oneTimePreKey: { keyId: number; publicKey: string } | null;
-  }>(`/keys/${userId}`);
-}
-
-export async function uploadKeyBundle(bundle: {
-  identityKey: string;
-  signedPreKey: { keyId: number; publicKey: string; signature: string };
-  oneTimePreKeys: { keyId: number; publicKey: string }[];
-}) {
-  return apiFetch('/keys/register', {
-    method: 'POST',
-    body: JSON.stringify(bundle),
-  });
-}
-
-export async function getOTPKCount() {
-  return apiFetch<{ count: number }>('/keys/count');
-}
-
-// ─── Messages ─────────────────────────────────────────────
-
-export async function sendMessage(data: {
-  recipientId: string;
-  conversationId?: string;
-  ciphertext: string;
-  ciphertextType: number;
-  contentType?: string;
-}) {
-  return apiFetch<{
-    messageId: string;
-    conversationId: string;
-    timestamp: string;
-  }>('/messages', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function getConversations() {
-  return apiFetch<{
-    conversations: Array<{
-      id: string;
-      type: string;
-      name: string | null;
-      updatedAt: string;
-      members: Array<{
-        userId: string;
-        username: string;
-        displayName: string | null;
-        avatarUrl: string | null;
-        role: string;
-      }>;
-    }>;
-  }>('/messages/conversations');
-}
-
-export async function getMessages(conversationId: string, before?: string, limit = 50) {
-  const params = new URLSearchParams({ limit: limit.toString() });
-  if (before) params.set('before', before);
-  return apiFetch<{
-    messages: Array<{
-      id: string;
-      senderId: string;
-      ciphertext: string;
-      ciphertextType: number;
-      contentType: string;
-      sentAt: string;
-      deliveredAt: string | null;
-      readAt: string | null;
-    }>;
-    hasMore: boolean;
-    nextCursor: string | null;
-  }>(`/messages/conversations/${conversationId}/messages?${params}`);
-}
-
-export async function getPendingMessages() {
-  return apiFetch<{ messages: Record<string, unknown>[]; count: number }>('/messages/pending');
-}
-
-export async function markAsRead(messageId: string) {
-  return apiFetch(`/messages/${messageId}/read`, { method: 'PUT' });
+  await supabase.auth.signOut();
 }
 
 // ─── Users ────────────────────────────────────────────────
 
 export async function getProfile() {
-  return apiFetch<{
-    userId: string;
-    username: string;
-    displayName: string | null;
-    bio: string | null;
-    avatarUrl: string | null;
-    email: string;
-    createdAt: string;
-  }>('/users/me');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, email, username, display_name, bio, avatar_url, created_at')
+    .eq('id', user.id)
+    .single();
+
+  if (error) throw new Error(error.message);
+  return {
+    userId: data.id,
+    username: data.username,
+    displayName: data.display_name,
+    bio: data.bio,
+    avatarUrl: data.avatar_url,
+    email: data.email,
+    createdAt: data.created_at,
+  };
 }
 
-export async function updateProfile(data: { displayName?: string; bio?: string; username?: string }) {
-  return apiFetch('/users/me', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
-}
+export async function updateProfile(updates: { displayName?: string; bio?: string; username?: string }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
 
-export async function searchUsers(query: string) {
-  return apiFetch<{
-    users: Array<{
-      userId: string;
-      username: string;
-      displayName: string | null;
-      avatarUrl: string | null;
-    }>;
-  }>(`/users/search?q=${encodeURIComponent(query)}`);
-}
+  const { error } = await supabase
+    .from('users')
+    .update({
+      ...(updates.displayName !== undefined && { display_name: updates.displayName }),
+      ...(updates.bio !== undefined && { bio: updates.bio }),
+      ...(updates.username !== undefined && { username: updates.username }),
+    })
+    .eq('id', user.id);
 
-export async function deleteAccount() {
-  return apiFetch<{
-    scheduledDeletionAt: string;
-    message: string;
-  }>('/users/me', { method: 'DELETE' });
+  if (error) throw new Error(error.message);
+  return { success: true };
 }
 
 export async function getUserById(id: string) {
-  return apiFetch<{
-    userId: string;
-    username: string;
-    displayName: string | null;
-    bio: string | null;
-    avatarUrl: string | null;
-    createdAt: string;
-  }>(`/users/${id}`);
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, username, display_name, bio, avatar_url, created_at')
+    .eq('id', id)
+    .single();
+
+  if (error) throw new Error(error.message);
+  return {
+    userId: data.id,
+    username: data.username,
+    displayName: data.display_name,
+    bio: data.bio,
+    avatarUrl: data.avatar_url,
+    createdAt: data.created_at,
+  };
+}
+
+export async function searchUsers(query: string) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, username, display_name, avatar_url')
+    .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+    .limit(20);
+
+  if (error) throw new Error(error.message);
+  return {
+    users: (data || []).map(u => ({
+      userId: u.id,
+      username: u.username,
+      displayName: u.display_name,
+      avatarUrl: u.avatar_url,
+    })),
+  };
+}
+
+export async function deleteAccount() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Schedule deletion
+  const { error } = await supabase
+    .from('users')
+    .update({ deletion_scheduled_at: new Date().toISOString(), is_active: false })
+    .eq('id', user.id);
+
+  if (error) throw new Error(error.message);
+  await supabase.auth.signOut();
+  return { scheduledDeletionAt: new Date().toISOString(), message: 'Account scheduled for deletion' };
 }
 
 // ─── Settings ─────────────────────────────────────────────
 
 export async function getPrivacySettings() {
-  return apiFetch<{
-    lastSeen: string;
-    readReceipts: boolean;
-    profilePhotoVisibility: string;
-  }>('/settings/privacy');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('last_seen, read_receipts, profile_photo_visibility')
+    .eq('user_id', user.id)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw new Error(error.message);
+
+  return {
+    lastSeen: data?.last_seen || 'everyone',
+    readReceipts: data?.read_receipts ?? true,
+    profilePhotoVisibility: data?.profile_photo_visibility || 'everyone',
+  };
 }
 
-export async function updatePrivacySettings(data: {
+export async function updatePrivacySettings(updates: {
   lastSeen?: string;
   readReceipts?: boolean;
   profilePhotoVisibility?: string;
 }) {
-  return apiFetch('/settings/privacy', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert({
+      user_id: user.id,
+      ...(updates.lastSeen !== undefined && { last_seen: updates.lastSeen }),
+      ...(updates.readReceipts !== undefined && { read_receipts: updates.readReceipts }),
+      ...(updates.profilePhotoVisibility !== undefined && { profile_photo_visibility: updates.profilePhotoVisibility }),
+      updated_at: new Date().toISOString(),
+    });
+
+  if (error) throw new Error(error.message);
+  return { success: true };
 }
 
 export async function getNotificationSettings() {
-  return apiFetch<{
-    pushNotifications: boolean;
-    notificationPreview: boolean;
-  }>('/settings/notifications');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('push_notifications, notification_preview')
+    .eq('user_id', user.id)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw new Error(error.message);
+
+  return {
+    pushNotifications: data?.push_notifications ?? true,
+    notificationPreview: data?.notification_preview ?? false,
+  };
 }
 
-export async function updateNotificationSettings(data: {
+export async function updateNotificationSettings(updates: {
   pushNotifications?: boolean;
   notificationPreview?: boolean;
 }) {
-  return apiFetch('/settings/notifications', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert({
+      user_id: user.id,
+      ...(updates.pushNotifications !== undefined && { push_notifications: updates.pushNotifications }),
+      ...(updates.notificationPreview !== undefined && { notification_preview: updates.notificationPreview }),
+      updated_at: new Date().toISOString(),
+    });
+
+  if (error) throw new Error(error.message);
+  return { success: true };
 }
 
-// ─── Attachments ──────────────────────────────────────────
+// ─── Keys ─────────────────────────────────────────────────
 
-export async function getUploadUrl(contentType: string, size: number) {
-  return apiFetch<{ uploadUrl: string; s3Key: string }>(
-    `/attachments/upload-url?contentType=${encodeURIComponent(contentType)}&size=${size}`
-  );
-}
+export async function fetchKeyBundle(userId: string) {
+  const { data: ik, error: ikErr } = await supabase
+    .from('identity_keys')
+    .select('identity_key, device_id')
+    .eq('user_id', userId)
+    .single();
+  if (ikErr) throw new Error(ikErr.message);
 
-export async function getDownloadUrl(s3Key: string) {
-  return apiFetch<{ downloadUrl: string }>(
-    `/attachments/download-url?s3Key=${encodeURIComponent(s3Key)}`
-  );
-}
+  const { data: user } = await supabase
+    .from('users')
+    .select('registration_id')
+    .eq('id', userId)
+    .single();
 
-// ─── TURN ─────────────────────────────────────────────────
+  const { data: spk, error: spkErr } = await supabase
+    .from('signed_pre_keys')
+    .select('key_id, public_key, signature')
+    .eq('user_id', userId)
+    .single();
+  if (spkErr) throw new Error(spkErr.message);
 
-export async function getTurnCredentials() {
-  return apiFetch<{
-    iceServers: Array<{
-      urls: string | string[];
-      username?: string;
-      credential?: string;
-    }>;
-  }>('/turn');
-}
+  const { data: otpk } = await supabase
+    .from('one_time_pre_keys')
+    .select('key_id, public_key')
+    .eq('user_id', userId)
+    .eq('used', false)
+    .limit(1)
+    .single();
 
-// ─── Health ───────────────────────────────────────────────
-
-export async function healthCheck() {
-  return apiFetch<{
-    status: string;
-    database: string;
-    redis: string;
-  }>('/health');
+  return {
+    identityKey: ik.identity_key,
+    registrationId: user?.registration_id || 0,
+    signedPreKey: {
+      keyId: spk.key_id,
+      publicKey: spk.public_key,
+      signature: spk.signature,
+    },
+    oneTimePreKey: otpk ? { keyId: otpk.key_id, publicKey: otpk.public_key } : null,
+  };
 }

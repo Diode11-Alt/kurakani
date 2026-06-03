@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 
-export const API_BASE = 'http://localhost:4000/api';
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:4000/api';
 
 async function getAccessToken(): Promise<string | null> {
   return await AsyncStorage.getItem('signal_token');

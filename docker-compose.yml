@@ -81,7 +81,7 @@ services:
       --no-tlsv1
       --no-tlsv1_1
       --realm=signal-clone.local
-      --secret=your_turn_secret_here
+      --secret=${TURN_SECRET:-changeme_in_production}
       --listening-port=3478
       --min-port=49160
       --max-port=49200

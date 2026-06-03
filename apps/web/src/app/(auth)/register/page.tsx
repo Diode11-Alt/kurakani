@@ -32,10 +32,12 @@ export default function RegisterPage() {
       const store = new WebSignalStore();
       const basePayload = await generateSignalRegistrationPayload(store);
       
-      // Determine device ID
+      // Determine device ID using cryptographically secure randomness
       let currentDeviceId = deviceId;
       if (!currentDeviceId) {
-        currentDeviceId = Math.floor(Math.random() * 2147483647) + 1; // Random positive integer
+        const arr = new Uint32Array(1);
+        crypto.getRandomValues(arr);
+        currentDeviceId = (arr[0] % 2147483646) + 1;
         setDeviceId(currentDeviceId);
       }
 

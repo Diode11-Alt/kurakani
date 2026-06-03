@@ -1,21 +1,33 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 
+// All Firebase config must come from environment variables.
+// Rotate the old key in Firebase Console immediately.
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDZY3CYX2-euGMJXHCzA4JA_4Ik_64GP4M",
-  authDomain: "kurakani-90a8d.firebaseapp.com",
-  projectId: "kurakani-90a8d",
-  storageBucket: "kurakani-90a8d.firebasestorage.app",
-  messagingSenderId: "898273082956",
-  appId: "1:898273082956:web:1752ed05111dc8d3093ee9",
-  measurementId: "G-SMXKDV4RD0"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// Fail fast if critical Firebase config is missing
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.warn(
+    '[Firebase] Missing NEXT_PUBLIC_FIREBASE_API_KEY or NEXT_PUBLIC_FIREBASE_PROJECT_ID. Push notifications will be disabled.'
+  );
+}
+
+// Initialize Firebase (only if config is present)
+const app = firebaseConfig.apiKey && firebaseConfig.projectId
+  ? (getApps().length > 0 ? getApp() : initializeApp(firebaseConfig))
+  : null;
 
 // Initialize Firebase Cloud Messaging and get a reference to the service
 export const getFirebaseMessaging = async () => {
+  if (!app) return null;
   try {
     const supported = await isSupported();
     if (supported) {
