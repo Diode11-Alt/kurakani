@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAppStore } from "../../store/appStore";
+import { useAuthStore } from "../../store/authStore";
 
 export function BottomNavBar() {
   const pathname = usePathname();
-  const { userId } = useAppStore();
+  const { userId } = useAuthStore();
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 w-full glass-dark flex justify-around items-center px-4 py-2 pb-6 z-50 rounded-t-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.3)]">

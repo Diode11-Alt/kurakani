@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { openDB, IDBPDatabase } from 'idb';
 import {
   SignalProtocolStore,

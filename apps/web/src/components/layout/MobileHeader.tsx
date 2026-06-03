@@ -1,10 +1,10 @@
 "use client";
 
-import { useAppStore } from "../../store/appStore";
+import { useAuthStore } from "../../store/authStore";
 import Link from "next/link";
 
 export function MobileHeader() {
-  const { user, userId } = useAppStore();
+  const { user, userId } = useAuthStore();
 
   return (
     <header className="md:hidden fixed top-0 left-0 right-0 h-16 glass-dark flex items-center justify-between px-lg z-40 shadow-sm">

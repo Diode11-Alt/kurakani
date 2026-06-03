@@ -1,122 +1,179 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
 import { usePathname, useRouter } from 'next/navigation';
 import { formatDistanceToNowStrict } from 'date-fns';
-import { Search, MessageSquare, Loader2, Compass, Shield, ShieldCheck, Check } from 'lucide-react';
+import { Search, MessageSquare, Loader2, ShieldCheck } from 'lucide-react';
+import { useAuthStore } from '../../../store/authStore';
+import { WebSignalStore } from '../../../lib/crypto/WebSignalStore';
+import { establishSessionAsInitiator, encryptMessage } from '@signal/crypto';
+import { db } from '../../../lib/db';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { supabase } from '../../../lib/supabase';
+
+// Decrypting messages in the sidebar is unsafe in Signal protocol because decryption 
+// advances the cryptographic ratchet. We just show an encrypted indicator.
 
 export default function MessagesLayout({ children }: { children: React.ReactNode }) {
-  const [conversations, setConversations] = useState<any[]>([]);
+  const liveConversations = useLiveQuery(
+    () => db.local_conversations.orderBy('updatedAt').reverse().toArray(),
+    []
+  );
+  const conversations = liveConversations || [];
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
-  const [session, setSession] = useState<any>(null);
+  
+  const { session: authSession, userId } = useAuthStore();
 
   const pathname = usePathname();
   const router = useRouter();
 
-  // Extract selected conversation ID if we are in /messages/[id]
   const pathParts = pathname.split('/');
   const activeId = pathParts.length > 2 && pathParts[1] === 'messages' ? pathParts[2] : null;
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) return;
-      setSession(currentSession);
-      await loadConversations(currentSession.user.id);
+      if (!authSession || !userId) {
+        router.push('/login');
+        return;
+      }
+      await loadConversations();
       setLoading(false);
     };
-
     init();
+  }, [pathname, authSession, userId]);
 
-    // Subscribe to new conversations or updates
-    const channel = supabase
-      .channel('messages-layout-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'conversations' },
-        async () => {
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-          if (currentSession) {
-            await loadConversations(currentSession.user.id);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        async () => {
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-          if (currentSession) {
-            await loadConversations(currentSession.user.id);
-          }
-        }
-      )
+  useEffect(() => {
+    if (!userId) return;
+
+    // Supabase Realtime for fetching conversation list automatically when new messages arrive
+    const messagesChannel = supabase
+      .channel('public:messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+        // Just reload the list if someone sends us a message
+        loadConversations();
+      })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
     };
-  }, [pathname]);
+  }, [userId]);
 
-  async function loadConversations(userId: string) {
+  async function loadConversations() {
+    if (!userId) return;
     try {
-      const { data, error } = await supabase
-        .from('conversations')
+      // 1. Fetch memberships for the current user
+      const { data: myMemberships, error: memErr } = await supabase
+        .from('conversation_members')
         .select(`
-          id,
-          last_message_at,
-          p1:participant_1(id, username, display_name, avatar_url),
-          p2:participant_2(id, username, display_name, avatar_url)
+          conversation_id,
+          conversations!inner (
+            id, type, name, avatar_url, updated_at
+          )
         `)
-        .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
-        .order('last_message_at', { ascending: false });
+        .eq('user_id', userId);
 
-      if (error) throw error;
-      if (!data) return;
+      if (memErr || !myMemberships) return;
 
+      const convIds = myMemberships.map(m => m.conversation_id);
+      
+      if (convIds.length === 0) {
+        return;
+      }
+
+      // 2. Fetch all members for these conversations to find the "otherUser"
+      const { data: allMembers, error: membersError } = await supabase
+        .from('conversation_members')
+        .select(`
+          conversation_id,
+          user_id,
+          users (
+            id, username, display_name, avatar_url
+          )
+        `)
+        .in('conversation_id', convIds);
+        
+      if (membersError || !allMembers) return;
+
+      // 3. For each conversation, find the latest message 
+      //    (we do this individually for simplicity, could be optimized via RPC if needed)
       const enriched = await Promise.all(
-        data.map(async (c: any) => {
-          // Identify other participant
-          const otherUser = c.p1.id === userId ? c.p2 : c.p1;
+        myMemberships.map(async (row) => {
+          // Depending on Supabase SDK version, inner join might be an array or object.
+          // Usually it's an object if it's a 1:1 relation, but conversations is a 1:1 from member's perspective.
+          const c: any = Array.isArray(row.conversations) ? row.conversations[0] : row.conversations;
+          
+          const members = allMembers.filter(m => m.conversation_id === c.id);
+          const otherUserMember = members.find(m => m.user_id !== userId);
+          const otherUser = otherUserMember?.users || { username: 'Unknown' };
 
-          // Fetch last message
-          const { data: lastMsg } = await supabase
+          // Fetch last message from remote
+          const { data: lastMsgData } = await supabase
             .from('messages')
-            .select('content, sender_id, created_at, read_at')
+            .select('*')
             .eq('conversation_id', c.id)
-            .order('created_at', { ascending: false })
+            .order('sent_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
+          let decryptedLastMsg = null;
+          if (lastMsgData) {
+            decryptedLastMsg = {
+              ...lastMsgData,
+              senderId: lastMsgData.sender_id,
+              sentAt: lastMsgData.sent_at,
+              readAt: lastMsgData.read_at,
+              content: lastMsgData.sender_id === userId ? 'You sent a message' : 'Encrypted Message 🔒'
+            };
+          }
+
           return {
             id: c.id,
-            last_message_at: c.last_message_at,
-            otherUser,
-            lastMessage: lastMsg || null,
+            type: c.type,
+            name: c.name,
+            avatarUrl: c.avatar_url,
+            last_message_at: lastMsgData?.sent_at || c.updated_at,
+            otherUser: otherUser as any,
+            lastMessage: decryptedLastMsg,
           };
         })
       );
 
-      // Sort by last message / active timestamp descending
       enriched.sort((a, b) => {
-        const timeA = new Date(a.lastMessage?.created_at || a.last_message_at).getTime();
-        const timeB = new Date(b.lastMessage?.created_at || b.last_message_at).getTime();
+        const timeA = new Date(a.last_message_at).getTime();
+        const timeB = new Date(b.last_message_at).getTime();
         return timeB - timeA;
       });
 
-      setConversations(enriched);
+      await db.transaction('rw', db.local_conversations, async () => {
+        for (const conv of enriched) {
+          await db.local_conversations.put({
+            id: conv.id,
+            type: conv.type || 'direct',
+            name: conv.name || null,
+            avatarUrl: conv.avatarUrl || null,
+            updatedAt: new Date(conv.last_message_at),
+            unreadCount: 0,
+            otherUser: {
+              id: (conv.otherUser as any).id || 'unknown',
+              username: (conv.otherUser as any).username || 'Unknown',
+              displayName: (conv.otherUser as any).display_name || null,
+              avatarUrl: (conv.otherUser as any).avatar_url || null,
+            },
+            lastMessage: conv.lastMessage
+          });
+        }
+      });
     } catch (err) {
       console.error('Error loading conversations:', err);
     }
-  };
+  }
 
-  // Live search users to message
   useEffect(() => {
-    if (!searchQuery.trim() || !session) {
+    if (!searchQuery.trim() || !userId) {
       setSearchResults([]);
       return;
     }
@@ -125,15 +182,22 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       setSearching(true);
       try {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('users')
           .select('id, username, display_name, avatar_url')
-          .neq('id', session.user.id)
           .ilike('username', `%${searchQuery.trim()}%`)
-          .limit(5);
-
-        if (!error && data) {
-          setSearchResults(data);
-        }
+          .neq('id', userId)
+          .limit(10);
+        
+        if (error) throw error;
+        
+        const mappedData = data.map(u => ({
+          userId: u.id,
+          username: u.username,
+          displayName: u.display_name,
+          avatarUrl: u.avatar_url
+        }));
+        
+        setSearchResults(mappedData);
       } catch (err) {
         console.error('Error searching profiles:', err);
       } finally {
@@ -142,22 +206,99 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, session]);
+  }, [searchQuery, userId]);
 
   const startConversation = async (otherUserId: string) => {
-    if (!session) return;
+    if (!userId) return;
     setSearchQuery('');
     setSearchResults([]);
     try {
-      const { data, error } = await supabase.rpc('get_or_create_conversation', {
-        user_a: session.user.id,
-        user_b: otherUserId,
+      // 1. Check if conversation already exists
+      const { data: existingMemberships } = await supabase
+        .from('conversation_members')
+        .select('conversation_id')
+        .eq('user_id', userId);
+
+      const convIds = (existingMemberships || []).map(m => m.conversation_id);
+
+      let conversationId = null;
+      if (convIds.length > 0) {
+        const { data: commonConv } = await supabase
+          .from('conversation_members')
+          .select('conversation_id')
+          .in('conversation_id', convIds)
+          .eq('user_id', otherUserId)
+          .limit(1)
+          .maybeSingle();
+        conversationId = commonConv?.conversation_id;
+      }
+
+      // 2. Create if doesn't exist
+      if (!conversationId) {
+        const { data: newConv, error: convErr } = await supabase
+          .from('conversations')
+          .insert({ type: 'direct' })
+          .select()
+          .single();
+          
+        if (convErr) throw convErr;
+        conversationId = newConv.id;
+        
+        await supabase.from('conversation_members').insert([
+          { conversation_id: conversationId, user_id: userId },
+          { conversation_id: conversationId, user_id: otherUserId }
+        ]);
+      }
+      
+      // 3. Establish Signal Session if needed
+      const store = new WebSignalStore();
+      let existingSession = await store.loadSession(otherUserId + '.1'); // assuming deviceId = 1 for MVP
+
+      if (!existingSession) {
+        // Fetch Keys from Supabase Crypto tables
+        const { data: ik } = await supabase.from('identity_keys').select('*').eq('user_id', otherUserId).single();
+        const { data: spk } = await supabase.from('signed_pre_keys').select('*').eq('user_id', otherUserId).single();
+        const { data: opks } = await supabase.from('one_time_pre_keys').select('*').eq('user_id', otherUserId).eq('used', false).limit(1);
+        
+        if (!ik || !spk) {
+          throw new Error("User has not set up E2EE keys");
+        }
+        
+        const keyBundle = {
+          identityKey: ik.identity_key,
+          registrationId: ik.device_id,
+          signedPreKey: {
+            keyId: spk.key_id,
+            publicKey: spk.public_key,
+            signature: spk.signature
+          },
+          oneTimePreKey: opks && opks.length > 0 ? {
+            keyId: opks[0].key_id,
+            publicKey: opks[0].public_key
+          } : undefined
+        };
+        
+        await establishSessionAsInitiator(store, otherUserId, 1, keyBundle);
+        
+        // Mark OTPK as used
+        if (opks && opks.length > 0) {
+          await supabase.from('one_time_pre_keys').update({ used: true, used_at: new Date().toISOString() }).eq('id', opks[0].id);
+        }
+      }
+
+      // 4. Send initial "Hello 👋" to register the conversation visually
+      const payload = JSON.stringify({ content: 'Hello 👋', media_url: null });
+      const encrypted = await encryptMessage(store, otherUserId, 1, payload);
+
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: userId,
+        ciphertext: encrypted.body,
+        ciphertext_type: encrypted.type,
+        content_type: 'text'
       });
 
-      if (error) throw error;
-      if (data) {
-        router.push(`/messages/${data}`);
-      }
+      router.push(`/messages/${conversationId}`);
     } catch (err) {
       console.error('Error creating conversation:', err);
       alert('Failed to start conversation');
@@ -168,30 +309,26 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="flex w-full h-[calc(100vh-64px)] md:h-screen overflow-hidden bg-[var(--color-guff-surface)]">
-      {/* Sidebar pane: Hidden on mobile if thread is active */}
       <div
         className={`w-full md:w-[360px] border-r border-[#4A3D33] flex flex-col flex-shrink-0 bg-[#1C1816] relative z-10
           ${!isInboxRoute ? 'hidden md:flex' : 'flex'}`}
       >
-        {/* Sidebar Header */}
         <div className="p-4 border-b border-[var(--color-guff-border)]/40 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold text-[var(--color-guff-text)]">Chats</h2>
           </div>
           
-          {/* Search bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[var(--color-guff-text-muted)]" />
             <input
               type="text"
-              placeholder="Search conversations..."
+              placeholder="Search users to chat..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[var(--color-guff-surface-container-low)] border-none rounded-xl pl-10 pr-4 py-2.5 text-xs focus:ring-2 focus:ring-[var(--color-guff-primary)] outline-none text-[var(--color-guff-text)]"
             />
           </div>
 
-          {/* Search Results Dropdown */}
           {searchQuery.trim() !== '' && (
             <div className="absolute left-4 right-4 md:left-4 md:w-[328px] mt-1 bg-[#262220] rounded-xl shadow-xl border border-[#4A3D33] py-2 z-50 max-h-[250px] overflow-y-auto">
               {searching ? (
@@ -203,20 +340,20 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               ) : (
                 searchResults.map((user) => (
                   <button
-                    key={user.id}
-                    onClick={() => startConversation(user.id)}
+                    key={user.userId}
+                    onClick={() => startConversation(user.userId)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#262220] text-left transition-colors cursor-pointer"
                   >
                     <div className="w-8 h-8 squircle bg-brand/20 flex items-center justify-center text-brand font-bold overflow-hidden text-xs">
-                      {user.avatar_url ? (
-                        <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                      {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        user.username[0].toUpperCase()
+                        user.username?.[0]?.toUpperCase()
                       )}
                     </div>
                     <div>
                       <div className="font-semibold text-xs text-[var(--color-guff-text)]">
-                        {user.display_name || user.username}
+                        {user.displayName || user.username}
                       </div>
                       <div className="text-[10px] text-[var(--color-guff-text-muted)]">@{user.username}</div>
                     </div>
@@ -227,7 +364,6 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
           )}
         </div>
 
-        {/* Conversations List */}
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
           {loading ? (
             <div className="flex items-center justify-center h-48">
@@ -244,12 +380,11 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               const active = activeId === c.id;
               const hasUnread =
                 c.lastMessage &&
-                c.lastMessage.sender_id !== session?.user?.id &&
-                !c.lastMessage.read_at;
+                c.lastMessage.senderId !== userId &&
+                !c.lastMessage.readAt;
 
-              // Format date strictly
               const timeDisplay = c.lastMessage
-                ? formatDistanceToNowStrict(new Date(c.lastMessage.created_at), { addSuffix: false })
+                ? formatDistanceToNowStrict(new Date(c.lastMessage.sentAt), { addSuffix: false })
                     .replace(' seconds', 's')
                     .replace(' second', 's')
                     .replace(' minutes', 'm')
@@ -258,7 +393,6 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                     .replace(' hour', 'h')
                     .replace(' days', 'd')
                     .replace(' day', 'd')
-                    .replace(' ago', '')
                 : '';
 
               return (
@@ -270,26 +404,23 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                       ? 'bg-[var(--color-guff-primary-light)]/40 border-[var(--color-guff-primary)]' 
                       : 'hover:bg-[var(--color-guff-surface-container-low)] border-transparent'}`}
                 >
-                  {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     <div className="w-12 h-12 squircle bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
-                      {c.otherUser.avatar_url ? (
-                        <img src={c.otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
+                      {c.otherUser?.avatarUrl ? (
+                        <img src={c.otherUser.avatarUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        c.otherUser.username?.[0]?.toUpperCase() || '?'
+                        c.otherUser?.username?.[0]?.toUpperCase() || '?'
                       )}
                     </div>
-                    {/* Online badge mockup */}
                     <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-spark border-2 border-[#1C1816] rounded-full"></div>
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                       <span className={`text-sm truncate max-w-[150px]
                         ${hasUnread ? 'font-bold text-[var(--color-guff-text)]' : 'font-semibold text-[var(--color-guff-text)]'}`}
                       >
-                        {c.otherUser.display_name || c.otherUser.username}
+                        {c.otherUser?.displayName || c.otherUser?.username || 'Unknown User'}
                       </span>
                       <span className={`text-[10px] flex-shrink-0 ${hasUnread ? 'text-[var(--color-guff-primary)] font-bold' : 'text-[var(--color-guff-text-muted)]'}`}>
                         {timeDisplay}
@@ -300,12 +431,11 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                       ${hasUnread ? 'font-bold text-[var(--color-guff-text)]' : 'text-[var(--color-guff-text-secondary)]'}`}
                     >
                       {c.lastMessage
-                        ? `${c.lastMessage.sender_id === session?.user?.id ? 'You: ' : ''}${c.lastMessage.content}`
+                        ? `${c.lastMessage.senderId === userId ? 'You: ' : ''}${c.lastMessage.content}`
                         : 'No messages yet'}
                     </p>
                   </div>
 
-                  {/* Unread indicator */}
                   {hasUnread && (
                     <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-guff-primary)] flex-shrink-0" />
                   )}
@@ -316,7 +446,6 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         </div>
       </div>
 
-      {/* Main Detail pane */}
       <div className={`flex-1 flex flex-col h-full bg-[var(--color-guff-background)] relative
         ${isInboxRoute ? 'hidden md:flex' : 'flex'}`}
       >

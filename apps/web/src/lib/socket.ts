@@ -19,7 +19,11 @@ class SocketManager {
     const token = getAccessToken();
     if (!token) return;
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4000';
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || (
+      typeof window !== 'undefined'
+        ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:4000`
+        : 'ws://localhost:4000'
+    );
     
     this.isIntentionalClose = false;
 

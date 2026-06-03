@@ -7,6 +7,8 @@ export interface LocalConversation {
   avatarUrl: string | null;
   updatedAt: Date;
   unreadCount: number;
+  otherUser?: any;
+  lastMessage?: any;
 }
 
 export interface LocalMessage {
@@ -14,9 +16,12 @@ export interface LocalMessage {
   conversationId: string;
   senderId: string;
   plaintext: string;
-  contentType: 'text' | 'media';
-  status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  mediaUrl: string | null;
+  contentType: 'text' | 'media' | 'attachment';
+  status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | 'error';
   sentAt: Date;
+  readAt?: Date | null;
+  created_at?: string;
 }
 
 export interface LocalContact {

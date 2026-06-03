@@ -32,6 +32,88 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+import { useSocket } from '../signal/SocketContext';
+import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+
+const IncomingCallOverlay = () => {
+  const socket = useSocket();
+  const navigation = useNavigation<any>();
+  const [incomingCall, setIncomingCall] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    if (!socket) return;
+    
+    const handleOffer = (payload: any) => {
+      setIncomingCall(payload);
+    };
+
+    const handleEnd = () => {
+      setIncomingCall(null);
+    };
+
+    socket.on('webrtc-offer', handleOffer);
+    socket.on('call-end', handleEnd);
+
+    return () => {
+      socket.off('webrtc-offer', handleOffer);
+      socket.off('call-end', handleEnd);
+    };
+  }, [socket]);
+
+  if (!incomingCall) return null;
+
+  return (
+    <Modal transparent visible animationType="fade">
+      <View style={overlayStyles.container}>
+        <View style={overlayStyles.card}>
+          <Text style={overlayStyles.title}>Incoming Video Call</Text>
+          <Text style={overlayStyles.subtitle}>Someone is calling you</Text>
+          
+          <View style={overlayStyles.actions}>
+            <TouchableOpacity 
+              style={[overlayStyles.btn, overlayStyles.reject]} 
+              onPress={() => {
+                socket?.emit('call-end', { targetUserId: incomingCall.senderId });
+                setIncomingCall(null);
+              }}
+            >
+              <Text style={overlayStyles.btnText}>Decline</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[overlayStyles.btn, overlayStyles.accept]} 
+              onPress={() => {
+                const callPayload = incomingCall;
+                setIncomingCall(null);
+                navigation.navigate('Call', { 
+                  id: callPayload.senderId, 
+                  name: 'Caller', 
+                  isIncoming: true, 
+                  offerPayload: callPayload 
+                });
+              }}
+            >
+              <Text style={overlayStyles.btnText}>Accept</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const overlayStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
+  card: { backgroundColor: '#18181b', padding: 24, borderRadius: 16, width: 300, alignItems: 'center' },
+  title: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  subtitle: { color: '#a1a1aa', fontSize: 14, marginTop: 8, marginBottom: 24 },
+  actions: { flexDirection: 'row', gap: 16 },
+  btn: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 },
+  reject: { backgroundColor: '#ef4444' },
+  accept: { backgroundColor: '#22c55e' },
+  btnText: { color: '#fff', fontWeight: '600' }
+});
+
 export default function RootNavigator() {
   return (
     <NavigationContainer>
@@ -105,6 +187,7 @@ export default function RootNavigator() {
           options={{ title: 'Call' }} 
         />
       </Stack.Navigator>
+      <IncomingCallOverlay />
     </NavigationContainer>
   );
 }

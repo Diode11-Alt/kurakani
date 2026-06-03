@@ -1,32 +1,51 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../../../lib/supabase';
+
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, Send, Paperclip, Image as ImageIcon, Loader2, Check, CheckCheck, Phone, Video, Mic, Trash2, ShieldCheck, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Phone, Video, MoreVertical, Send, Paperclip, Mic, Shield, Check, CheckCheck, FileIcon, Square, Smile, Loader2, Trash2, ShieldCheck, Users, Link as LinkIcon, Crown } from 'lucide-react';
+import Link from 'next/link';
+import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
+import { db } from '@/lib/db';
+import { useLiveQuery } from 'dexie-react-hooks';
+import imageCompression from 'browser-image-compression';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
+
+import { WebSignalStore } from '../../../../lib/crypto/WebSignalStore';
+import { establishSessionAsInitiator, encryptMessage, decryptMessage } from '@signal/crypto';
+import { supabase } from '@/lib/supabase';
 
 export default function ChatThreadPage() {
   const params = useParams();
   const conversationId = params.id as string;
   const router = useRouter();
 
-  const [session, setSession] = useState<any>(null);
+  const { session: authSession, userId: currentUserId, user: authUser } = useAuthStore();
+
   const [otherUser, setOtherUser] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const liveMessages = useLiveQuery(
+    () => db.local_messages.where('conversationId').equals(conversationId).sortBy('sentAt'),
+    [conversationId]
+  );
+  const messages = liveMessages || [];
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [conversation, setConversation] = useState<any>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<any>(null);
-
-  // Broadcaster channels
-  const broadcastChannelRef = useRef<any>(null);
+  const signalStoreRef = useRef<WebSignalStore | null>(null);
 
   // Voice note recorder state & refs
   const [isRecording, setIsRecording] = useState(false);
@@ -35,11 +54,11 @@ export default function ChatThreadPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
 
+
+
   useEffect(() => {
     return () => {
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-      }
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     };
   }, []);
 
@@ -51,9 +70,7 @@ export default function ChatThreadPage() {
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
 
       mediaRecorder.onstop = async () => {
@@ -86,9 +103,7 @@ export default function ChatThreadPage() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-      }
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     }
   };
 
@@ -98,41 +113,27 @@ export default function ChatThreadPage() {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-      }
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     }
+  };
+
+  const uploadToS3 = async (file: File | Blob, contentType: string): Promise<string> => {
+    const ext = contentType.split('/')[1] || 'bin';
+    const s3Key = `${currentUserId}-${Date.now()}.${ext}`;
+    
+    const { error } = await supabase.storage.from('attachments').upload(s3Key, file, { contentType });
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage.from('attachments').getPublicUrl(s3Key);
+    return publicUrl;
   };
 
   const uploadVoiceNote = async (blob: Blob, ext: string = 'webm') => {
     setUploading(true);
     try {
-      const filename = `${session.user.id}-${Date.now()}.${ext}`;
-      const file = new File([blob], filename, { type: blob.type });
-
-      const { error: uploadError } = await supabase.storage
-        .from('chat-media')
-        .upload(filename, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-media')
-        .getPublicUrl(filename);
-
-      const { error: msgError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: session.user.id,
-          content: 'Voice Note 🎤',
-          media_url: publicUrl,
-        });
-
-      if (msgError) throw msgError;
+      const mimeType = blob.type || 'audio/webm';
+      const downloadUrl = await uploadToS3(blob, mimeType);
+      await handleSendMessage({ preventDefault: () => {} } as any, downloadUrl, 'Voice Note 🎤');
     } catch (err) {
       console.error('Error uploading voice note:', err);
       alert('Failed to send voice note');
@@ -149,98 +150,138 @@ export default function ChatThreadPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) return;
-      setSession(currentSession);
-
-      // Load conversation details
-      const { data: conv, error: convError } = await supabase
-        .from('conversations')
-        .select(`
-          participant_1(id, username, display_name, avatar_url),
-          participant_2(id, username, display_name, avatar_url)
-        `)
-        .eq('id', conversationId)
-        .single();
-
-      if (convError || !conv) {
-        console.error('Error loading conversation:', convError);
-        router.push('/messages');
+      if (!authSession || !currentUserId) {
+        router.push('/login');
         return;
       }
 
-      // Identify other user
-      const other = (conv as any).participant_1.id === currentSession.user.id ? (conv as any).participant_2 : (conv as any).participant_1;
-      setOtherUser(other);
+      // Load conversation details from our backend
+      try {
+        const { data: convData, error: convErr } = await supabase
+          .from('conversations')
+          .select(`
+            *,
+            conversation_members!inner(
+              user_id,
+              users (
+                id, username, display_name, avatar_url
+              )
+            )
+          `)
+          .eq('id', conversationId)
+          .single();
+        
+        if (convErr || !convData) {
+          router.push('/messages');
+          return;
+        }
 
-      // Load messages
-      await loadMessages(currentSession.user.id);
-      setLoading(false);
+        const members = convData.conversation_members.map((m: any) => m.users);
+        const conv = { ...convData, members };
 
-      // Mark existing messages as read
-      await markAsRead(currentSession.user.id);
+        setConversation(conv);
+        const other = conv.members.find((m: any) => m.id !== currentUserId);
+        setOtherUser(other);
+        
+        // Initialize Signal Store
+        const store = new WebSignalStore();
+        signalStoreRef.current = store;
+
+        await loadMessages(store, other.id);
+
+        // Mark conversation as read
+        try {
+          // Find unread messages from this sender in this conversation and mark them read
+          await supabase
+            .from('messages')
+            .update({ read_at: new Date().toISOString() })
+            .eq('conversation_id', conversationId)
+            .eq('sender_id', other.id)
+            .is('read_at', null);
+        } catch (e) {
+          console.error('Failed to mark conversation read', e);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to load conversation details', err);
+        setLoading(false);
+      }
     };
 
     init();
+  }, [conversationId, authSession, currentUserId, router]);
 
-    // Subscribe to new messages & updates
-    const messageSub = supabase
-      .channel(`chat-${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`
-        },
-        async (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newMsg = payload.new;
-            setMessages(prev => {
-              // Prevent duplicate insertions
-              if (prev.some(m => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
+  useEffect(() => {
+    if (!currentUserId || !conversationId) return;
+
+    // Supabase Realtime channel for THIS conversation's messages
+    const channel = supabase
+      .channel(`room:${conversationId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, async (payload) => {
+        const msg = payload.new;
+        if (msg.sender_id === currentUserId) return; // Ignore own messages broadcasted back
+        
+        if (signalStoreRef.current) {
+          try {
+            const decryptedJson = await decryptMessage(
+              signalStoreRef.current,
+              msg.sender_id,
+              1, 
+              msg.ciphertext,
+              msg.ciphertext_type as 1 | 3
+            );
+            const parsed = JSON.parse(decryptedJson);
+
+            await db.local_messages.put({
+              id: msg.id,
+              conversationId: msg.conversation_id,
+              senderId: msg.sender_id,
+              plaintext: parsed.content,
+              mediaUrl: parsed.media_url || null,
+              contentType: parsed.media_url ? 'attachment' : 'text',
+              status: 'sent',
+              sentAt: new Date(msg.sent_at),
             });
-
-            // Mark as read if user is active in this window
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
-            if (currentSession && newMsg.sender_id !== currentSession.user.id) {
-              await markAsRead(currentSession.user.id);
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedMsg = payload.new;
-            setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
+          } catch (err) {
+            console.error("Decryption failed for incoming message:", err);
+            await db.local_messages.put({
+              id: msg.id,
+              conversationId: msg.conversation_id,
+              senderId: msg.sender_id,
+              plaintext: '[Encrypted Message - Could not decrypt]',
+              mediaUrl: null,
+              contentType: 'text',
+              status: 'sent',
+              sentAt: new Date(msg.sent_at),
+            });
           }
-        }
-      )
-      .subscribe();
 
-    // Setup broadcast channel for typing indicators
-    const broadcastChan = supabase.channel(`typing-${conversationId}`);
-    broadcastChannelRef.current = broadcastChan;
-    
-    broadcastChan
-      .on('broadcast', { event: 'typing' }, ({ payload }) => {
-        if (payload.userId !== session?.user?.id) {
-          setTypingUser(payload.username);
-          setIsTyping(true);
-          
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(() => {
-            setIsTyping(false);
-            setTypingUser(null);
-          }, 3000);
+          // Mark as read in supabase
+          supabase.from('messages').update({ read_at: new Date().toISOString() }).eq('id', msg.id).then();
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, async (payload) => {
+        const msg = payload.new;
+        if (msg.read_at) {
+          try {
+            await db.local_messages.update(msg.id, { readAt: new Date(msg.read_at) });
+          } catch (e) {}
         }
       })
       .subscribe();
 
+    // Typing indicators via broadcast on the same channel
+    channel.on('broadcast', { event: 'typing' }, ({ payload }) => {
+      if (payload.userId !== currentUserId) {
+        setIsTyping(payload.isTyping);
+      }
+    });
+
     return () => {
-      supabase.removeChannel(messageSub);
-      if (broadcastChan) supabase.removeChannel(broadcastChan);
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, currentUserId]);
 
   // Scroll to bottom whenever messages list changes
   useEffect(() => {
@@ -249,100 +290,299 @@ export default function ChatThreadPage() {
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
       }
     };
-    
-    // Use timeout to ensure DOM has updated (especially for media)
     const timeoutId = setTimeout(scrollToBottom, 150);
     return () => clearTimeout(timeoutId);
   }, [messages, isTyping]);
 
-  async function loadMessages(userId: string) {
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+
+  async function loadMessages(store: WebSignalStore, recipientId: string) {
     try {
-      const { data, error } = await supabase
+      const { data: messagesData, error } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+        .order('sent_at', { ascending: false })
+        .limit(20);
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      const mData = messagesData.reverse();
+      
+      const decryptedMessages = await Promise.all(mData.map(async (m: any) => {
+        let payload = { content: '[Encrypted Message]', media_url: null };
+        try {
+          if (m.sender_id === currentUserId) {
+            payload = { content: 'Sent Message', media_url: null };
+          } else {
+            const decryptedJson = await decryptMessage(
+              store,
+              m.sender_id,
+              1, 
+              m.ciphertext,
+              m.ciphertext_type
+            );
+            payload = JSON.parse(decryptedJson);
+          }
+        } catch (err) {
+          console.error("Failed to decrypt past message", err);
+        }
+
+        return {
+          id: m.id,
+          conversationId: m.conversation_id,
+          senderId: m.sender_id,
+          plaintext: payload.content,
+          mediaUrl: payload.media_url || null,
+          contentType: (payload.media_url ? 'attachment' : 'text') as 'text' | 'media' | 'attachment',
+          status: 'sent' as const,
+          sentAt: new Date(m.sent_at),
+          readAt: m.read_at ? new Date(m.read_at) : null
+        };
+      }));
+
+      await db.transaction('rw', db.local_messages, async () => {
+        for (const msg of decryptedMessages) {
+          await db.local_messages.put(msg);
+        }
+      });
+      
+      // Simple pagination logic using sent_at
+      setHasMore(mData.length === 20);
+      if (mData.length > 0) {
+        setNextCursor(mData[0].sent_at); // oldest message we loaded
+      }
     } catch (err) {
       console.error('Error fetching messages:', err);
     }
-  };
+  }
 
-  async function markAsRead(userId: string) {
+  const loadMoreMessages = async () => {
+    if (!hasMore || loadingMore || !nextCursor) return;
+    
+    setLoadingMore(true);
     try {
-      await supabase
+      const { data: messagesData, error } = await supabase
         .from('messages')
-        .update({ read_at: new Date().toISOString() })
+        .select('*')
         .eq('conversation_id', conversationId)
-        .neq('sender_id', userId)
-        .is('read_at', null);
+        .lt('sent_at', nextCursor)
+        .order('sent_at', { ascending: false })
+        .limit(20);
+        
+      if (error) throw error;
+      
+      const mData = messagesData.reverse();
+
+      const decryptedMessages = await Promise.all(mData.map(async (m: any) => {
+        let payload = { content: '[Encrypted Message]', media_url: null };
+        try {
+          if (m.sender_id === currentUserId) {
+            payload = { content: 'Sent Message', media_url: null };
+          } else if (signalStoreRef.current) {
+            const decryptedJson = await decryptMessage(
+              signalStoreRef.current,
+              m.sender_id,
+              1, 
+              m.ciphertext,
+              m.ciphertext_type
+            );
+            payload = JSON.parse(decryptedJson);
+          }
+        } catch (err) {
+          console.error("Failed to decrypt past message in loadMore", err);
+        }
+
+        return {
+          id: m.id,
+          conversationId: m.conversation_id,
+          senderId: m.sender_id,
+          plaintext: payload.content,
+          mediaUrl: payload.media_url || null,
+          contentType: (payload.media_url ? 'attachment' : 'text') as 'text' | 'media' | 'attachment',
+          status: 'sent' as const,
+          sentAt: new Date(m.sent_at),
+          readAt: m.read_at ? new Date(m.read_at) : null
+        };
+      }));
+
+      await db.transaction('rw', db.local_messages, async () => {
+        for (const msg of decryptedMessages) {
+          await db.local_messages.put(msg);
+        }
+      });
+      
+      setHasMore(mData.length === 20);
+      if (mData.length > 0) {
+        setNextCursor(mData[0].sent_at);
+      }
     } catch (err) {
-      console.error('Error marking as read:', err);
+      console.error('Error loading more messages:', err);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
-  const sendTypingEvent = () => {
-    if (!broadcastChannelRef.current || !session) return;
-    broadcastChannelRef.current.send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: {
-        userId: session.user.id,
-        username: session.user.user_metadata?.username || 'Someone'
-      }
-    });
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    if (target.scrollTop === 0) {
+      loadMoreMessages();
+    }
   };
+
+  const lastTypingTimeRef = useRef<number>(0);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputText(e.target.value);
-    sendTypingEvent();
-  };
-
-  const handleSendMessage = async (e: React.FormEvent, mediaUrl?: string) => {
-    e.preventDefault();
-    if (!inputText.trim() && !mediaUrl) return;
-
-    const messageContent = inputText.trim();
-    setInputText('');
-
-    try {
-      const { error } = await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        sender_id: session.user.id,
-        content: messageContent,
-        media_url: mediaUrl || null
-      });
-
-      if (error) throw error;
-    } catch (err) {
-      console.error('Error sending message:', err);
-      alert('Failed to send message');
+    
+    if (otherUser?.id) {
+      const now = Date.now();
+      if (now - lastTypingTimeRef.current > 2000) {
+        supabase.channel(`room:${conversationId}`).send({ type: 'broadcast', event: 'typing', payload: { userId: currentUserId, isTyping: true } });
+        lastTypingTimeRef.current = now;
+        
+        // Auto-stop typing after 3 seconds of inactivity
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+          supabase.channel(`room:${conversationId}`).send({ type: 'broadcast', event: 'typing', payload: { userId: currentUserId, isTyping: false } });
+          lastTypingTimeRef.current = 0;
+        }, 3000);
+      }
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !session) return;
+  const handleSendMessage = async (e: React.FormEvent, mediaUrl?: string, overrideContent?: string) => {
+    e.preventDefault();
+    const content = overrideContent || inputText.trim();
+    if (!content && !mediaUrl) return;
+
+    setInputText('');
+
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg = {
+      id: tempId,
+      conversationId: conversationId,
+      senderId: currentUserId as string,
+      plaintext: content,
+      mediaUrl: mediaUrl || null,
+      contentType: (mediaUrl ? 'attachment' : 'text') as 'text' | 'media' | 'attachment',
+      status: 'sending' as const,
+      sentAt: new Date(),
+    };
+    
+    await db.local_messages.add(optimisticMsg);
+
+    try {
+      if (!signalStoreRef.current) throw new Error("Signal store not initialized");
+      
+      const payloadString = JSON.stringify({ content, media_url: mediaUrl || null });
+      
+      const sessionString = otherUser.id + '.1'; 
+      const existingSession = await signalStoreRef.current.loadSession(sessionString);
+      
+      if (!existingSession) {
+        const { data: ik } = await supabase.from('identity_keys').select('*').eq('user_id', otherUser.id).single();
+        const { data: spk } = await supabase.from('signed_pre_keys').select('*').eq('user_id', otherUser.id).single();
+        const { data: opks } = await supabase.from('one_time_pre_keys').select('*').eq('user_id', otherUser.id).eq('used', false).limit(1);
+        
+        if (!ik || !spk) throw new Error("Could not fetch recipient keys");
+        const keyBundle = {
+          identityKey: ik.identity_key,
+          registrationId: ik.device_id,
+          signedPreKey: {
+            keyId: spk.key_id,
+            publicKey: spk.public_key,
+            signature: spk.signature
+          },
+          oneTimePreKey: opks && opks.length > 0 ? {
+            keyId: opks[0].key_id,
+            publicKey: opks[0].public_key
+          } : undefined
+        };
+        
+        await establishSessionAsInitiator(signalStoreRef.current, otherUser.id, 1, keyBundle);
+        
+        // Mark OTPK as used
+        if (opks && opks.length > 0) {
+          await supabase.from('one_time_pre_keys').update({ used: true, used_at: new Date().toISOString() }).eq('id', opks[0].id);
+        }
+      }
+
+      const encrypted = await encryptMessage(signalStoreRef.current, otherUser.id, 1, payloadString);
+
+      const { data, error } = await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: currentUserId,
+        ciphertext: encrypted.body,
+        ciphertext_type: encrypted.type,
+        content_type: mediaUrl ? 'attachment' : 'text'
+      }).select().single();
+
+      if (error) throw new Error(error.message);
+      
+      await db.local_messages.update(tempId, { id: data.id, status: 'sent', sentAt: new Date(data.sent_at) });
+    } catch (err) {
+      console.error('Error sending message:', err);
+      await db.local_messages.update(tempId, { status: 'error' });
+    }
+  };
+
+  const handleGenerateInvite = async () => {
+    try {
+      // In a real app this would generate a signed JWT or insert a short-lived token to DB.
+      toast.success('Group invites not supported in MVP Supabase migration yet');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to generate invite link');
+    }
+  };
+
+  const handleTransferAdmin = async (newAdminId: string) => {
+    try {
+      // Just update the conversation_members role directly
+      const { error } = await supabase.from('conversation_members')
+        .update({ role: 'admin' })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', newAdminId);
+        
+      if (error) throw error;
+      
+      // Demote self
+      await supabase.from('conversation_members')
+        .update({ role: 'member' })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', currentUserId);
+
+      toast.success('Admin role transferred');
+      setShowGroupSettings(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to transfer admin');
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
+    const file = 'target' in e ? e.target.files?.[0] : e;
+    if (!file || !authSession) return;
 
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
-      const path = `${conversationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('chat-media')
-        .upload(path, file);
+      let uploadFile: File | Blob = file;
+      if (file.type.startsWith('image/')) {
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        };
+        try {
+          uploadFile = await imageCompression(file, options);
+        } catch (error) {
+          console.error('Compression error', error);
+        }
+      }
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-media')
-        .getPublicUrl(path);
-
-      // Send message with the media attachment
-      await handleSendMessage({ preventDefault: () => {} } as any, publicUrl);
+      const downloadUrl = await uploadToS3(uploadFile, file.type || 'application/octet-stream');
+      await handleSendMessage({ preventDefault: () => {} } as any, downloadUrl, 'Attachment 📎');
     } catch (err) {
       console.error('File upload error:', err);
       alert('Failed to upload file');
@@ -375,13 +615,13 @@ export default function ChatThreadPage() {
             onClick={() => router.push(`/profile/${otherUser?.id}`)}
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
           >
-            {/* Avatar with Squircle wrapper */}
+            {/* Avatar */}
             <div className="relative">
               <div className="w-10 h-10 squircle bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden ember-glow-sm">
-                {otherUser?.avatar_url ? (
-                  <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
+                {otherUser?.avatarUrl ? (
+                  <img src={otherUser.avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  otherUser?.username?.[0]?.toUpperCase() || '?'
+                  otherUser?.displayName?.[0]?.toUpperCase() || otherUser?.username?.[0]?.toUpperCase() || '?'
                 )}
               </div>
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-spark border-2 border-[#1C1816] rounded-full"></span>
@@ -390,7 +630,7 @@ export default function ChatThreadPage() {
             {/* User Info */}
             <div className="flex flex-col select-none">
               <div className="font-bold text-sm text-[var(--color-guff-text)] leading-tight">
-                {otherUser?.display_name || otherUser?.username}
+                {otherUser?.displayName || otherUser?.username}
               </div>
               <div className="text-[10px] font-bold text-[var(--color-guff-text-muted)] mt-0.5 flex items-center gap-1">
                 {isTyping ? (
@@ -444,15 +684,17 @@ export default function ChatThreadPage() {
                   >
                     View Profile
                   </button>
-                  <button 
-                    onClick={() => {
-                      setShowDropdown(false);
-                      setMessages([]); // Client-side clear for demo
-                    }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-blaze hover:bg-blaze/10 transition-colors"
-                  >
-                    Clear Chat
-                  </button>
+                  {conversation?.type === 'group' && (
+                    <button 
+                      onClick={() => {
+                        setShowDropdown(false);
+                        setShowGroupSettings(true);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-content hover:bg-[#262220] transition-colors"
+                    >
+                      Group Settings
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -461,7 +703,12 @@ export default function ChatThreadPage() {
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--color-guff-surface)]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--color-guff-surface)]" onScroll={handleScroll}>
+        {loadingMore && (
+          <div className="flex justify-center py-2">
+            <Loader2 className="w-5 h-5 animate-spin text-brand" />
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="text-center py-20 select-none">
             <span className="text-4xl animate-bounce inline-block">👋</span>
@@ -470,9 +717,9 @@ export default function ChatThreadPage() {
           </div>
         ) : (
           messages.map((m) => {
-            const isSelf = m.sender_id === session?.user?.id;
-            const timeFormatted = m.created_at ? format(new Date(m.created_at), 'h:mm a') : '';
-            const isRead = !!m.read_at;
+            const isSelf = m.senderId === currentUserId;
+            const timeFormatted = m.sentAt ? format(new Date(m.sentAt), 'h:mm a') : '';
+            const isRead = !!m.readAt;
 
             return (
               <div key={m.id} className={`flex flex-col ${isSelf ? 'items-end' : 'items-start'}`}>
@@ -482,20 +729,19 @@ export default function ChatThreadPage() {
                     : 'bg-[#262220] text-content rounded-[20px] rounded-tl-[4px] border border-[#4A3D33]'}`}
                 >
                   {/* Media attachment */}
-                  {m.media_url && (
+                  {m.mediaUrl && (
                     <div className="mb-2 max-w-xs rounded-xl overflow-hidden">
-                      {m.content === 'Voice Note 🎤' || m.media_url.match(/\.(mp3|wav|ogg|webm|m4a|aac|mp4)(\?|$)/i) ? (
+                      {m.plaintext === 'Voice Note 🎤' || m.mediaUrl.match(/\.(mp3|wav|ogg|webm|m4a|aac|mp4)(\?|$)/i) ? (
                         <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-black/5">
-                          <audio src={m.media_url} controls className="w-full h-10 min-w-[200px] max-w-[240px] focus:outline-none rounded-lg" />
+                          <audio src={m.mediaUrl} controls className="w-full h-10 min-w-[200px] max-w-[240px] focus:outline-none rounded-lg" />
                         </div>
                       ) : (
-                        <img src={m.media_url} alt="" className="max-h-48 object-cover w-full rounded-xl border border-black/5" />
+                        <img src={m.mediaUrl} alt="" className="max-h-48 object-cover w-full rounded-xl border border-black/5" />
                       )}
                     </div>
                   )}
 
-                  {/* Text content (skip if it's just the Voice Note placeholder text) */}
-                  {m.content && m.content !== 'Voice Note 🎤' && <p className="font-sans">{m.content}</p>}
+                  {m.plaintext && m.plaintext !== 'Voice Note 🎤' && m.plaintext !== 'Attachment 📎' && <p className="font-sans">{m.plaintext}</p>}
                 </div>
 
                 {/* Message Meta Info */}
@@ -503,7 +749,11 @@ export default function ChatThreadPage() {
                   <span>{timeFormatted}</span>
                   {isSelf && (
                     <span>
-                      {isRead ? (
+                      {m.status === 'sending' ? (
+                        <Loader2 className="w-3 h-3 text-content-muted animate-spin" />
+                      ) : m.status === 'error' ? (
+                        <span className="text-red-500">Failed</span>
+                      ) : isRead ? (
                         <CheckCheck className="w-3.5 h-3.5 text-[var(--color-guff-primary)] stroke-[2.5]" />
                       ) : (
                         <Check className="w-3.5 h-3.5 text-content-muted stroke-[2.5]" />
@@ -515,26 +765,6 @@ export default function ChatThreadPage() {
             );
           })
         )}
-
-        {/* Live typing indicator bubble */}
-        {isTyping && (
-          <div className="flex items-end gap-2 mt-2 select-none">
-            <div className="w-8 h-8 squircle bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-[10px] font-bold text-white overflow-hidden flex-shrink-0">
-              {otherUser?.username?.[0]?.toUpperCase()}
-            </div>
-            <div className="bg-[#262220] rounded-[20px] rounded-tl-[4px] px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-[#4A3D33]">
-              <span className="flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-[var(--color-guff-text-secondary)]">{typingUser} is typing</span>
-                <span className="flex gap-0.5 items-center justify-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand animate-bounce" style={{ animationDelay: '300ms' }} />
-                </span>
-              </span>
-            </div>
-          </div>
-        )}
-
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
@@ -577,29 +807,50 @@ export default function ChatThreadPage() {
             <input
               ref={fileRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*,audio/*"
               onChange={handleFileUpload}
               className="hidden"
               disabled={uploading}
             />
 
             <div className="flex-grow bg-[#171311] rounded-full px-4 py-2 flex items-center gap-2 border border-[#4A3D33] focus-within:border-brand/40 transition-all">
-              <button 
-                type="button"
-                className="p-1 rounded-full text-content-muted hover:bg-[#262220] transition-colors cursor-pointer"
-              >
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-3.5-9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
-                </svg>
-              </button>
               <input
                 type="text"
                 value={inputText}
                 onChange={handleInputChange}
+                onPaste={(e) => {
+                  if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+                    e.preventDefault();
+                    handleFileUpload(e.clipboardData.files[0]);
+                  }
+                }}
                 placeholder="Secure message..."
                 className="flex-grow bg-transparent border-none focus:ring-0 text-xs py-1.5 outline-none text-[var(--color-guff-text)]"
                 disabled={uploading}
               />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="p-1 rounded-full text-content-muted hover:text-brand transition-colors focus:outline-none"
+                >
+                  <Smile className="w-5 h-5" />
+                </button>
+                {showEmojiPicker && (
+                  <div className="absolute bottom-10 right-0 z-50 shadow-xl rounded-lg">
+                    <Picker 
+                      data={data} 
+                      onEmojiSelect={(emoji: any) => {
+                        setInputText(prev => prev + emoji.native);
+                        setShowEmojiPicker(false);
+                      }}
+                      theme="dark"
+                      previewPosition="none"
+                      skinTonePosition="none"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {!inputText.trim() && !uploading ? (
@@ -622,6 +873,91 @@ export default function ChatThreadPage() {
           </form>
         )}
       </div>
+
+      {/* Group Settings Modal */}
+      {showGroupSettings && conversation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-[#1C1816] rounded-2xl shadow-2xl border border-[#4A3D33] overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-[#4A3D33] flex justify-between items-center bg-[#262220]">
+              <h2 className="text-lg font-bold text-[var(--color-guff-text)]">Group Settings</h2>
+              <button onClick={() => setShowGroupSettings(false)} className="text-content-muted hover:text-white transition-colors">
+                <Trash2 className="w-5 h-5 opacity-0" /> {/* Spacer */}
+                <span className="text-sm font-medium">Close</span>
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto space-y-6">
+              {/* Invite Link Section */}
+              {conversation.members?.find((m: any) => m.id === currentUserId)?.role === 'admin' && (
+                <div className="space-y-3 bg-[#262220] p-4 rounded-xl border border-[#4A3D33]">
+                  <h3 className="text-sm font-semibold text-[var(--color-guff-text)] flex items-center gap-2">
+                    <LinkIcon className="w-4 h-4 text-[var(--color-guff-primary)]" />
+                    Invite Link
+                  </h3>
+                  {inviteToken ? (
+                    <div className="bg-[#171311] p-3 rounded-lg border border-brand/30 flex justify-between items-center break-all">
+                      <span className="text-xs text-brand font-mono">{`${window.location.origin}/join/${inviteToken}`}</span>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/join/${inviteToken}`);
+                          toast.success('Copied!');
+                        }}
+                        className="ml-2 text-xs bg-brand/20 text-brand px-2 py-1 rounded hover:bg-brand/30"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleGenerateInvite}
+                      className="w-full py-2 bg-[var(--color-guff-primary)] hover:bg-[var(--color-guff-primary-hover)] text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Generate Invite Link
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Members List */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-[var(--color-guff-text)] flex items-center gap-2">
+                  <Users className="w-4 h-4 text-content-secondary" />
+                  Members ({conversation.members?.length})
+                </h3>
+                <div className="space-y-2">
+                  {conversation.members?.map((member: any) => (
+                    <div key={member.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-[#262220] transition-colors border border-transparent hover:border-[#4A3D33]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                          {member.username?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-[var(--color-guff-text)]">
+                            {member.username} {member.id === currentUserId && '(You)'}
+                          </span>
+                          <span className="text-[10px] text-content-muted capitalize flex items-center gap-1">
+                            {member.role}
+                            {member.role === 'admin' && <Crown className="w-3 h-3 text-yellow-500" />}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {conversation.members?.find((m: any) => m.id === currentUserId)?.role === 'admin' && member.id !== currentUserId && (
+                        <button 
+                          onClick={() => handleTransferAdmin(member.id)}
+                          className="text-[10px] bg-[#171311] text-content-secondary px-2 py-1 rounded border border-[#4A3D33] hover:text-white hover:border-white transition-colors"
+                        >
+                          Make Admin
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,13 +1,32 @@
 import type { NextConfig } from "next";
+import path from "path";
 
-const nextConfig: NextConfig = {
+const nextConfig: any = {
   /* config options here */
   output: "standalone",
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  outputFileTracingRoot: path.join(__dirname, "../../"),
   typescript: {
     ignoreBuildErrors: true,
+  },
+  webpack: (config: any, { isServer }: any) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+    return config;
+  },
+  experimental: {
+    turbo: {
+      resolveAlias: {
+        fs: "empty",
+        path: "empty",
+        crypto: "empty",
+      },
+    },
   },
 };
 

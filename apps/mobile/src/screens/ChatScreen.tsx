@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, Linking, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, Linking, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
-import { Send, Mic, ArrowLeft, MoreVertical, Plus, Timer } from 'lucide-react-native';
+import { Send, Mic, ArrowLeft, MoreVertical, Plus, Timer, Check, CheckCheck } from 'lucide-react-native';
 import { getMessages, saveMessage, CryptoStore } from '../signal/SignalStore';
 import { useSocket } from '../signal/SocketContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { encryptMessage, decryptMessage } from '@signal/crypto';
+import { decryptMessage, encryptMessage } from '@signal/crypto';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { base64ToBuffer } from '../signal/utils';
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
@@ -25,6 +27,18 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
+    const markConversationRead = async () => {
+      try {
+        const token = await AsyncStorage.getItem('signal_token');
+        await fetch(`http://localhost:4000/api/messages/conversations/${activeContact}/read`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (e) {
+        console.error('Failed to mark conversation read', e);
+      }
+    };
+    markConversationRead();
     loadMessages();
   }, [activeContact]);
 
@@ -68,28 +82,187 @@ export default function ChatScreen() {
           attachment,
           sent: false,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          status: 'sent'
         };
 
         await saveMessage(newMsg);
 
         if (activeContact === payload.fromUserId) {
           setMessages(prev => [...prev, newMsg]);
+          
+          // Mark as read
+          try {
+            const token = await AsyncStorage.getItem('signal_token');
+            await fetch(`http://localhost:4000/api/messages/${newMsg.id}/read`, {
+              method: 'PUT',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+          } catch (e) {
+            console.error('Failed to mark read', e);
+          }
         }
       } catch (err) {
         console.error('Decryption failed on mobile:', err);
       }
     };
 
+    const handleRead = (data: any) => {
+      if (data.conversationId === activeContact) {
+        setMessages(prev => prev.map(m => m.id === data.messageId ? { ...m, readAt: data.readAt } : m));
+      }
+    };
+
+    const handleTypingStart = (data: any) => {
+      if (data.conversationId === activeContact && data.fromUserId !== activeContact) {
+        // We could add isTyping state here
+      }
+    };
+
     socket.on('message', handleMessage);
+    socket.on('message:read', handleRead);
+    socket.on('typing:start', handleTypingStart);
     return () => {
       socket.off('message', handleMessage);
+      socket.off('message:read', handleRead);
+      socket.off('typing:start', handleTypingStart);
     };
   }, [socket, activeContact]);
+
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
   const loadMessages = async () => {
     const msgs = await getMessages(activeContact);
     setMessages(msgs.sort((a: any, b: any) => a.timestamp - b.timestamp));
+    
+    // Attempt initial fetch from API
+    try {
+      const token = await AsyncStorage.getItem('signal_token');
+      const res = await fetch(`http://localhost:4000/api/messages/conversations/${activeContact}/messages`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.nextCursor) setNextCursor(data.nextCursor);
+    } catch (e) {
+      console.log('Initial fetch failed', e);
+    }
+  };
+
+  const loadMoreMessages = async () => {
+    if (loadingMore || !nextCursor) return;
+    setLoadingMore(true);
+    try {
+      const token = await AsyncStorage.getItem('signal_token');
+      const res = await fetch(`http://localhost:4000/api/messages/conversations/${activeContact}/messages?before=${nextCursor}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      
+      const secretBase64 = await CryptoStore.getSharedSecret(activeContact);
+      const sharedSecret = secretBase64 ? new Uint8Array(base64ToBuffer(secretBase64)) : null;
+
+      const newMsgs = [];
+      for (const m of data.messages) {
+        let plaintext = m.content || '[Encrypted]';
+        try {
+          if (sharedSecret && m.senderId === activeContact) {
+            plaintext = decryptMessage(sharedSecret, m.ciphertext);
+          }
+        } catch(e) {}
+        
+        let messageObj: any = { type: 'text', content: plaintext };
+        try { messageObj = JSON.parse(plaintext); } catch (e) { }
+        
+        const newMsg = {
+          id: m.id,
+          conversationId: activeContact,
+          text: messageObj.content || plaintext,
+          attachment: messageObj.linkPreview ? { type: 'link', data: messageObj.linkPreview } : null,
+          sent: m.senderId !== activeContact,
+          time: new Date(m.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: new Date(m.sentAt).getTime(),
+          status: 'sent'
+        };
+        await saveMessage(newMsg);
+        newMsgs.push(newMsg);
+      }
+      
+      if (newMsgs.length > 0) {
+        setMessages(prev => [...newMsgs, ...prev].sort((a: any, b: any) => a.timestamp - b.timestamp));
+      }
+      setNextCursor(data.nextCursor);
+    } catch (err) {
+      console.error('Error loading more messages:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingTimeRef = useRef<number>(0);
+
+  const handleInputChange = (text: string) => {
+    setInput(text);
+    
+    if (socket && activeContact) {
+      const now = Date.now();
+      if (now - lastTypingTimeRef.current > 2000) {
+        socket.emit('typing:start', { targetUserId: activeContact, conversationId: activeContact });
+        lastTypingTimeRef.current = now;
+        
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+          socket.emit('typing:stop', { targetUserId: activeContact, conversationId: activeContact });
+          lastTypingTimeRef.current = 0;
+        }, 3000);
+      }
+    }
+  };
+
+  const handleImagePick = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      alert("You've refused to allow this app to access your photos!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7, // Compress image
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      let uri = result.assets[0].uri;
+      
+      try {
+        const compressed = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: 1080 } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        uri = compressed.uri;
+      } catch (error) {
+        console.error('Image compression failed', error);
+      }
+
+      // For MVP, just show a toast or handle base64 if small enough.
+      // We will simulate sending an attachment message here
+      const newMsg = {
+        id: Date.now().toString(),
+        conversationId: activeContact,
+        text: 'Photo',
+        attachment: { type: 'link', data: { url: uri, title: 'Photo', image: uri } },
+        sent: true,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: Date.now(),
+        status: 'sent'
+      };
+      setMessages(prev => [...prev, newMsg]);
+      await saveMessage(newMsg);
+    }
   };
 
   const handleSend = async () => {
@@ -121,7 +294,8 @@ export default function ChatScreen() {
       attachment: linkPreview ? { type: 'link', data: linkPreview } : null,
       sent: true,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      status: 'sending'
     };
 
     setMessages(prev => [...prev, newMsg]);
@@ -141,8 +315,15 @@ export default function ChatScreen() {
         ciphertextType: 3,
         expiresIn: expiresIn > 0 ? expiresIn : undefined
       }));
+      
+      // Update status to sent
+      setMessages(prev => prev.map(m => m.id === newMsg.id ? { ...m, status: 'sent' } : m));
+      await saveMessage({ ...newMsg, status: 'sent' });
     } catch (err) {
       console.error('Encryption failed', err);
+      // Update status to failed
+      setMessages(prev => prev.map(m => m.id === newMsg.id ? { ...m, status: 'failed' } : m));
+      await saveMessage({ ...newMsg, status: 'failed' });
     }
   };
 
@@ -175,9 +356,23 @@ export default function ChatScreen() {
             </View>
           )}
         </View>
-        <Text style={[styles.timeText, item.sent ? styles.timeTextSent : styles.timeTextReceived]}>
-          {item.time}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+          <Text style={[styles.timeText, item.sent ? styles.timeTextSent : styles.timeTextReceived, { marginTop: 0 }]}>
+            {item.time}
+          </Text>
+          {item.sent && item.status === 'sending' && (
+            <ActivityIndicator size="small" color={colors.onSurfaceVariant} style={{ marginLeft: 4, transform: [{ scale: 0.5 }] }} />
+          )}
+          {item.sent && item.status === 'failed' && (
+            <Text style={{ color: colors.error, fontSize: 10, marginLeft: 4 }}>Failed</Text>
+          )}
+          {item.sent && item.status === 'sent' && !item.readAt && (
+            <Check size={12} color={colors.onSurfaceVariant} style={{ marginLeft: 4 }} />
+          )}
+          {item.sent && item.status === 'sent' && item.readAt && (
+            <CheckCheck size={12} color={colors.primary} style={{ marginLeft: 4 }} />
+          )}
+        </View>
       </View>
     );
   }, [messages]);
@@ -237,12 +432,14 @@ export default function ChatScreen() {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
           showsVerticalScrollIndicator={false}
+          onEndReached={loadMoreMessages}
+          onEndReachedThreshold={0.5}
         />
 
         {/* Composer */}
         <View style={styles.composerWrapper}>
           <View style={styles.inputContainer}>
-            <TouchableOpacity style={styles.composerBtn} activeOpacity={0.7} accessible={true} accessibilityRole="button" accessibilityLabel="Add attachment">
+            <TouchableOpacity onPress={handleImagePick} style={styles.composerBtn} activeOpacity={0.7} accessible={true} accessibilityRole="button" accessibilityLabel="Add attachment">
               <Plus size={24} color={colors.onSurfaceVariant} />
             </TouchableOpacity>
             
@@ -251,7 +448,7 @@ export default function ChatScreen() {
               placeholder="Message"
               placeholderTextColor="rgba(67, 70, 83, 0.5)" // on-surface-variant/50
               value={input}
-              onChangeText={setInput}
+              onChangeText={handleInputChange}
               multiline
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}

@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAppStore } from "../../../store/appStore";
+import { useAuthStore } from "../../../store/authStore";
 import { WebSignalStore } from "../../../lib/crypto/WebSignalStore";
 import { generateSignalRegistrationPayload } from "../../../lib/crypto/registration";
+import { supabase } from "../../../lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setJwt, setUserId, setKeysGenerated } = useAppStore();
+  const { setDeviceId, setKeysGenerated, deviceId } = useAuthStore();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,26 +29,58 @@ export default function LoginPage() {
     try {
       // 1. Generate new cryptographic identity for this device
       const store = new WebSignalStore();
-      const serverPayload = await generateSignalRegistrationPayload(store);
-
-      // 2. Hit our strict Zero-Knowledge auth endpoint
-      const res = await fetch("http://localhost:4000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, serverPayload }),
-      });
-
-      const data = await res.json();
+      const basePayload = await generateSignalRegistrationPayload(store);
       
-      if (!res.ok) {
-        if (data.details && data.details.fieldErrors) {
-          setFieldErrors(data.details.fieldErrors);
-        }
-        throw new Error(data.error || "Authentication failed");
+      // Determine device ID
+      let currentDeviceId = deviceId;
+      if (!currentDeviceId) {
+        currentDeviceId = Math.floor(Math.random() * 2147483647) + 1; // Random positive integer
+        setDeviceId(currentDeviceId);
       }
 
-      setJwt(data.accessToken);
-      setUserId(data.user.id);
+      // 2. Authenticate with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        throw new Error(authError.message);
+      }
+
+      const user = authData.user;
+      if (!user) {
+        throw new Error("Authentication failed - no user returned.");
+      }
+      
+      // Upload new keys for this device session
+      // 1. Identity Key (upsert/insert)
+      const { error: idError } = await supabase.from('identity_keys').insert({
+        user_id: user.id,
+        device_id: currentDeviceId,
+        identity_key: basePayload.identityKey
+      });
+      if (idError) console.warn("Identity key might exist:", idError.message); // Could already exist
+
+      // 2. Signed Pre-Key
+      await supabase.from('signed_pre_keys').insert({
+        user_id: user.id,
+        device_id: currentDeviceId,
+        key_id: basePayload.signedPreKey.keyId,
+        public_key: basePayload.signedPreKey.publicKey,
+        signature: basePayload.signedPreKey.signature
+      });
+
+      // 3. One-Time Pre-Keys
+      const preKeysToInsert = basePayload.oneTimePreKeys.map(pk => ({
+        user_id: user.id,
+        device_id: currentDeviceId,
+        key_id: pk.keyId,
+        public_key: pk.publicKey,
+        used: false
+      }));
+      await supabase.from('one_time_pre_keys').insert(preKeysToInsert);
+
       setKeysGenerated(true);
       
       router.replace("/feed");

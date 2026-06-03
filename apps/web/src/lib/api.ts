@@ -5,7 +5,9 @@
 
 import { get, set, del } from 'idb-keyval';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE = typeof window !== 'undefined'
+  ? (process.env.NEXT_PUBLIC_API_URL || `${window.location.protocol}//${window.location.hostname}:4000/api`)
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
 
 export async function setTokens(access: string, refresh: string) {
   if (typeof window !== 'undefined') {
@@ -56,7 +58,9 @@ async function refreshAccessToken(refreshToken?: string): Promise<boolean> {
   }
 }
 
-async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+import toast from 'react-hot-toast';
+
+export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -70,7 +74,7 @@ async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): P
   let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
   // Auto-refresh on 401
-  if (res.status === 401 && token) {
+  if (res.status === 401 && token && !path.includes('/auth/refresh')) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       const newToken = await getAccessToken();
@@ -80,8 +84,29 @@ async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): P
   }
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(error.error || error.message || 'API request failed');
+    let errorMessage = res.statusText || 'API request failed';
+    try {
+      const errorData = await res.json();
+      if (errorData.message) errorMessage = errorData.message;
+      else if (errorData.error) errorMessage = errorData.error;
+    } catch (e) {
+      // ignore json parse error
+    }
+    
+    // Auto-logout and redirect if we get a 401 (meaning refresh failed or no token)
+    if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
+      if (typeof window !== 'undefined') {
+        await clearTokens();
+        window.location.href = '/login';
+        return {} as T; // Return dummy to stop execution
+      }
+    }
+
+    // Show toast for non-auth endpoints or specific errors
+    if (!path.includes('/auth/refresh')) {
+      toast.error(errorMessage);
+    }
+    throw new Error(errorMessage);
   }
 
   return res.json();

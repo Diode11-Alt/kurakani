@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { Rss, Compass, PlusSquare, MessageSquare, User, LogOut, Settings, HelpCircle } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 const NAV_ITEMS = [
   { icon: Rss, label: 'Feed', path: '/feed' },
@@ -17,7 +18,8 @@ export function Sidebar({ profile }: { profile: any }) {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.replace('/');
+    useAuthStore.getState().clearAuth();
+    router.replace('/login');
   };
 
   return (

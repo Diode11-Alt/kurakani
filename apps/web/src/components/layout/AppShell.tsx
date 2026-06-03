@@ -1,19 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { useAppStore } from "../../store/appStore";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "../../store/authStore";
 import { Sidebar } from "./Sidebar";
 import { BottomNavBar } from "./BottomNavBar";
 import { MobileHeader } from "./MobileHeader";
+import { VideoCall } from "../../components/VideoCall";
+import { supabase } from "../../lib/supabase";
+
+interface ActiveCallState {
+  conversationId: string;
+  callType: 'video' | 'audio';
+  otherUser: any;
+  incomingOfferPayload?: any;
+}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const { jwt, isKeysGenerated } = useAppStore();
+  const { session: authSession, isKeysGenerated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-
-  const isMessages = pathname?.startsWith("/messages");
+  const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
+  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -23,23 +31,91 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
 
     // Strict Zero-Knowledge Auth Check
-    // If we have no JWT, we are totally unauthenticated.
-    if (!jwt) {
+    // If we have no session, we are totally unauthenticated.
+    if (!authSession) {
       router.replace("/login");
       return;
     }
 
     // If we have a JWT, but the local hardware Keystore hasn't generated the
     // KDS (Key Distribution Server) payload (100 OTPKs + SPK), we are in a broken state.
-    // We should redirect to the key generation loading screen.
+    // We should log them out so they can log back in and generate keys properly.
     if (!isKeysGenerated) {
-      router.replace("/register/keys");
+      useAuthStore.getState().clearAuth();
+      router.replace("/login");
       return;
     }
-  }, [jwt, isKeysGenerated, mounted, router]);
+
+    // Register Web Push Token (Skipped for now during Supabase migration)
+    const registerPushToken = async () => {
+      // Push tokens will need to be saved directly to a Supabase table
+      // e.g., supabase.from('push_tokens').upsert({ token, user_id })
+      console.log('Push token registration skipped in MVP');
+    };
+    
+    registerPushToken();
+  }, [authSession, isKeysGenerated, mounted, router]);
+
+  // Get Supabase session for incoming call listener
+  useEffect(() => {
+    if (!mounted) return;
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (s) setSession(s);
+    });
+  }, [mounted]);
+
+  // Listen for outgoing call events from chat thread page
+  useEffect(() => {
+    const handleStartCall = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && detail.conversationId && detail.otherUser) {
+        setActiveCall({
+          conversationId: detail.conversationId,
+          callType: detail.callType || 'video',
+          otherUser: detail.otherUser,
+        });
+      }
+    };
+
+    window.addEventListener('guff-start-call', handleStartCall);
+    return () => window.removeEventListener('guff-start-call', handleStartCall);
+  }, []);
+
+  // Listen for incoming calls via Supabase Broadcast
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const userId = session.user.id;
+    const incomingChannel = supabase.channel(`user-calls-${userId}`);
+
+    incomingChannel
+      .on('broadcast', { event: 'signal' }, ({ payload }) => {
+        if (payload.type === 'offer' && payload.senderId !== userId) {
+          console.log('[AppShell] Incoming call from:', payload.callerProfile?.username);
+
+          // Don't interrupt an existing call
+          if (activeCall) {
+            console.log('[AppShell] Already in a call, ignoring incoming');
+            return;
+          }
+
+          setActiveCall({
+            conversationId: payload.conversationId,
+            callType: payload.callType || 'video',
+            otherUser: payload.callerProfile || { username: 'Unknown' },
+            incomingOfferPayload: payload,
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(incomingChannel);
+    };
+  }, [session?.user?.id, activeCall]);
 
   // Prevent SSR flash of unauthenticated content
-  if (!mounted || !jwt || !isKeysGenerated) {
+  if (!mounted || !authSession || !isKeysGenerated) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-base">
         <div className="flex flex-col items-center gap-4">
@@ -59,23 +135,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <MobileHeader />
       
-      <main 
-        className={`flex-1 md:ml-[280px] relative z-10 flex flex-col h-screen ${
-          isMessages 
-            ? 'overflow-hidden' 
-            : 'pt-20 md:pt-8 pb-32 px-4 md:px-8 overflow-y-auto'
-        }`}
-      >
-        {isMessages ? (
-          children
-        ) : (
-          <div className="max-w-[1280px] mx-auto w-full">
-            {children}
-          </div>
-        )}
+      <main className="flex-1 md:ml-64 pt-20 md:pt-0 pb-32 md:pb-0 overflow-y-auto relative z-10">
+        <div className="max-w-[1280px] mx-auto">
+          {children}
+        </div>
       </main>
 
       <BottomNavBar />
+
+      {/* Video Call Overlay */}
+      {activeCall && (
+        <VideoCall
+          conversationId={activeCall.conversationId}
+          currentUserId={session?.user?.id || ''}
+          currentUserProfile={session?.user?.user_metadata || {}}
+          otherUser={activeCall.otherUser}
+          initialCallType={activeCall.callType}
+          incomingOfferPayload={activeCall.incomingOfferPayload || null}
+          onClose={() => setActiveCall(null)}
+        />
+      )}
     </div>
   );
 }

@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAppStore } from "../../../store/appStore";
+import { useAuthStore } from "../../../store/authStore";
 import { WebSignalStore } from "../../../lib/crypto/WebSignalStore";
 import { generateSignalRegistrationPayload } from "../../../lib/crypto/registration";
+import { supabase } from "../../../lib/supabase";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { setJwt, setUserId, setKeysGenerated } = useAppStore();
+  const { setDeviceId, setKeysGenerated, deviceId } = useAuthStore();
   
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -29,31 +30,70 @@ export default function RegisterPage() {
 
     try {
       const store = new WebSignalStore();
-      const serverPayload = await generateSignalRegistrationPayload(store);
-
-      const res = await fetch("http://localhost:4000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          username, 
-          email, 
-          password, 
-          ...(phoneNumber ? { phoneNumber } : {}), 
-          serverPayload 
-        }),
-      });
-
-      const data = await res.json();
+      const basePayload = await generateSignalRegistrationPayload(store);
       
-      if (!res.ok) {
-        if (data.details && data.details.fieldErrors) {
-          setFieldErrors(data.details.fieldErrors);
-        }
-        throw new Error(data.error || "Registration failed");
+      // Determine device ID
+      let currentDeviceId = deviceId;
+      if (!currentDeviceId) {
+        currentDeviceId = Math.floor(Math.random() * 2147483647) + 1; // Random positive integer
+        setDeviceId(currentDeviceId);
       }
 
-      setJwt(data.accessToken);
-      setUserId(data.user.id);
+      // Register with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            phone_number: phoneNumber,
+            registration_id: basePayload.registrationId,
+          }
+        }
+      });
+
+      if (authError) {
+        throw new Error(authError.message);
+      }
+
+      const user = authData.user;
+      if (!user) {
+        throw new Error("Registration failed - no user returned.");
+      }
+      
+      // We must insert the identity keys into Supabase via postgres. 
+      // The trigger has already created the public.users record synchronously.
+      
+      // 1. Insert Identity Key
+      const { error: idError } = await supabase.from('identity_keys').insert({
+        user_id: user.id,
+        device_id: currentDeviceId,
+        identity_key: basePayload.identityKey
+      });
+      if (idError) throw new Error("Failed to store identity key: " + idError.message);
+
+      // 2. Insert Signed Pre-Key
+      const { error: spkError } = await supabase.from('signed_pre_keys').insert({
+        user_id: user.id,
+        device_id: currentDeviceId,
+        key_id: basePayload.signedPreKey.keyId,
+        public_key: basePayload.signedPreKey.publicKey,
+        signature: basePayload.signedPreKey.signature
+      });
+      if (spkError) throw new Error("Failed to store signed pre-key: " + spkError.message);
+
+      // 3. Insert One-Time Pre-Keys
+      const preKeysToInsert = basePayload.oneTimePreKeys.map(pk => ({
+        user_id: user.id,
+        device_id: currentDeviceId,
+        key_id: pk.keyId,
+        public_key: pk.publicKey,
+        used: false
+      }));
+      const { error: opkError } = await supabase.from('one_time_pre_keys').insert(preKeysToInsert);
+      if (opkError) throw new Error("Failed to store one-time pre-keys: " + opkError.message);
+
+      // Successfully generated and uploaded keys
       setKeysGenerated(true);
       
       router.replace("/feed");

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAppStore } from "../../store/appStore";
+import { useAuthStore } from "../../store/authStore";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, userId, setJwt, setUserId } = useAppStore();
+  const { user, userId, setJwt, setUserId } = useAuthStore();
 
   const handleLogout = () => {
     setJwt(null);

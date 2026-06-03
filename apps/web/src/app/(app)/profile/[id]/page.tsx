@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getUserById, updateProfile } from '../../../../lib/api';
-import { useAppStore } from '../../../../store/appStore';
+import { useAuthStore } from '../../../../store/authStore';
 import { PostCard } from '../../../../components/PostCard';
 import { Loader2, Link as LinkIcon, Calendar, Settings, Edit, X, Save, MessageSquare, ShieldCheck, Heart } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -13,7 +13,7 @@ export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
   const profileId = params.id as string;
-  const { userId: currentUserId } = useAppStore();
+  const { userId: currentUserId } = useAuthStore();
 
   const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);

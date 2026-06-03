@@ -9,3 +9,8 @@ build
 .turbo
 *.log
 .DS_Store
+
+# Agent & local environment files
+.agents
+skills-lock.json
+*.py

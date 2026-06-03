@@ -1,18 +1,196 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../theme/colors';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, RTCView, mediaDevices } from 'react-native-webrtc';
+import { useSocket } from '../signal/SocketContext';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react-native';
+
+const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
 export default function CallScreen() {
+  const { socket } = useSocket();
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { id: peerId, name: peerName, isIncoming, offerPayload } = route.params as any;
+  
+  const [localStream, setLocalStream] = useState<any>(null);
+  const [remoteStream, setRemoteStream] = useState<any>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  
+  const pc = useRef<RTCPeerConnection | null>(null);
+
+  useEffect(() => {
+    const setupWebrtc = async () => {
+      // 1. Get Local Media
+      let stream;
+      try {
+        stream = await mediaDevices.getUserMedia({
+          audio: true,
+          video: { width: 640, height: 480, frameRate: 30, facingMode: 'user' },
+        });
+        setLocalStream(stream);
+      } catch (err) {
+        console.error('Failed to get local stream', err);
+        return;
+      }
+
+      // 2. Setup PC
+      const peer = new RTCPeerConnection(iceServers);
+      pc.current = peer;
+
+      stream.getTracks().forEach(t => peer.addTrack(t, stream));
+
+      peer.addEventListener('track', (event: any) => {
+        if (event.streams && event.streams[0]) {
+          setRemoteStream(event.streams[0]);
+        }
+      });
+
+      peer.addEventListener('icecandidate', (event: any) => {
+        if (event.candidate && socket) {
+          socket.emit('ice-candidate', {
+            targetUserId: peerId,
+            candidate: event.candidate,
+          });
+        }
+      });
+
+      if (!isIncoming) {
+        // We are calling
+        const offer = await peer.createOffer({});
+        await peer.setLocalDescription(offer);
+        socket?.emit('webrtc-offer', {
+          targetUserId: peerId,
+          offer,
+          callType: 'video',
+          conversationId: peerId
+        });
+      } else if (offerPayload) {
+        // We are receiving
+        await peer.setRemoteDescription(new RTCSessionDescription(offerPayload.offer));
+        const answer = await peer.createAnswer();
+        await peer.setLocalDescription(answer);
+        socket?.emit('webrtc-answer', {
+          targetUserId: peerId,
+          answer
+        });
+      }
+    };
+
+    setupWebrtc();
+
+    // Socket Listeners
+    if (socket) {
+      socket.on('webrtc-answer', async (payload: any) => {
+        if (pc.current && pc.current.signalingState !== 'stable') {
+          await pc.current.setRemoteDescription(new RTCSessionDescription(payload.answer));
+        }
+      });
+
+      socket.on('ice-candidate', async (payload: any) => {
+        if (pc.current && payload.candidate) {
+          await pc.current.addIceCandidate(new RTCIceCandidate(payload.candidate));
+        }
+      });
+
+      socket.on('call-end', () => {
+        handleEndCall(false);
+      });
+    }
+
+    return () => {
+      socket?.off('webrtc-answer');
+      socket?.off('ice-candidate');
+      socket?.off('call-end');
+      if (pc.current) pc.current.close();
+      if (localStream) localStream.getTracks().forEach((t: any) => t.stop());
+    };
+  }, []);
+
+  const handleEndCall = (emit = true) => {
+    if (emit && socket) {
+      socket.emit('call-end', { targetUserId: peerId });
+    }
+    if (pc.current) pc.current.close();
+    if (localStream) localStream.getTracks().forEach((t: any) => t.stop());
+    navigation.goBack();
+  };
+
+  const toggleMute = () => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach((t: any) => t.enabled = !t.enabled);
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach((t: any) => t.enabled = !t.enabled);
+      setIsVideoEnabled(!isVideoEnabled);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Call</Text>
-      <Text style={styles.subtext}>Call features coming soon...</Text>
+      {remoteStream ? (
+        <RTCView streamURL={remoteStream.toURL()} style={styles.remoteVideo} objectFit="cover" />
+      ) : (
+        <View style={styles.connectingContainer}>
+          <Text style={styles.callingText}>Calling {peerName}...</Text>
+        </View>
+      )}
+
+      {localStream && isVideoEnabled && (
+        <RTCView streamURL={localStream.toURL()} style={styles.localVideo} objectFit="cover" zOrder={1} />
+      )}
+
+      <View style={styles.controls}>
+        <TouchableOpacity style={[styles.controlBtn, isMuted && styles.controlBtnOff]} onPress={toggleMute}>
+          {isMuted ? <MicOff color="#fff" /> : <Mic color="#fff" />}
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.controlBtn, !isVideoEnabled && styles.controlBtnOff]} onPress={toggleVideo}>
+          {isVideoEnabled ? <Video color="#fff" /> : <VideoOff color="#fff" />}
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.controlBtn, styles.endCallBtn]} onPress={() => handleEndCall(true)}>
+          <PhoneOff color="#fff" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  header: { fontSize: 28, fontWeight: '700', color: colors.text },
-  subtext: { fontSize: 16, color: colors.textSecondary, marginTop: 10 },
+  container: { flex: 1, backgroundColor: '#000' },
+  remoteVideo: { flex: 1 },
+  localVideo: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 100,
+    height: 150,
+    backgroundColor: '#333',
+    borderRadius: 10,
+    overflow: 'hidden'
+  },
+  connectingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  callingText: { color: '#fff', fontSize: 20 },
+  controls: {
+    position: 'absolute',
+    bottom: 40,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20
+  },
+  controlBtn: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  controlBtnOff: { backgroundColor: 'rgba(255,255,255,0.1)' },
+  endCallBtn: { backgroundColor: '#ef4444' }
 });

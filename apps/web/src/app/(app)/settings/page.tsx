@@ -7,11 +7,11 @@ import {
   ChevronRight, Eye, EyeOff, Check, X, Loader2, Save
 } from 'lucide-react';
 import { getProfile, updateProfile, getPrivacySettings, updatePrivacySettings, getNotificationSettings, updateNotificationSettings, logout, deleteAccount } from '../../../lib/api';
-import { useAppStore } from '../../../store/appStore';
+import { useAuthStore } from '../../../store/authStore';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { clearAuth } = useAppStore();
+  const { clearAuth } = useAuthStore();
   const [activeSection, setActiveSection] = useState<string>('profile');
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
