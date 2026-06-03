@@ -1,26 +1,41 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
-import { Search, Loader2, ShieldCheck, Check, Terminal, Brain, Eye, MessageSquare } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '../../../store/authStore';
+import { useState, useEffect } from "react";
+import { supabase } from "../../../lib/supabase";
+import {
+  Search,
+  Loader2,
+  ShieldCheck,
+  Check,
+  Terminal,
+  Brain,
+  Eye,
+  MessageSquare,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "../../../store/authStore";
 
 export default function ExplorePage() {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [followedUserIds, setFollowedUserIds] = useState<Set<string>>(new Set());
+  const [followedUserIds, setFollowedUserIds] = useState<Set<string>>(
+    new Set(),
+  );
   const router = useRouter();
   const { userId } = useAuthStore();
 
   useEffect(() => {
     if (userId) {
-      supabase.from('follows').select('following_id').eq('follower_id', userId).then(({ data }) => {
-        if (data) {
-          setFollowedUserIds(new Set(data.map(d => d.following_id)));
-        }
-      });
+      supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", userId)
+        .then(({ data }) => {
+          if (data) {
+            setFollowedUserIds(new Set(data.map((d) => d.following_id)));
+          }
+        });
     }
   }, [userId]);
 
@@ -29,16 +44,16 @@ export default function ExplorePage() {
   useEffect(() => {
     const loadExperts = async () => {
       const { data } = await supabase
-        .from('users')
-        .select('*')
-        .neq('id', userId)
+        .from("users")
+        .select("*")
+        .neq("id", userId)
         .limit(3);
-      
+
       if (data) {
         setDefaultExperts(data);
       }
     };
-    
+
     if (userId) {
       loadExperts();
     }
@@ -51,8 +66,8 @@ export default function ExplorePage() {
 
     try {
       const { data } = await supabase
-        .from('users')
-        .select('*')
+        .from("users")
+        .select("*")
         .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
         .limit(20);
 
@@ -67,9 +82,9 @@ export default function ExplorePage() {
   const toggleFollow = async (id: string) => {
     if (!userId) return;
     const isFollowing = followedUserIds.has(id);
-    
+
     // Optimistic update
-    setFollowedUserIds(prev => {
+    setFollowedUserIds((prev) => {
       const next = new Set(prev);
       if (isFollowing) next.delete(id);
       else next.add(id);
@@ -77,9 +92,15 @@ export default function ExplorePage() {
     });
 
     if (isFollowing) {
-      await supabase.from('follows').delete().eq('follower_id', userId).eq('following_id', id);
+      await supabase
+        .from("follows")
+        .delete()
+        .eq("follower_id", userId)
+        .eq("following_id", id);
     } else {
-      await supabase.from('follows').insert({ follower_id: userId, following_id: id });
+      await supabase
+        .from("follows")
+        .insert({ follower_id: userId, following_id: id });
     }
   };
 
@@ -88,9 +109,12 @@ export default function ExplorePage() {
       {/* Search Header Section */}
       <section className="space-y-6">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[var(--color-primary)]">Discover</h1>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[var(--color-primary)]">
+            Discover
+          </h1>
           <p className="text-sm text-[var(--color-on-surface-variant)] max-w-xl">
-            Find people, communities, and conversations that matter to you. All end-to-end encrypted and safe.
+            Find people, communities, and conversations that matter to you. All
+            end-to-end encrypted and safe.
           </p>
         </div>
 
@@ -102,49 +126,46 @@ export default function ExplorePage() {
             <input
               type="text"
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name, @username, or bio..."
               className="w-full bg-transparent border-none py-5 px-3 text-sm focus:ring-0 placeholder-[var(--color-on-surface-variant)]/50 text-[var(--color-on-surface)] outline-none"
             />
             <div className="mr-3 flex items-center gap-2 flex-shrink-0">
-              <span className="hidden sm:inline text-[9px] font-bold text-[var(--color-on-surface-variant)] px-2 py-1 bg-[var(--color-surface-container)] rounded-lg">⌘ K</span>
-              <button 
-                type="submit" 
+              <span className="hidden sm:inline text-[9px] font-bold text-[var(--color-on-surface-variant)] px-2 py-1 bg-[var(--color-surface-container)] rounded-lg">
+                ⌘ K
+              </span>
+              <button
+                type="submit"
                 className="btn-primary px-5 py-2.5 flex items-center gap-2"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Search"
+                )}
               </button>
             </div>
           </div>
         </form>
-
-        {/* Trending Pills */}
-        <div className="flex flex-wrap items-center gap-2.5 select-none">
-          <span className="text-[10px] font-bold text-[var(--color-on-surface-variant)] uppercase tracking-wider">Trending:</span>
-          {['#privacy', '#blockchain', '#design', '#tech', '#open_source', '#security'].map(tag => (
-            <button
-              key={tag}
-              onClick={() => { setQuery(tag.replace('#', '')); }}
-              className="px-3.5 py-1.5 rounded-full bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)] font-bold text-xs hover:bg-[var(--color-primary-container)] hover:text-[var(--color-primary)] transition-all cursor-pointer"
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
       </section>
 
       {/* Suggested Experts Grid */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-[var(--color-on-surface)]">
-            {query.trim() && results.length > 0 ? 'Search Results' : 'Suggested Experts'}
+            {query.trim() && results.length > 0
+              ? "Search Results"
+              : "Suggested Users"}
           </h2>
         </div>
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="glass-card p-6 rounded-3xl flex flex-col items-center space-y-4 animate-pulse">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="glass-card p-6 rounded-3xl flex flex-col items-center space-y-4 animate-pulse"
+              >
                 <div className="w-20 h-20 rounded-[24px] bg-[var(--color-surface-container)]"></div>
                 <div className="w-3/4 h-5 rounded bg-[var(--color-surface-container)]"></div>
                 <div className="w-1/2 h-3.5 rounded bg-[var(--color-surface-container)]"></div>
@@ -155,27 +176,40 @@ export default function ExplorePage() {
         ) : query.trim() && results.length === 0 ? (
           <div className="text-center py-12 glass-card rounded-3xl">
             <span className="text-3xl">🔍</span>
-            <p className="text-sm font-semibold text-[var(--color-on-surface)] mt-3">No profiles matched your search</p>
-            <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Try another query or check spelling</p>
+            <p className="text-sm font-semibold text-[var(--color-on-surface)] mt-3">
+              No profiles matched your search
+            </p>
+            <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">
+              Try another query or check spelling
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {(results.length > 0 ? results : defaultExperts).map((user) => {
               const following = followedUserIds.has(user.id);
-              const isDefault = user.id.startsWith('default-');
+              const isDefault = user.id.startsWith("default-");
 
               return (
-                <div 
-                  key={user.id} 
+                <div
+                  key={user.id}
                   className="glass-card p-6 rounded-3xl flex flex-col items-center text-center space-y-4 hover:shadow-md transition-shadow group relative"
                 >
-                  <div className="relative cursor-pointer" onClick={() => !isDefault && router.push(`/profile/${user.id}`)}>
+                  <div
+                    className="relative cursor-pointer"
+                    onClick={() =>
+                      !isDefault && router.push(`/profile/${user.id}`)
+                    }
+                  >
                     <div className="w-20 h-20 rounded-[24px] overflow-hidden rotate-3 group-hover:rotate-0 transition-transform duration-300 bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)]">
                       {user.avatar_url ? (
-                        <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                        <img
+                          src={user.avatar_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center font-bold text-lg text-[var(--color-on-surface)] bg-[var(--color-surface-container)]">
-                          {user.username?.[0]?.toUpperCase() || '?'}
+                          {user.username?.[0]?.toUpperCase() || "?"}
                         </div>
                       )}
                     </div>
@@ -186,37 +220,49 @@ export default function ExplorePage() {
                     )}
                   </div>
 
-                  <div className="cursor-pointer" onClick={() => !isDefault && router.push(`/profile/${user.id}`)}>
+                  <div
+                    className="cursor-pointer"
+                    onClick={() =>
+                      !isDefault && router.push(`/profile/${user.id}`)
+                    }
+                  >
                     <h3 className="font-bold text-sm text-[var(--color-on-surface)] group-hover:text-[var(--color-primary)] transition-colors leading-tight">
                       {user.display_name || user.username}
                     </h3>
-                    <p className="text-[10px] font-semibold text-[var(--color-on-surface-variant)] mt-0.5">@{user.username}</p>
+                    <p className="text-[10px] font-semibold text-[var(--color-on-surface-variant)] mt-0.5">
+                      @{user.username}
+                    </p>
                   </div>
 
                   <p className="text-xs text-[var(--color-on-surface-variant)] line-clamp-2 h-8 leading-relaxed">
-                    {user.bio || 'No bio provided yet.'}
+                    {user.bio || "No bio provided yet."}
                   </p>
 
                   <div className="w-full flex gap-2">
-                    <button 
+                    <button
                       onClick={() => toggleFollow(user.id)}
                       className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer ${
                         following
-                          ? 'bg-[var(--color-surface-container)] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]'
-                          : 'btn-primary'
+                          ? "bg-[var(--color-surface-container)] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]"
+                          : "btn-primary"
                       }`}
                     >
-                      {following ? 'Following' : 'Follow'}
+                      {following ? "Following" : "Follow"}
                     </button>
                     {!isDefault && (
-                      <button 
+                      <button
                         onClick={async () => {
-                          const { data: { session } } = await supabase.auth.getSession();
+                          const {
+                            data: { session },
+                          } = await supabase.auth.getSession();
                           if (!session) return;
-                          const { data } = await supabase.rpc('get_or_create_conversation', {
-                            user_a: session.user.id,
-                            user_b: user.id
-                          });
+                          const { data } = await supabase.rpc(
+                            "get_or_create_conversation",
+                            {
+                              user_a: session.user.id,
+                              user_b: user.id,
+                            },
+                          );
                           if (data) router.push(`/messages/${data}`);
                         }}
                         className="p-2 border border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)] rounded-xl transition-all cursor-pointer"
@@ -230,52 +276,6 @@ export default function ExplorePage() {
             })}
           </div>
         )}
-      </section>
-
-      {/* Explore Channels Bento */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-bold text-[var(--color-on-surface)]">Explore Channels</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[160px] select-none">
-          {/* Card 1 */}
-          <div className="md:col-span-2 md:row-span-2 relative rounded-3xl overflow-hidden group cursor-pointer border border-[var(--color-outline-variant)]/50 shadow-sm">
-            <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPjB-Qqo8AiNDSt2TLtBI7fdPM-nW2MA00OzSG3bZhJmsM5Y0QG0RwF1QG42oZe0427rtzkGfpgy7E8Oys0N3D7YOC_46GwaPmbhvODF__qI7SPwk_-AXulfKfWDG9ajjd0V3jz8phCWGa52CXA6nmfecf51iUAy3l5geDB-6KGfpB9MfoKnLS84keRMB4QkV9hwU0oZoZMs92pKveWcMT03BBhM3ClpS9NS7WlvZcX2Up0gdxd6VHjQAv8VMcwSReSgP7lbVEcev6" alt="Cybersecurity" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 flex flex-col justify-end">
-              <h4 className="text-white font-bold text-lg">Cybersecurity News</h4>
-              <p className="text-white/80 text-xs mt-1">2.4k members active now</p>
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="md:col-span-2 relative rounded-3xl overflow-hidden group cursor-pointer border border-[var(--color-outline-variant)]/50 shadow-sm">
-            <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhE9ulFk_cxZI5i-q8-5uUyTV4U0Nta-amgsEwT3T21-nwLrbevXQt0Eou6PgVog-LzyS90ItvyX4PyTssfDQpywX8b5gwi1nBN5jeSAEgwvtGfNT0j9HwBxepbn93hbR-HzV5JPOqzEUb4N6kC50C-f--I85PUBCi-g-JinTmLtCR4ZD6YGqrg009RE8wp3q_k2Zjj0XoWvCIII4dpAc6XYs7bXsVAnWO-OLe6KByYf-Ke4B0YMRtfL-rrxNPfAhleB0Z6fUm_vO8" alt="Design" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
-              <h4 className="text-white font-bold text-sm">Product Design</h4>
-            </div>
-          </div>
-
-          {/* Card 3 (Bento flat color) */}
-          <div className="relative rounded-3xl overflow-hidden group cursor-pointer bg-[var(--color-secondary-container)] border border-[var(--color-outline-variant)]/50 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
-            <div className="absolute inset-0 p-5 flex flex-col justify-between">
-              <Terminal className="text-white w-9 h-9" />
-              <div>
-                <h4 className="text-white font-bold text-sm">Open Source</h4>
-                <p className="text-white/80 text-[10px] mt-0.5">Join the sprint</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4 (Bento flat color) */}
-          <div className="relative rounded-3xl overflow-hidden group cursor-pointer bg-[var(--color-primary-container)] border border-[var(--color-outline-variant)]/50 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
-            <div className="absolute inset-0 p-5 flex flex-col justify-between">
-              <Brain className="text-white w-9 h-9" />
-              <div>
-                <h4 className="text-white font-bold text-sm">AI Ethics</h4>
-                <p className="text-white/80 text-[10px] mt-0.5">Debates & Updates</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );

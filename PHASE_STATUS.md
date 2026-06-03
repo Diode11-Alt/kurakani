@@ -45,12 +45,12 @@ Phase 2 will tackle pushing updates to offline devices, polishing real-time medi
   - **Web:** Set up a Service Worker to receive Firebase Web Push notifications. Request notification permissions from the user.
   - **Mobile:** Integrate `expo-notifications` or Firebase Cloud Messaging into React Native. Handle foreground, background, and quit states, routing the user to the correct `ChatScreen` upon clicking the notification.
 
-### 2. Video Calling Polish
-* **Goal:** Finalize the WebRTC Video and Audio calling UI that is currently in scaffolding.
+✅ **2. Video Calling Polish**
+* **Goal:** Finalize the WebRTC Video and Audio calling UI.
 * **Tasks:**
-  - Connect the WebRTC signaling logic via existing Supabase Realtime Presence and Broadcast channels.
-  - Complete the UI overlay for incoming calls (Ringing Screen).
-  - Handle call states (Accepted, Rejected, Missed) natively on Web and Mobile.
+  - Connected the WebRTC signaling logic via existing Supabase Realtime Broadcast channels (`user-global-*`).
+  - Completed the UI overlay for incoming calls (Ringing Screen).
+  - Handled call states (Accepted, Rejected, Missed) natively on Web and inserted `call_log` messages into Supabase.
 
 ### 3. File Upload & Storage Improvements
 * **Goal:** Make sending media faster, more reliable, and tied to Supabase Storage.

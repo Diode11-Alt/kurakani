@@ -17,3 +17,4 @@ skills-lock.json
 
 # Design assets (too large for git — use Figma/external storage)
 stitch_guff_visual_redesign_ui_ux/
+.vercel
