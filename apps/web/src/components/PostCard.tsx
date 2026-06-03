@@ -23,6 +23,8 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const [commentsCount, setCommentsCount] = useState(0);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [sharesCount, setSharesCount] = useState(0);
 
   const author = post.users || post.author;
 
@@ -51,6 +53,22 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         .select('*', { count: 'exact', head: true })
         .eq('post_id', post.id);
       setCommentsCount(cCount || 0);
+
+      // Check if saved
+      const { data: savedData } = await supabase
+        .from('saved_posts')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .eq('post_id', post.id)
+        .maybeSingle();
+      if (savedData) setSaved(true);
+
+      // Shares count
+      const { count: sCount } = await supabase
+        .from('post_shares')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', post.id);
+      setSharesCount(sCount || 0);
     };
     fetchCounts();
   }, [post.id, currentUserId]);
@@ -136,6 +154,42 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         </div>
       </div>
     ), { duration: 5000 });
+  };
+
+  const handleShare = async () => {
+    // Copy post link to clipboard
+    const postUrl = `${window.location.origin}/feed?post=${post.id}`;
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      toast.success('Link copied to clipboard');
+    } catch {
+      toast.error('Failed to copy link');
+    }
+    // Track the share
+    await supabase.from('post_shares').insert({ user_id: currentUserId, post_id: post.id });
+    setSharesCount(c => c + 1);
+  };
+
+  const toggleSave = async () => {
+    if (saved) {
+      setSaved(false);
+      const { error } = await supabase.from('saved_posts').delete().eq('user_id', currentUserId).eq('post_id', post.id);
+      if (error) {
+        setSaved(true);
+        toast.error('Failed to unsave');
+      } else {
+        toast.success('Removed from saved');
+      }
+    } else {
+      setSaved(true);
+      const { error } = await supabase.from('saved_posts').insert({ user_id: currentUserId, post_id: post.id });
+      if (error) {
+        setSaved(false);
+        toast.error('Failed to save');
+      } else {
+        toast.success('Saved!');
+      }
+    }
   };
 
   const timeAgo = post.created_at
@@ -247,13 +301,23 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
           <span>{commentsCount > 0 ? commentsCount : 'Comment'}</span>
         </button>
 
-        <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all cursor-pointer">
+        <button 
+          onClick={handleShare}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all cursor-pointer"
+        >
           <Share2 className="w-4.5 h-4.5" />
-          <span>Share</span>
+          <span>{sharesCount > 0 ? `${sharesCount}` : 'Share'}</span>
         </button>
 
-        <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all cursor-pointer">
-          <Bookmark className="w-4.5 h-4.5" />
+        <button 
+          onClick={toggleSave}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            saved
+              ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10'
+              : 'text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10'
+          }`}
+        >
+          <Bookmark className={`w-4.5 h-4.5 ${saved ? 'fill-current' : ''}`} />
         </button>
       </div>
 

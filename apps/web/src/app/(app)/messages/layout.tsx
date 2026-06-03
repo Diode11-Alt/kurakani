@@ -184,7 +184,6 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         const { data, error } = await supabase
           .from('users')
           .select('id, username, display_name, avatar_url')
-          .or(`is_public.eq.true,username.eq.${searchQuery.trim()}`)
           .ilike('username', `%${searchQuery.trim()}%`)
           .neq('id', userId)
           .limit(10);
