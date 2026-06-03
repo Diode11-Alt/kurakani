@@ -8,15 +8,10 @@ import { ArrowLeft, Phone, Video, MoreVertical, Send, Paperclip, Mic, Shield, Ch
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
-import { db } from '@/lib/db';
-import { useLiveQuery } from 'dexie-react-hooks';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 
-import { WebSignalStore } from '../../../../lib/crypto/WebSignalStore';
-import { establishSessionAsInitiator, encryptMessage, decryptMessage } from '@signal/crypto';
 import { supabase } from '@/lib/supabase';
-import { fetchKeyBundle } from '@/lib/api';
 
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useFileUpload } from '@/hooks/useFileUpload';
@@ -29,11 +24,7 @@ export default function ChatThreadPage() {
   const { session: authSession, userId: currentUserId, user: authUser } = useAuthStore();
 
   const [otherUser, setOtherUser] = useState<any>(null);
-  const liveMessages = useLiveQuery(
-    () => db.local_messages.where('conversationId').equals(conversationId).sortBy('sentAt'),
-    [conversationId]
-  );
-  const messages = liveMessages || [];
+  const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -47,7 +38,6 @@ export default function ChatThreadPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<any>(null);
-  const signalStoreRef = useRef<WebSignalStore | null>(null);
 
   const { uploading, handleFileUpload: uploadFileHook, uploadToS3 } = useFileUpload(currentUserId || null);
   
@@ -114,11 +104,7 @@ export default function ChatThreadPage() {
         const other = conv.members.find((m: any) => m.id !== currentUserId);
         setOtherUser(other);
         
-        // Initialize Signal Store
-        const store = new WebSignalStore();
-        signalStoreRef.current = store;
-
-        await loadMessages(store, other.id);
+        await loadMessages(other.id);
 
         // Mark conversation as read
         try {
@@ -146,64 +132,43 @@ export default function ChatThreadPage() {
   useEffect(() => {
     if (!currentUserId || !conversationId) return;
 
-    // Supabase Realtime channel for THIS conversation's messages
     const channel = supabase
       .channel(`room:${conversationId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, async (payload) => {
         const msg = payload.new;
-        if (msg.sender_id === currentUserId) return; // Ignore own messages broadcasted back
         
-        if (signalStoreRef.current) {
-          try {
-            const decryptedJson = await decryptMessage(
-              signalStoreRef.current,
-              msg.sender_id,
-              1, 
-              msg.ciphertext,
-              msg.ciphertext_type as 1 | 3
-            );
-            const parsed = JSON.parse(decryptedJson);
+        const newMsg = {
+          id: msg.id,
+          conversationId: msg.conversation_id,
+          senderId: msg.sender_id,
+          plaintext: msg.content || '[Empty message]',
+          mediaUrl: msg.media_url || null,
+          contentType: msg.media_url ? 'attachment' : 'text',
+          status: 'sent',
+          sentAt: new Date(msg.sent_at),
+          readAt: msg.read_at ? new Date(msg.read_at) : null
+        };
+        
+        setMessages(prev => {
+          // Prevent duplicates
+          if (prev.some(m => m.id === newMsg.id)) return prev;
+          // Sort is maintained by inserting at end, but we can sort just in case
+          const next = [...prev, newMsg];
+          return next.sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
+        });
 
-            await db.local_messages.put({
-              id: msg.id,
-              conversationId: msg.conversation_id,
-              senderId: msg.sender_id,
-              plaintext: parsed.content,
-              mediaUrl: parsed.media_url || null,
-              contentType: parsed.media_url ? 'attachment' : 'text',
-              status: 'sent',
-              sentAt: new Date(msg.sent_at),
-            });
-          } catch (err: any) {
-            // console.warn("Decryption failed for incoming message:", err);
-            const isUntrusted = err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted');
-            await db.local_messages.put({
-              id: msg.id,
-              conversationId: msg.conversation_id,
-              senderId: msg.sender_id,
-              plaintext: isUntrusted ? '[Identity Key changed. Connection not trusted.]' : '[Encrypted Message - Could not decrypt]',
-              mediaUrl: null,
-              contentType: 'text',
-              status: 'sent',
-              sentAt: new Date(msg.sent_at),
-            });
-          }
-
-          // Mark as read in supabase
+        if (msg.sender_id !== currentUserId) {
           supabase.from('messages').update({ read_at: new Date().toISOString() }).eq('id', msg.id).then();
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, async (payload) => {
         const msg = payload.new;
         if (msg.read_at) {
-          try {
-            await db.local_messages.update(msg.id, { readAt: new Date(msg.read_at) });
-          } catch (e) {}
+          setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, readAt: new Date(msg.read_at) } : m));
         }
       })
       .subscribe();
 
-    // Typing indicators via broadcast on the same channel
     channel.on('broadcast', { event: 'typing' }, ({ payload }) => {
       if (payload.userId !== currentUserId) {
         setIsTyping(payload.isTyping);
@@ -230,7 +195,7 @@ export default function ChatThreadPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  async function loadMessages(store: WebSignalStore, recipientId: string) {
+  async function loadMessages(recipientId: string) {
     try {
       const { data: messagesData, error } = await supabase
         .from('messages')
@@ -243,66 +208,19 @@ export default function ChatThreadPage() {
       
       const mData = messagesData.reverse();
       
-      // Get all message IDs we already have locally
-      const localMsgIds = new Set(
-        (await db.local_messages.where('conversationId').equals(conversationId).toArray()).map(m => m.id)
-      );
-      
-      const newMessages = [];
-      
-      for (const m of mData) {
-        // If we already have this message locally, skip — don't re-decrypt
-        if (localMsgIds.has(m.id)) continue;
-        
-        let payload = { content: '[Encrypted Message]', media_url: null as string | null };
-        
-        if (m.sender_id === currentUserId) {
-          // Sender's own message — we can't decrypt our own ciphertext.
-          // The plaintext should have been saved locally when we sent it.
-          // If we're here, it means the local DB was cleared (new device/browser).
-          payload = { content: '📨 Sent message (encrypted)', media_url: null };
-        } else {
-          // Incoming message we haven't decrypted yet
-          try {
-            const decryptedJson = await decryptMessage(
-              store,
-              m.sender_id,
-              1, 
-              m.ciphertext,
-              m.ciphertext_type
-            );
-            payload = JSON.parse(decryptedJson);
-          } catch (err: any) {
-            // Silencing expected decryption errors to prevent Next.js dev overlay
-            if (err.message?.includes('Invalid private key') || err.message?.includes('Bad MAC')) {
-              payload.content = '[Session expired — re-establish to decrypt]';
-            } else if (err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted')) {
-              payload.content = '[Identity Key changed. Connection not trusted.]';
-            }
-          }
-        }
+      const newMessages = mData.map(m => ({
+        id: m.id,
+        conversationId: m.conversation_id,
+        senderId: m.sender_id,
+        plaintext: m.content || '[Empty message]',
+        mediaUrl: m.media_url || null,
+        contentType: (m.media_url ? 'attachment' : 'text') as 'text' | 'media' | 'attachment',
+        status: 'sent' as const,
+        sentAt: new Date(m.sent_at),
+        readAt: m.read_at ? new Date(m.read_at) : null
+      }));
 
-        newMessages.push({
-          id: m.id,
-          conversationId: m.conversation_id,
-          senderId: m.sender_id,
-          plaintext: payload.content,
-          mediaUrl: payload.media_url || null,
-          contentType: (payload.media_url ? 'attachment' : 'text') as 'text' | 'media' | 'attachment',
-          status: 'sent' as const,
-          sentAt: new Date(m.sent_at),
-          readAt: m.read_at ? new Date(m.read_at) : null
-        });
-      }
-
-      // Only add truly new messages — never overwrite existing local entries
-      if (newMessages.length > 0) {
-        await db.transaction('rw', db.local_messages, async () => {
-          for (const msg of newMessages) {
-            await db.local_messages.put(msg);
-          }
-        });
-      }
+      setMessages(newMessages);
       
       // Simple pagination logic using sent_at
       setHasMore(mData.length === 20);
@@ -331,59 +249,24 @@ export default function ChatThreadPage() {
       
       const mData = messagesData.reverse();
 
-      // Get all message IDs we already have locally
-      const localMsgIds = new Set(
-        (await db.local_messages.where('conversationId').equals(conversationId).toArray()).map(m => m.id)
-      );
+      const newMessages = mData.map(m => ({
+        id: m.id,
+        conversationId: m.conversation_id,
+        senderId: m.sender_id,
+        plaintext: m.content || '[Empty message]',
+        mediaUrl: m.media_url || null,
+        contentType: (m.media_url ? 'attachment' : 'text') as 'text' | 'media' | 'attachment',
+        status: 'sent' as const,
+        sentAt: new Date(m.sent_at),
+        readAt: m.read_at ? new Date(m.read_at) : null
+      }));
 
-      const newMessages = [];
-      
-      for (const m of mData) {
-        if (localMsgIds.has(m.id)) continue;
-
-        let payload = { content: '[Encrypted Message]', media_url: null as string | null };
-        try {
-          if (m.sender_id === currentUserId) {
-            payload = { content: '📨 Sent message (encrypted)', media_url: null };
-          } else if (signalStoreRef.current) {
-            const decryptedJson = await decryptMessage(
-              signalStoreRef.current,
-              m.sender_id,
-              1, 
-              m.ciphertext,
-              m.ciphertext_type
-            );
-            payload = JSON.parse(decryptedJson);
-          }
-        } catch (err: any) {
-          // console.warn("Expected decryption failure in loadMore", err);
-          if (err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted')) {
-            payload.content = '[Identity Key changed. Connection not trusted.]';
-          } else {
-            payload.content = '[Session expired — re-establish to decrypt]';
-          }
-        }
-
-        newMessages.push({
-          id: m.id,
-          conversationId: m.conversation_id,
-          senderId: m.sender_id,
-          plaintext: payload.content,
-          mediaUrl: payload.media_url || null,
-          contentType: (payload.media_url ? 'attachment' : 'text') as 'text' | 'media' | 'attachment',
-          status: 'sent' as const,
-          sentAt: new Date(m.sent_at),
-          readAt: m.read_at ? new Date(m.read_at) : null
-        });
-      }
-
-      if (newMessages.length > 0) {
-        await db.transaction('rw', db.local_messages, async () => {
-          for (const msg of newMessages) {
-            await db.local_messages.put(msg);
-          }
-        });
-      }
+      setMessages(prev => {
+        // filter out duplicates just in case
+        const existingIds = new Set(prev.map(p => p.id));
+        const filteredNew = newMessages.filter(n => !existingIds.has(n.id));
+        return [...filteredNew, ...prev];
+      });
       
       setHasMore(mData.length === 20);
       if (mData.length > 0) {
@@ -443,70 +326,28 @@ export default function ChatThreadPage() {
       sentAt: new Date(),
     };
     
-    await db.local_messages.add(optimisticMsg);
+    setMessages(prev => [...prev, optimisticMsg]);
 
     try {
-      if (!signalStoreRef.current) throw new Error("Signal store not initialized");
-      
-      const payloadString = JSON.stringify({ content, media_url: mediaUrl || null });
-      
-      const sessionString = otherUser.id + '.1'; 
-      const existingSession = await signalStoreRef.current.loadSession(sessionString);
-      
-      if (!existingSession) {
-        const keyBundle = await fetchKeyBundle(otherUser.id);
-        await establishSessionAsInitiator(signalStoreRef.current, otherUser.id, 1, keyBundle);
-      }
-
-      const encrypted = await encryptMessage(signalStoreRef.current, otherUser.id, 1, payloadString);
-
       const { data, error } = await supabase.from('messages').insert({
         conversation_id: conversationId,
         sender_id: currentUserId,
-        ciphertext: encrypted.body,
-        ciphertext_type: encrypted.type,
+        content: content,
+        media_url: mediaUrl || null,
         content_type: mediaUrl ? 'attachment' : 'text'
       }).select().single();
 
       if (error) throw new Error(error.message);
       
-      // Dexie doesn't allow primary key updates, so delete temp and insert real
-      await db.local_messages.delete(tempId);
-      await db.local_messages.add({ 
-        ...optimisticMsg, 
-        id: data.id, 
-        status: 'sent', 
-        sentAt: new Date(data.sent_at) 
-      });
+      setMessages(prev => prev.map(m => m.id === tempId ? {
+        ...m,
+        id: data.id,
+        status: 'sent',
+        sentAt: new Date(data.sent_at)
+      } : m));
     } catch (err) {
       console.error('Error sending message:', err);
-      await db.local_messages.update(tempId, { status: 'error' });
-    }
-  };
-
-  const reestablishSession = async () => {
-    if (!signalStoreRef.current || !otherUser?.id) return;
-    
-    try {
-      const sessionString = otherUser.id + '.1';
-      // Clear the broken session
-      await signalStoreRef.current.removeSession(sessionString);
-      
-      // Fetch new keys
-      const keyBundle = await fetchKeyBundle(otherUser.id);
-      
-      // Establish new session
-      await establishSessionAsInitiator(signalStoreRef.current, otherUser.id, 1, keyBundle);
-      
-      // We MUST send a message using the new session to transmit the PreKeySignalMessage to the other party
-      await handleSendMessage({ preventDefault: () => {} } as any, undefined, '🔄 Secure session re-established. We can now chat securely again.');
-      
-      toast.success('Secure session re-established! Refreshing messages...');
-      
-      // Reload page to re-decrypt messages
-      window.location.reload();
-    } catch (err: any) {
-      toast.error('Failed to re-establish session: ' + err.message);
+      setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'error' } : m));
     }
   };
 
@@ -666,15 +507,6 @@ export default function ChatThreadPage() {
                   {m.plaintext && m.plaintext !== 'Voice Note 🎤' && m.plaintext !== 'Attachment 📎' && (
                     <div className="font-sans">
                       <p>{m.plaintext}</p>
-                      {(m.plaintext.includes('[Identity Key changed') || m.plaintext.includes('[Session expired')) && !isSelf && (
-                        <button
-                          onClick={reestablishSession}
-                          className="mt-3 w-full bg-red-500/10 text-red-600 border border-red-500/30 hover:bg-red-500/20 text-xs font-bold py-2 px-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Shield className="w-3.5 h-3.5" />
-                          Re-establish Secure Session
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>

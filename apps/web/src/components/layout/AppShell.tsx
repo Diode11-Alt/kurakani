@@ -13,7 +13,7 @@ import { useUIStore } from "../../store/uiStore";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { session: authSession, isKeysGenerated } = useAuthStore();
+  const { session: authSession } = useAuthStore();
   const { activeCall, setActiveCall } = useUIStore();
   const [mounted, setMounted] = useState(false);
   const [session, setSession] = useState<any>(null);
@@ -49,7 +49,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
     
     registerPushToken();
-  }, [authSession, isKeysGenerated, mounted, router]);
+  }, [authSession, mounted, router]);
 
   // Get Supabase session for incoming call listener and Presence
   useEffect(() => {
@@ -150,7 +150,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [session?.user?.id]);
 
   // Prevent SSR flash of unauthenticated content
-  if (!mounted || !authSession || !isKeysGenerated) {
+  if (!mounted || !authSession) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-base">
         <div className="flex flex-col items-center gap-4">
@@ -158,7 +158,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             sync
           </span>
           <p className="text-content-muted font-medium animate-pulse">
-            Verifying secure session...
+            Loading...
           </p>
         </div>
       </div>
