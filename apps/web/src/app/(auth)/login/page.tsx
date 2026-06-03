@@ -4,13 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../../store/authStore";
-import { WebSignalStore } from "../../../lib/crypto/WebSignalStore";
-import { generateSignalRegistrationPayload } from "../../../lib/crypto/registration";
 import { supabase } from "../../../lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setDeviceId, setKeysGenerated, deviceId } = useAuthStore();
+  const { setDeviceId, deviceId } = useAuthStore();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,15 +25,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Generate new cryptographic identity for this device only if not initialized
-      const store = new WebSignalStore();
-      const isInit = await store.isInitialized();
-      
-      let basePayload = null;
-      if (!isInit) {
-        basePayload = await generateSignalRegistrationPayload(store);
-      }
-      
       // Determine device ID
       let currentDeviceId = deviceId;
       if (!currentDeviceId) {
@@ -43,7 +32,7 @@ export default function LoginPage() {
         setDeviceId(currentDeviceId);
       }
 
-      // 2. Authenticate with Supabase Auth
+      // Authenticate with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -57,53 +46,7 @@ export default function LoginPage() {
       if (!user) {
         throw new Error("Authentication failed - no user returned.");
       }
-      
-      // Upload new keys for this device session only if they were just generated
-      if (!isInit && basePayload) {
-        try {
-          // Clear old keys to enforce single-device MVP
-          await supabase.from("identity_keys").delete().eq("user_id", user.id);
-          await supabase.from("signed_pre_keys").delete().eq("user_id", user.id);
-          await supabase.from("one_time_pre_keys").delete().eq("user_id", user.id);
 
-          const { error: idKeyError } = await supabase.from("identity_keys").insert({
-            user_id: user.id,
-            device_id: currentDeviceId,
-            identity_key: basePayload.identityKey,
-          });
-          if (idKeyError) throw idKeyError;
-
-          const { error: spkError } = await supabase.from("signed_pre_keys").insert({
-            user_id: user.id,
-            device_id: currentDeviceId,
-            key_id: basePayload.signedPreKey.keyId,
-            public_key: basePayload.signedPreKey.publicKey,
-            signature: basePayload.signedPreKey.signature,
-          });
-          if (spkError) throw spkError;
-
-          await supabase.from("one_time_pre_keys").insert(
-            basePayload.oneTimePreKeys.map((pk: any) => ({
-              user_id: user.id,
-              device_id: currentDeviceId,
-              key_id: pk.keyId,
-              public_key: pk.publicKey,
-              used: false,
-            }))
-          );
-
-          // Update registration_id on users table
-          await supabase.from("users").update({
-            registration_id: basePayload.registrationId
-          }).eq("id", user.id);
-          
-        } catch (keyErr: any) {
-          console.error("Key upload failed:", keyErr);
-        }
-      }
-
-      setKeysGenerated(true);
-      
       router.replace("/feed");
     } catch (err: any) {
       setError(err.message);

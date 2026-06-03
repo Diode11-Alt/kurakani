@@ -4,13 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../../store/authStore";
-import { WebSignalStore } from "../../../lib/crypto/WebSignalStore";
-import { generateSignalRegistrationPayload } from "../../../lib/crypto/registration";
 import { supabase } from "../../../lib/supabase";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { setDeviceId, setKeysGenerated, deviceId } = useAuthStore();
+  const { setDeviceId, deviceId } = useAuthStore();
   
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -29,9 +27,6 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const store = new WebSignalStore();
-      const basePayload = await generateSignalRegistrationPayload(store);
-      
       // Determine device ID using cryptographically secure randomness
       let currentDeviceId = deviceId;
       if (!currentDeviceId) {
@@ -58,7 +53,7 @@ export default function RegisterPage() {
           data: {
             username,
             phone_hash: phoneHash,
-            registration_id: basePayload.registrationId,
+            registration_id: 1, // Fallback placeholder since we removed crypto
           }
         }
       });
@@ -71,41 +66,6 @@ export default function RegisterPage() {
       if (!user) {
         throw new Error("Registration failed - no user returned.");
       }
-      
-      // We must insert the identity keys into Supabase via postgres. 
-      // The trigger has already created the public.users record synchronously.
-      
-      // 1. Insert Identity Key
-      const { error: idError } = await supabase.from('identity_keys').insert({
-        user_id: user.id,
-        device_id: currentDeviceId,
-        identity_key: basePayload.identityKey
-      });
-      if (idError) throw new Error("Failed to store identity key: " + idError.message);
-
-      // 2. Insert Signed Pre-Key
-      const { error: spkError } = await supabase.from('signed_pre_keys').insert({
-        user_id: user.id,
-        device_id: currentDeviceId,
-        key_id: basePayload.signedPreKey.keyId,
-        public_key: basePayload.signedPreKey.publicKey,
-        signature: basePayload.signedPreKey.signature
-      });
-      if (spkError) throw new Error("Failed to store signed pre-key: " + spkError.message);
-
-      // 3. Insert One-Time Pre-Keys
-      const preKeysToInsert = basePayload.oneTimePreKeys.map(pk => ({
-        user_id: user.id,
-        device_id: currentDeviceId,
-        key_id: pk.keyId,
-        public_key: pk.publicKey,
-        used: false
-      }));
-      const { error: opkError } = await supabase.from('one_time_pre_keys').insert(preKeysToInsert);
-      if (opkError) throw new Error("Failed to store one-time pre-keys: " + opkError.message);
-
-      // Successfully generated and uploaded keys
-      setKeysGenerated(true);
       
       router.replace("/feed");
     } catch (err: any) {
