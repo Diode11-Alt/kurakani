@@ -32,14 +32,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // If we have a JWT, but the local hardware Keystore hasn't generated the
-    // KDS (Key Distribution Server) payload (100 OTPKs + SPK), we are in a broken state.
-    // We should log them out so they can log back in and generate keys properly.
-    if (!isKeysGenerated) {
-      useAuthStore.getState().clearAuth();
-      router.replace("/login");
-      return;
-    }
 
     // Register Web Push Token (Skipped for now during Supabase migration)
     const registerPushToken = async () => {
