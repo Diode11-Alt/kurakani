@@ -199,21 +199,27 @@ export async function fetchKeyBundle(userId: string) {
     .from('identity_keys')
     .select('identity_key, device_id')
     .eq('user_id', userId)
-    .single();
+    .limit(1)
+    .maybeSingle();
+    
   if (ikErr) throw new Error(ikErr.message);
+  if (!ik) throw new Error("User has not set up End-to-End Encryption yet.");
 
   const { data: user } = await supabase
     .from('users')
     .select('registration_id')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
 
   const { data: spk, error: spkErr } = await supabase
     .from('signed_pre_keys')
     .select('key_id, public_key, signature')
     .eq('user_id', userId)
-    .single();
+    .limit(1)
+    .maybeSingle();
+    
   if (spkErr) throw new Error(spkErr.message);
+  if (!spk) throw new Error("User's signed pre-keys are missing.");
 
   const { data: otpk } = await supabase.rpc('fetch_otpk', { target_user_id: userId }).maybeSingle() as any;
 
