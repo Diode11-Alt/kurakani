@@ -259,14 +259,15 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         const { data: ik } = await supabase.from('identity_keys').select('*').eq('user_id', otherUserId).single();
         const { data: spk } = await supabase.from('signed_pre_keys').select('*').eq('user_id', otherUserId).single();
         const { data: opks } = await supabase.from('one_time_pre_keys').select('*').eq('user_id', otherUserId).eq('used', false).limit(1);
+        const { data: otherUser } = await supabase.from('users').select('registration_id').eq('id', otherUserId).single();
         
-        if (!ik || !spk) {
+        if (!ik || !spk || !otherUser) {
           throw new Error("User has not set up E2EE keys");
         }
         
         const keyBundle = {
           identityKey: ik.identity_key,
-          registrationId: ik.device_id,
+          registrationId: otherUser.registration_id,
           signedPreKey: {
             keyId: spk.key_id,
             publicKey: spk.public_key,

@@ -319,12 +319,27 @@ export default function ChatThreadPage() {
       
       const mData = messagesData.reverse();
       
-      const decryptedMessages = await Promise.all(mData.map(async (m: any) => {
-        let payload = { content: '[Encrypted Message]', media_url: null };
-        try {
-          if (m.sender_id === currentUserId) {
-            payload = { content: 'Sent Message', media_url: null };
-          } else {
+      // Get all message IDs we already have locally
+      const localMsgIds = new Set(
+        (await db.local_messages.where('conversationId').equals(conversationId).toArray()).map(m => m.id)
+      );
+      
+      const newMessages = [];
+      
+      for (const m of mData) {
+        // If we already have this message locally, skip — don't re-decrypt
+        if (localMsgIds.has(m.id)) continue;
+        
+        let payload = { content: '[Encrypted Message]', media_url: null as string | null };
+        
+        if (m.sender_id === currentUserId) {
+          // Sender's own message — we can't decrypt our own ciphertext.
+          // The plaintext should have been saved locally when we sent it.
+          // If we're here, it means the local DB was cleared (new device/browser).
+          payload = { content: '📨 Sent message (encrypted)', media_url: null };
+        } else {
+          // Incoming message we haven't decrypted yet
+          try {
             const decryptedJson = await decryptMessage(
               store,
               m.sender_id,
@@ -333,15 +348,17 @@ export default function ChatThreadPage() {
               m.ciphertext_type
             );
             payload = JSON.parse(decryptedJson);
-          }
-        } catch (err: any) {
-          console.error("Failed to decrypt past message", err);
-          if (err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted')) {
-            payload.content = '[Identity Key changed. Connection not trusted.]';
+          } catch (err: any) {
+            console.error("Failed to decrypt message:", err.message);
+            if (err.message?.includes('Invalid private key') || err.message?.includes('Bad MAC')) {
+              payload.content = '[Session expired — re-establish to decrypt]';
+            } else if (err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted')) {
+              payload.content = '[Identity Key changed. Connection not trusted.]';
+            }
           }
         }
 
-        return {
+        newMessages.push({
           id: m.id,
           conversationId: m.conversation_id,
           senderId: m.sender_id,
@@ -351,14 +368,17 @@ export default function ChatThreadPage() {
           status: 'sent' as const,
           sentAt: new Date(m.sent_at),
           readAt: m.read_at ? new Date(m.read_at) : null
-        };
-      }));
+        });
+      }
 
-      await db.transaction('rw', db.local_messages, async () => {
-        for (const msg of decryptedMessages) {
-          await db.local_messages.put(msg);
-        }
-      });
+      // Only add truly new messages — never overwrite existing local entries
+      if (newMessages.length > 0) {
+        await db.transaction('rw', db.local_messages, async () => {
+          for (const msg of newMessages) {
+            await db.local_messages.put(msg);
+          }
+        });
+      }
       
       // Simple pagination logic using sent_at
       setHasMore(mData.length === 20);

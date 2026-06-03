@@ -61,13 +61,17 @@ export default function LoginPage() {
       // Upload new keys for this device session only if they were just generated
       if (!isInit && basePayload) {
         try {
+          // Clear old keys to enforce single-device MVP
+          await supabase.from("identity_keys").delete().eq("user_id", user.id);
+          await supabase.from("signed_pre_keys").delete().eq("user_id", user.id);
+          await supabase.from("one_time_pre_keys").delete().eq("user_id", user.id);
+
           const { error: idKeyError } = await supabase.from("identity_keys").insert({
             user_id: user.id,
             device_id: currentDeviceId,
             identity_key: basePayload.identityKey,
           });
-          // Ignore duplicate key error if we already uploaded keys for this device (code 23505)
-          if (idKeyError && idKeyError.code !== '23505') throw idKeyError;
+          if (idKeyError) throw idKeyError;
 
           const { error: spkError } = await supabase.from("signed_pre_keys").insert({
             user_id: user.id,
@@ -76,7 +80,7 @@ export default function LoginPage() {
             public_key: basePayload.signedPreKey.publicKey,
             signature: basePayload.signedPreKey.signature,
           });
-          if (spkError && spkError.code !== '23505') throw spkError;
+          if (spkError) throw spkError;
 
           await supabase.from("one_time_pre_keys").insert(
             basePayload.oneTimePreKeys.map((pk: any) => ({
@@ -87,8 +91,14 @@ export default function LoginPage() {
               used: false,
             }))
           );
+
+          // Update registration_id on users table
+          await supabase.from("users").update({
+            registration_id: basePayload.registrationId
+          }).eq("id", user.id);
+          
         } catch (keyErr: any) {
-          console.error("Key upload failed (may already exist):", keyErr);
+          console.error("Key upload failed:", keyErr);
         }
       }
 
