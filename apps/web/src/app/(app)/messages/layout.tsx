@@ -184,6 +184,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         const { data, error } = await supabase
           .from('users')
           .select('id, username, display_name, avatar_url')
+          .or(`is_public.eq.true,username.eq.${searchQuery.trim()}`)
           .ilike('username', `%${searchQuery.trim()}%`)
           .neq('id', userId)
           .limit(10);
@@ -342,7 +343,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 searchResults.map((user) => (
                   <button
                     key={user.userId}
-                    onClick={() => startConversation(user.userId)}
+                    onClick={() => router.push(`/profile/${user.userId}`)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--color-surface-variant)] text-left transition-colors cursor-pointer"
                   >
                     <div className="w-8 h-8 squircle bg-[var(--color-primary-container)] flex items-center justify-center text-[var(--color-on-primary-container)] font-bold overflow-hidden text-xs">

@@ -19,6 +19,7 @@ export function Sidebar() {
     { icon: "explore", label: "Explore", href: "/explore" },
     { icon: "add_box", label: "Create", href: "/create" },
     { icon: "chat", label: "Messages", href: "/messages", badge: 0 },
+    { icon: "group", label: "Connections", href: "/connections" },
     { icon: "person", label: "Profile", href: `/profile/${userId || 'me'}` },
   ];
 

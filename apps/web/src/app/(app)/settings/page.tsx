@@ -22,6 +22,8 @@ export default function SettingsPage() {
   const [username, setUsername] = useState('');
 
   // Privacy state
+  const [isPublic, setIsPublic] = useState(true);
+  const [requireConnectionRequests, setRequireConnectionRequests] = useState(false);
   const [lastSeen, setLastSeen] = useState('everyone');
   const [readReceipts, setReadReceipts] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState('everyone');
@@ -47,6 +49,8 @@ export default function SettingsPage() {
         setDisplayName(profileRes.displayName || '');
         setBio(profileRes.bio || '');
         setUsername(profileRes.username || '');
+        setIsPublic(profileRes.isPublic ?? true);
+        setRequireConnectionRequests(profileRes.requireConnectionRequests ?? false);
       }
       if (privacyRes) {
         setLastSeen(privacyRes.lastSeen || 'everyone');
@@ -68,6 +72,7 @@ export default function SettingsPage() {
       if (section === 'profile') {
         await updateProfile({ displayName, bio, username });
       } else if (section === 'privacy') {
+        await updateProfile({ isPublic, requireConnectionRequests });
         await updatePrivacySettings({ lastSeen, readReceipts, profilePhotoVisibility: profilePhoto });
       } else if (section === 'notifications') {
         await updateNotificationSettings({ pushNotifications: pushEnabled, notificationPreview: previewEnabled });
@@ -189,7 +194,29 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-5">
-                <div>
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-sm font-medium">Public Account</p>
+                    <p className="text-xs text-[var(--color-guff-text-muted)]">Allow anyone to find your profile in search</p>
+                  </div>
+                  <button onClick={() => setIsPublic(!isPublic)}
+                    className={`w-11 h-6 rounded-full transition-all relative ${isPublic ? 'bg-brand' : 'bg-[#4A3D33]'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all ${isPublic ? 'left-5.5' : 'left-0.5'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-sm font-medium">Require Connection Requests</p>
+                    <p className="text-xs text-[var(--color-guff-text-muted)]">Users must send a request to view your full profile and message you</p>
+                  </div>
+                  <button onClick={() => setRequireConnectionRequests(!requireConnectionRequests)}
+                    className={`w-11 h-6 rounded-full transition-all relative ${requireConnectionRequests ? 'bg-brand' : 'bg-[#4A3D33]'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all ${requireConnectionRequests ? 'left-5.5' : 'left-0.5'}`} />
+                  </button>
+                </div>
+
+                <div className="border-t border-[var(--color-guff-border)] pt-5">
                   <label className="block text-sm font-medium mb-2">Last Seen</label>
                   <select value={lastSeen} onChange={e => setLastSeen(e.target.value)}
                     className="input-field">

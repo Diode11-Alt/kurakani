@@ -21,7 +21,7 @@ export async function getProfile() {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, username, display_name, bio, avatar_url, created_at')
+    .select('id, email, username, display_name, bio, avatar_url, created_at, is_public, require_connection_requests')
     .eq('id', user.id)
     .single();
 
@@ -34,10 +34,18 @@ export async function getProfile() {
     avatarUrl: data.avatar_url,
     email: data.email,
     createdAt: data.created_at,
+    isPublic: data.is_public ?? true,
+    requireConnectionRequests: data.require_connection_requests ?? false,
   };
 }
 
-export async function updateProfile(updates: { displayName?: string; bio?: string; username?: string }) {
+export async function updateProfile(updates: { 
+  displayName?: string; 
+  bio?: string; 
+  username?: string;
+  isPublic?: boolean;
+  requireConnectionRequests?: boolean;
+}) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -47,6 +55,8 @@ export async function updateProfile(updates: { displayName?: string; bio?: strin
       ...(updates.displayName !== undefined && { display_name: updates.displayName }),
       ...(updates.bio !== undefined && { bio: updates.bio }),
       ...(updates.username !== undefined && { username: updates.username }),
+      ...(updates.isPublic !== undefined && { is_public: updates.isPublic }),
+      ...(updates.requireConnectionRequests !== undefined && { require_connection_requests: updates.requireConnectionRequests }),
     })
     .eq('id', user.id);
 
@@ -57,7 +67,7 @@ export async function updateProfile(updates: { displayName?: string; bio?: strin
 export async function getUserById(id: string) {
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, display_name, bio, avatar_url, created_at')
+    .select('id, username, display_name, bio, avatar_url, created_at, is_public, require_connection_requests')
     .eq('id', id)
     .single();
 
@@ -69,6 +79,8 @@ export async function getUserById(id: string) {
     bio: data.bio,
     avatarUrl: data.avatar_url,
     createdAt: data.created_at,
+    isPublic: data.is_public ?? true,
+    requireConnectionRequests: data.require_connection_requests ?? false,
   };
 }
 
@@ -82,6 +94,7 @@ export async function searchUsers(query: string) {
   const { data, error } = await supabase
     .from('users')
     .select('id, username, display_name, avatar_url')
+    .or(`is_public.eq.true,username.eq.${safeQuery}`)
     .or(`username.ilike.${safeQuery}%,display_name.ilike.${safeQuery}%`)
     .limit(20);
 
