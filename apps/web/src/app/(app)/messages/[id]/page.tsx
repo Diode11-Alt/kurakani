@@ -585,19 +585,19 @@ export default function ChatThreadPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-base">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-guff-primary)]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[var(--color-guff-surface)] relative overflow-hidden select-none">
+    <div className="flex-1 flex flex-col h-full bg-[var(--color-background)] relative overflow-hidden select-none">
       {/* Header */}
-      <div className="bg-[#1C1816] px-4 py-3 border-b border-[#4A3D33] flex items-center justify-between z-10 shadow-sm">
+      <div className="bg-[var(--color-surface)] px-4 py-3 border-b border-[var(--color-outline-variant)] flex items-center justify-between z-10 shadow-sm">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/messages')}
-            className="md:hidden p-1.5 rounded-xl text-content-secondary hover:bg-[#262220] transition-colors cursor-pointer"
+            className="md:hidden p-1.5 rounded-xl text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -608,27 +608,27 @@ export default function ChatThreadPage() {
           >
             {/* Avatar */}
             <div className="relative">
-              <div className="w-10 h-10 squircle bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden ember-glow-sm">
+              <div className="w-10 h-10 squircle bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden ">
                 {otherUser?.avatarUrl ? (
                   <img src={otherUser.avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
                   otherUser?.displayName?.[0]?.toUpperCase() || otherUser?.username?.[0]?.toUpperCase() || '?'
                 )}
               </div>
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-spark border-2 border-[#1C1816] rounded-full"></span>
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
             </div>
 
             {/* User Info */}
             <div className="flex flex-col select-none">
-              <div className="font-bold text-sm text-[var(--color-guff-text)] leading-tight">
+              <div className="font-bold text-sm text-[var(--color-on-surface)] leading-tight">
                 {otherUser?.displayName || otherUser?.username}
               </div>
-              <div className="text-[10px] font-bold text-[var(--color-guff-text-muted)] mt-0.5 flex items-center gap-1">
+              <div className="text-[10px] font-bold text-[var(--color-on-surface-variant)] mt-0.5 flex items-center gap-1">
                 {isTyping ? (
-                  <span className="text-[var(--color-guff-primary)] animate-pulse">typing...</span>
+                  <span className="text-[var(--color-primary)] animate-pulse">typing...</span>
                 ) : (
                   <>
-                    <ShieldCheck className="w-3 h-3 text-[var(--color-guff-success)]" />
+                    <ShieldCheck className="w-3 h-3 text-green-500" />
                     <span>Encrypted Connection</span>
                   </>
                 )}
@@ -643,7 +643,7 @@ export default function ChatThreadPage() {
             onClick={() => window.dispatchEvent(new CustomEvent('guff-start-call', {
               detail: { conversationId, callType: 'audio', otherUser }
             }))}
-            className="p-2.5 rounded-xl text-content-secondary hover:bg-[#262220] hover:text-brand transition-all cursor-pointer"
+            className="p-2.5 rounded-xl text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] hover:text-[var(--color-primary)] transition-all cursor-pointer"
           >
             <Phone className="w-4.5 h-4.5" />
           </button>
@@ -651,27 +651,27 @@ export default function ChatThreadPage() {
             onClick={() => window.dispatchEvent(new CustomEvent('guff-start-call', {
               detail: { conversationId, callType: 'video', otherUser }
             }))}
-            className="p-2.5 rounded-xl text-content-secondary hover:bg-[#262220] hover:text-brand transition-all cursor-pointer"
+            className="p-2.5 rounded-xl text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] hover:text-[var(--color-primary)] transition-all cursor-pointer"
           >
             <Video className="w-4.5 h-4.5" />
           </button>
           <div className="relative">
             <button 
               onClick={() => setShowDropdown(!showDropdown)}
-              className="p-2.5 rounded-xl text-content-secondary hover:bg-[#262220] transition-all cursor-pointer"
+              className="p-2.5 rounded-xl text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] transition-all cursor-pointer"
             >
               <MoreVertical className="w-4.5 h-4.5" />
             </button>
             {showDropdown && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)}></div>
-                <div className="absolute right-0 top-full mt-2 w-48 card-ember shadow-xl py-2 z-50 border border-[#4A3D33] overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--color-surface-container-high)] shadow-xl py-2 z-50 border border-[var(--color-outline-variant)] overflow-hidden">
                   <button 
                     onClick={() => {
                       setShowDropdown(false);
                       router.push(`/profile/${otherUser?.id}`);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-content hover:bg-[#262220] transition-colors"
+                    className="w-full text-left px-4 py-2.5 text-sm text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors"
                   >
                     View Profile
                   </button>
@@ -681,7 +681,7 @@ export default function ChatThreadPage() {
                         setShowDropdown(false);
                         setShowGroupSettings(true);
                       }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-content hover:bg-[#262220] transition-colors"
+                      className="w-full text-left px-4 py-2.5 text-sm text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors"
                     >
                       Group Settings
                     </button>
@@ -694,17 +694,17 @@ export default function ChatThreadPage() {
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--color-guff-surface)]" onScroll={handleScroll}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--color-background)]" onScroll={handleScroll}>
         {loadingMore && (
           <div className="flex justify-center py-2">
-            <Loader2 className="w-5 h-5 animate-spin text-brand" />
+            <Loader2 className="w-5 h-5 animate-spin text-[var(--color-primary)]" />
           </div>
         )}
         {messages.length === 0 ? (
           <div className="text-center py-20 select-none">
             <span className="text-4xl animate-bounce inline-block">👋</span>
-            <h4 className="font-semibold text-sm text-[var(--color-guff-text)] mt-3">Say hello!</h4>
-            <p className="text-xs text-[var(--color-guff-text-muted)] mt-1">Start your end-to-end encrypted conversation with @{otherUser?.username}</p>
+            <h4 className="font-semibold text-sm text-[var(--color-on-surface)] mt-3">Say hello!</h4>
+            <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Start your end-to-end encrypted conversation with @{otherUser?.username}</p>
           </div>
         ) : (
           messages.map((m) => {
@@ -716,8 +716,8 @@ export default function ChatThreadPage() {
               <div key={m.id} className={`flex flex-col ${isSelf ? 'items-end' : 'items-start'}`}>
                 <div className={`max-w-[85%] md:max-w-[70%] p-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.08)] text-sm leading-relaxed break-words
                   ${isSelf 
-                    ? 'bg-brand text-white rounded-[20px] rounded-tr-[4px]' 
-                    : 'bg-[#262220] text-content rounded-[20px] rounded-tl-[4px] border border-[#4A3D33]'}`}
+                    ? 'bg-[var(--color-primary)] text-white rounded-[20px] rounded-tr-[4px]' 
+                    : 'bg-[var(--color-surface-container)] text-[var(--color-on-surface)] rounded-[20px] rounded-tl-[4px] border border-[var(--color-outline-variant)]'}`}
                 >
                   {/* Media attachment */}
                   {m.mediaUrl && (
@@ -736,18 +736,18 @@ export default function ChatThreadPage() {
                 </div>
 
                 {/* Message Meta Info */}
-                <div className="flex items-center gap-1 mt-1.5 px-1.5 text-[9px] font-bold text-[var(--color-guff-text-muted)] select-none">
+                <div className="flex items-center gap-1 mt-1.5 px-1.5 text-[9px] font-bold text-[var(--color-on-surface-variant)] select-none">
                   <span>{timeFormatted}</span>
                   {isSelf && (
                     <span>
                       {m.status === 'sending' ? (
-                        <Loader2 className="w-3 h-3 text-content-muted animate-spin" />
+                        <Loader2 className="w-3 h-3 text-[var(--color-outline-variant)] animate-spin" />
                       ) : m.status === 'error' ? (
                         <span className="text-red-500">Failed</span>
                       ) : isRead ? (
-                        <CheckCheck className="w-3.5 h-3.5 text-[var(--color-guff-primary)] stroke-[2.5]" />
+                        <CheckCheck className="w-3.5 h-3.5 text-[var(--color-primary)] stroke-[2.5]" />
                       ) : (
-                        <Check className="w-3.5 h-3.5 text-content-muted stroke-[2.5]" />
+                        <Check className="w-3.5 h-3.5 text-[var(--color-outline-variant)] stroke-[2.5]" />
                       )}
                     </span>
                   )}
@@ -760,23 +760,23 @@ export default function ChatThreadPage() {
       </div>
 
       {/* Input Composer Panel */}
-      <div className="bg-[#1C1816] p-4 border-t border-[#4A3D33] flex items-center gap-3 relative z-10">
+      <div className="bg-[var(--color-surface)] p-4 border-t border-[var(--color-outline-variant)] flex items-center gap-3 relative z-10">
         {isRecording ? (
-          <div className="flex-grow flex items-center gap-3 bg-blaze/10 border border-blaze/30 rounded-full px-4 py-2 select-none">
-            <span className="w-2.5 h-2.5 rounded-full bg-blaze animate-pulse flex-shrink-0" />
-            <span className="text-xs font-bold text-blaze">Recording {formatDuration(recordingDuration)}</span>
+          <div className="flex-grow flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-full px-4 py-2 select-none">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+            <span className="text-xs font-bold text-red-500">Recording {formatDuration(recordingDuration)}</span>
             
             <button
               type="button"
               onClick={cancelRecording}
-              className="p-2 rounded-xl text-blaze hover:bg-blaze/10 transition-colors ml-auto flex items-center justify-center cursor-pointer"
+              className="p-2 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors ml-auto flex items-center justify-center cursor-pointer"
             >
               <Trash2 className="w-4.5 h-4.5" />
             </button>
             <button
               type="button"
               onClick={stopRecording}
-              className="p-2.5 rounded-full bg-spark hover:bg-spark/80 text-white shadow transition-colors flex items-center justify-center cursor-pointer"
+              className="p-2.5 rounded-full bg-green-500 hover:bg-green-500/80 text-white shadow transition-colors flex items-center justify-center cursor-pointer"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -787,10 +787,10 @@ export default function ChatThreadPage() {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="p-2.5 rounded-full text-content-muted hover:bg-[#262220] hover:text-brand transition-colors flex-shrink-0 cursor-pointer"
+              className="p-2.5 rounded-full text-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container)] hover:text-[var(--color-primary)] transition-colors flex-shrink-0 cursor-pointer"
             >
               {uploading ? (
-                <Loader2 className="w-5 h-5 animate-spin text-[var(--color-guff-primary)]" />
+                <Loader2 className="w-5 h-5 animate-spin text-[var(--color-primary)]" />
               ) : (
                 <Paperclip className="w-5 h-5" />
               )}
@@ -804,7 +804,7 @@ export default function ChatThreadPage() {
               disabled={uploading}
             />
 
-            <div className="flex-grow bg-[#171311] rounded-full px-4 py-2 flex items-center gap-2 border border-[#4A3D33] focus-within:border-brand/40 transition-all">
+            <div className="flex-grow bg-[var(--color-surface-container-lowest)] rounded-full px-4 py-2 flex items-center gap-2 border border-[var(--color-outline-variant)] focus-within:border-[var(--color-primary)] transition-all">
               <input
                 type="text"
                 value={inputText}
@@ -816,14 +816,14 @@ export default function ChatThreadPage() {
                   }
                 }}
                 placeholder="Secure message..."
-                className="flex-grow bg-transparent border-none focus:ring-0 text-xs py-1.5 outline-none text-[var(--color-guff-text)]"
+                className="flex-grow bg-transparent border-none focus:ring-0 text-xs py-1.5 outline-none text-[var(--color-on-surface)]"
                 disabled={uploading}
               />
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="p-1 rounded-full text-content-muted hover:text-brand transition-colors focus:outline-none"
+                  className="p-1 rounded-full text-[var(--color-outline-variant)] hover:text-[var(--color-primary)] transition-colors focus:outline-none"
                 >
                   <Smile className="w-5 h-5" />
                 </button>
@@ -848,7 +848,7 @@ export default function ChatThreadPage() {
               <button
                 type="button"
                 onClick={startRecording}
-                className="p-2.5 rounded-full text-content-muted hover:bg-[#262220] hover:text-content transition-colors flex-shrink-0 cursor-pointer"
+                className="p-2.5 rounded-full text-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container)] hover:text-[var(--color-on-surface)] transition-colors flex-shrink-0 cursor-pointer"
               >
                 <Mic className="w-5 h-5" />
               </button>
@@ -856,7 +856,7 @@ export default function ChatThreadPage() {
               <button
                 type="submit"
                 disabled={uploading || (!inputText.trim())}
-                className="p-3 bg-[var(--color-guff-primary)] hover:bg-[var(--color-guff-primary-hover)] text-white rounded-full flex items-center justify-center flex-shrink-0 shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer"
+                className="p-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-white rounded-full flex items-center justify-center flex-shrink-0 shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer"
               >
                 <Send className="w-4 h-4 fill-current" />
               </button>
@@ -868,10 +868,10 @@ export default function ChatThreadPage() {
       {/* Group Settings Modal */}
       {showGroupSettings && conversation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-[#1C1816] rounded-2xl shadow-2xl border border-[#4A3D33] overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="p-4 border-b border-[#4A3D33] flex justify-between items-center bg-[#262220]">
-              <h2 className="text-lg font-bold text-[var(--color-guff-text)]">Group Settings</h2>
-              <button onClick={() => setShowGroupSettings(false)} className="text-content-muted hover:text-white transition-colors">
+          <div className="w-full max-w-md bg-[var(--color-surface)] rounded-2xl shadow-2xl border border-[var(--color-outline-variant)] overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-[var(--color-outline-variant)] flex justify-between items-center bg-[var(--color-surface-container)]">
+              <h2 className="text-lg font-bold text-[var(--color-on-surface)]">Group Settings</h2>
+              <button onClick={() => setShowGroupSettings(false)} className="text-[var(--color-outline-variant)] hover:text-white transition-colors">
                 <Trash2 className="w-5 h-5 opacity-0" /> {/* Spacer */}
                 <span className="text-sm font-medium">Close</span>
               </button>
@@ -880,20 +880,20 @@ export default function ChatThreadPage() {
             <div className="p-4 overflow-y-auto space-y-6">
               {/* Invite Link Section */}
               {conversation.members?.find((m: any) => m.id === currentUserId)?.role === 'admin' && (
-                <div className="space-y-3 bg-[#262220] p-4 rounded-xl border border-[#4A3D33]">
-                  <h3 className="text-sm font-semibold text-[var(--color-guff-text)] flex items-center gap-2">
-                    <LinkIcon className="w-4 h-4 text-[var(--color-guff-primary)]" />
+                <div className="space-y-3 bg-[var(--color-surface-container)] p-4 rounded-xl border border-[var(--color-outline-variant)]">
+                  <h3 className="text-sm font-semibold text-[var(--color-on-surface)] flex items-center gap-2">
+                    <LinkIcon className="w-4 h-4 text-[var(--color-primary)]" />
                     Invite Link
                   </h3>
                   {inviteToken ? (
-                    <div className="bg-[#171311] p-3 rounded-lg border border-brand/30 flex justify-between items-center break-all">
-                      <span className="text-xs text-brand font-mono">{`${window.location.origin}/join/${inviteToken}`}</span>
+                    <div className="bg-[var(--color-surface-container-lowest)] p-3 rounded-lg border border-[var(--color-primary)]/30 flex justify-between items-center break-all">
+                      <span className="text-xs text-[var(--color-primary)] font-mono">{`${window.location.origin}/join/${inviteToken}`}</span>
                       <button 
                         onClick={() => {
                           navigator.clipboard.writeText(`${window.location.origin}/join/${inviteToken}`);
                           toast.success('Copied!');
                         }}
-                        className="ml-2 text-xs bg-brand/20 text-brand px-2 py-1 rounded hover:bg-brand/30"
+                        className="ml-2 text-xs bg-[var(--color-primary)]/20 text-[var(--color-primary)] px-2 py-1 rounded hover:bg-[var(--color-primary)]/30"
                       >
                         Copy
                       </button>
@@ -901,7 +901,7 @@ export default function ChatThreadPage() {
                   ) : (
                     <button 
                       onClick={handleGenerateInvite}
-                      className="w-full py-2 bg-[var(--color-guff-primary)] hover:bg-[var(--color-guff-primary-hover)] text-white text-sm font-medium rounded-lg transition-colors"
+                      className="w-full py-2 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-white text-sm font-medium rounded-lg transition-colors"
                     >
                       Generate Invite Link
                     </button>
@@ -911,22 +911,22 @@ export default function ChatThreadPage() {
 
               {/* Members List */}
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-[var(--color-guff-text)] flex items-center gap-2">
-                  <Users className="w-4 h-4 text-content-secondary" />
+                <h3 className="text-sm font-semibold text-[var(--color-on-surface)] flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[var(--color-on-surface-variant)]" />
                   Members ({conversation.members?.length})
                 </h3>
                 <div className="space-y-2">
                   {conversation.members?.map((member: any) => (
-                    <div key={member.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-[#262220] transition-colors border border-transparent hover:border-[#4A3D33]">
+                    <div key={member.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-[var(--color-surface-container)] transition-colors border border-transparent hover:border-[var(--color-outline-variant)]">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                           {member.username?.[0]?.toUpperCase() || '?'}
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-[var(--color-guff-text)]">
+                          <span className="text-sm font-medium text-[var(--color-on-surface)]">
                             {member.username} {member.id === currentUserId && '(You)'}
                           </span>
-                          <span className="text-[10px] text-content-muted capitalize flex items-center gap-1">
+                          <span className="text-[10px] text-[var(--color-outline-variant)] capitalize flex items-center gap-1">
                             {member.role}
                             {member.role === 'admin' && <Crown className="w-3 h-3 text-yellow-500" />}
                           </span>
@@ -936,7 +936,7 @@ export default function ChatThreadPage() {
                       {conversation.members?.find((m: any) => m.id === currentUserId)?.role === 'admin' && member.id !== currentUserId && (
                         <button 
                           onClick={() => handleTransferAdmin(member.id)}
-                          className="text-[10px] bg-[#171311] text-content-secondary px-2 py-1 rounded border border-[#4A3D33] hover:text-white hover:border-white transition-colors"
+                          className="text-[10px] bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface-variant)] px-2 py-1 rounded border border-[var(--color-outline-variant)] hover:text-white hover:border-white transition-colors"
                         >
                           Make Admin
                         </button>

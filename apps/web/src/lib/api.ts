@@ -215,7 +215,7 @@ export async function fetchKeyBundle(userId: string) {
     .single();
   if (spkErr) throw new Error(spkErr.message);
 
-  const { data: otpk } = await supabase.rpc('fetch_otpk', { target_user_id: userId }).maybeSingle();
+  const { data: otpk } = await supabase.rpc('fetch_otpk', { target_user_id: userId }).maybeSingle() as any;
 
   return {
     identityKey: ik.identity_key,

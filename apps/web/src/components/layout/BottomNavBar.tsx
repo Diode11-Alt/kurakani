@@ -37,7 +37,7 @@ export function BottomNavBar() {
       <div className="relative -top-5">
         <Link 
           href="/create"
-          className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-700 text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform duration-200 border-4 border-[#1C1816] ember-glow"
+          className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform duration-200 border-4 border-white "
         >
           <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'wght' 700" }}>
             add
@@ -56,7 +56,7 @@ export function BottomNavBar() {
         <span className="material-symbols-outlined">chat</span>
         <span className="text-[10px] font-bold mt-0.5">Messages</span>
         {/* Unread indicator */}
-        <span className="absolute top-1 right-3 w-2.5 h-2.5 bg-blaze rounded-full border-2 border-[#1C1816]"></span>
+        <span className="absolute top-1 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
       </Link>
 
       <Link 

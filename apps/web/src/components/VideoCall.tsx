@@ -1,4 +1,5 @@
 "use client";
+import { IncomingCallToast } from './IncomingCallToast';
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
@@ -810,9 +811,23 @@ export function VideoCall({
   };
 
   // Minimized state card render
+  
+  // If we have an incoming call, just show the toast
+  if (callState === 'ringing-in') {
+    return (
+      <IncomingCallToast 
+        callerName={otherUser?.display_name || otherUser?.username || 'Unknown'}
+        callerAvatar={otherUser?.avatar_url}
+        isVideoCall={incomingOfferPayload?.callType === 'video'}
+        onAccept={acceptIncomingCall}
+        onDecline={declineCall}
+      />
+    );
+  }
+
   if (layoutMode === 'minimized') {
     return (
-      <div className="fixed bottom-6 right-6 w-80 h-52 z-50 bg-[#0C0A09]/95 border border-[#4A3D33] shadow-[0_20px_50px_rgba(0,0,0,0.6)] rounded-[24px] flex flex-col overflow-hidden transition-all duration-300">
+      <div className="fixed bottom-6 right-6 w-80 h-52 z-50 bg-[#0C0A09]/95 border border-[var(--color-outline-variant)] shadow-[0_20px_50px_rgba(0,0,0,0.6)] rounded-[24px] flex flex-col overflow-hidden transition-all duration-300">
         {/* Minimized Remote Video Background */}
         {callState === 'connected' && remoteStream && callType === 'video' ? (
           <>
@@ -826,7 +841,7 @@ export function VideoCall({
             <div className="absolute inset-0 bg-gradient-to-t from-[#0C0A09]/80 via-transparent to-[#0C0A09]/40 z-10 pointer-events-none" />
             
             {isRemoteVideoOff && (
-              <div className="absolute inset-0 bg-[#1C1816] flex flex-col items-center justify-center z-10">
+              <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center z-10">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center text-white text-sm font-bold shadow-md">
                   {otherUser?.avatar_url ? (
                     <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -839,7 +854,7 @@ export function VideoCall({
           </>
         ) : (
           /* Avatar placeholder background for audio or dialing/connecting */
-          <div className="absolute inset-0 bg-[#1C1816] flex items-center p-4 gap-3 z-0">
+          <div className="absolute inset-0 bg-[var(--color-surface)] flex items-center p-4 gap-3 z-0">
             <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center text-white text-base font-bold shadow-md">
               {otherUser?.avatar_url ? (
                 <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -851,7 +866,7 @@ export function VideoCall({
               <h4 className="text-xs font-bold text-white truncate">{otherUser?.display_name || otherUser?.username}</h4>
               <p className="text-[10px] text-[#9A8A7B] font-medium">
                 {callState === 'ringing-out' && 'Ringing...'}
-                {callState === 'ringing-in' && 'Incoming...'}
+                {false /* callState === 'ringing-in' */ && 'Incoming...'}
                 {callState === 'connecting' && 'Connecting...'}
                 {callState === 'connected' && `Audio Call`}
               </p>
@@ -863,7 +878,7 @@ export function VideoCall({
         <div className="relative z-20 flex flex-col justify-between h-full w-full p-3 bg-gradient-to-b from-slate-950/40 via-transparent to-slate-950/60">
           {/* Header */}
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-1.5 bg-[#1C1816]/60 backdrop-blur-md px-2 py-1 rounded-lg border border-[#4A3D33]">
+            <div className="flex items-center gap-1.5 bg-[var(--color-surface)]/60 backdrop-blur-md px-2 py-1 rounded-lg border border-[var(--color-outline-variant)]">
               {callState === 'connected' && (
                 <div className="w-1.5 h-1.5 rounded-full bg-[#FBBF24] animate-pulse" />
               )}
@@ -873,7 +888,7 @@ export function VideoCall({
             </div>
             <button
               onClick={() => setLayoutMode('floating')}
-              className="p-1 rounded-lg bg-[#1C1816]/60 hover:bg-[#262220]/80 backdrop-blur-md border border-[#4A3D33] text-white hover:scale-105 active:scale-95 transition-all"
+              className="p-1 rounded-lg bg-[var(--color-surface)]/60 hover:bg-[var(--color-surface-container)]/80 backdrop-blur-md border border-[var(--color-outline-variant)] text-white hover:scale-105 active:scale-95 transition-all"
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
@@ -881,11 +896,11 @@ export function VideoCall({
 
           {/* Controls Footer */}
           <div className="flex items-center justify-center gap-3 w-full mt-auto">
-            {callState === 'ringing-in' ? (
+            {false /* callState === 'ringing-in' */ ? (
               <>
                 <button
                   onClick={declineCall}
-                  className="w-8 h-8 rounded-full bg-[#EF4444] hover:bg-[#B91C1C] flex items-center justify-center text-white shadow-md hover:scale-110 active:scale-95 transition-all"
+                  className="w-8 h-8 rounded-full bg-red-500 hover:bg-[#B91C1C] flex items-center justify-center text-white shadow-md hover:scale-110 active:scale-95 transition-all"
                 >
                   <PhoneOff className="w-3.5 h-3.5" />
                 </button>
@@ -901,13 +916,13 @@ export function VideoCall({
                 <button
                   onClick={toggleMute}
                   className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all
-                    ${isMuted ? 'bg-[#EF4444] text-white' : 'bg-[#1C1816]/60 backdrop-blur-md text-white border border-[#4A3D33]'}`}
+                    ${isMuted ? 'bg-red-500 text-white' : 'bg-[var(--color-surface)]/60 backdrop-blur-md text-white border border-[var(--color-outline-variant)]'}`}
                 >
                   {isMuted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                 </button>
                 <button
                   onClick={hangUpCall}
-                  className="w-8 h-8 rounded-full bg-[#EF4444] hover:bg-[#B91C1C] flex items-center justify-center text-white shadow-md hover:scale-110 active:scale-95 transition-all"
+                  className="w-8 h-8 rounded-full bg-red-500 hover:bg-[#B91C1C] flex items-center justify-center text-white shadow-md hover:scale-110 active:scale-95 transition-all"
                 >
                   <PhoneOff className="w-3.5 h-3.5" />
                 </button>
@@ -943,7 +958,7 @@ export function VideoCall({
           /* GRID VIEW / SPLIT SCREEN (50-50 Split layout) */
           <div className="relative w-full h-full flex flex-col md:flex-row gap-4 p-6 pt-24 pb-32 z-0">
             {/* Panel 1: Remote user */}
-            <div className="relative flex-1 rounded-3xl overflow-hidden border border-[#4A3D33] bg-[#1C1816] shadow-2xl flex items-center justify-center">
+            <div className="relative flex-1 rounded-3xl overflow-hidden border border-[var(--color-outline-variant)] bg-[var(--color-surface)] shadow-2xl flex items-center justify-center">
               {remoteStream && !isRemoteVideoOff && callType === 'video' ? (
                 <video
                   ref={remoteVideoRef}
@@ -953,8 +968,8 @@ export function VideoCall({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 bg-[#1C1816] flex flex-col items-center justify-center p-6">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg border-2 border-[#4A3D33] mb-3 ember-glow">
+                <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-6">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg border-2 border-[var(--color-outline-variant)] mb-3 ">
                     {otherUser?.avatar_url ? (
                       <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -967,14 +982,14 @@ export function VideoCall({
               )}
               
               {/* Overlay status label */}
-              <div className="absolute bottom-4 left-4 bg-[#0C0A09]/70 backdrop-blur-md px-3 py-1 rounded-xl border border-[#4A3D33] flex items-center gap-2">
+              <div className="absolute bottom-4 left-4 bg-[#0C0A09]/70 backdrop-blur-md px-3 py-1 rounded-xl border border-[var(--color-outline-variant)] flex items-center gap-2">
                 <span className="text-xs font-bold text-white">{otherUser?.display_name || otherUser?.username}</span>
                 {isRemoteMuted && <MicOff className="w-3.5 h-3.5 text-[#EF4444]" />}
               </div>
             </div>
 
             {/* Panel 2: Local user */}
-            <div className="relative flex-1 rounded-3xl overflow-hidden border border-[#4A3D33] bg-[#1C1816] shadow-2xl flex items-center justify-center">
+            <div className="relative flex-1 rounded-3xl overflow-hidden border border-[var(--color-outline-variant)] bg-[var(--color-surface)] shadow-2xl flex items-center justify-center">
               {localStream && !isVideoOff && callType === 'video' ? (
                 <video
                   ref={localVideoRef}
@@ -984,8 +999,8 @@ export function VideoCall({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 bg-[#1C1816] flex flex-col items-center justify-center p-6">
-                  <div className="w-24 h-24 rounded-full bg-[#262220] flex items-center justify-center text-white text-3xl font-bold border border-[#4A3D33] mb-3">
+                <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-6">
+                  <div className="w-24 h-24 rounded-full bg-[var(--color-surface-container)] flex items-center justify-center text-white text-3xl font-bold border border-[var(--color-outline-variant)] mb-3">
                     {currentUserProfile?.avatar_url ? (
                       <img src={currentUserProfile.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -1033,7 +1048,7 @@ export function VideoCall({
               return (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-[#0C0A09] z-0">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent_75%)] pointer-events-none" />
-                  <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center text-white text-4xl font-bold overflow-hidden shadow-2xl mb-4 border-4 border-[#0C0A09] ember-glow">
+                  <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center text-white text-4xl font-bold overflow-hidden shadow-2xl mb-4 border-4 border-[#0C0A09] ">
                     {userProfile?.avatar_url ? (
                       <img src={userProfile.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -1065,7 +1080,7 @@ export function VideoCall({
               return (
                 <div
                   onClick={handleMiniContainerClick}
-                  className={`absolute w-32 h-44 sm:w-40 sm:h-56 rounded-2xl overflow-hidden border border-[#4A3D33] bg-[#0C0A09] shadow-2xl z-20 transition-all duration-300 ease-in-out cursor-pointer hover:scale-105 active:scale-95 group ${cornerClass}`}
+                  className={`absolute w-32 h-44 sm:w-40 sm:h-56 rounded-2xl overflow-hidden border border-[var(--color-outline-variant)] bg-[#0C0A09] shadow-2xl z-20 transition-all duration-300 ease-in-out cursor-pointer hover:scale-105 active:scale-95 group ${cornerClass}`}
                   title="Double-click to swap feeds, click to snap corners"
                 >
                   {!videoOff && callType === 'video' ? (
@@ -1077,8 +1092,8 @@ export function VideoCall({
                       className="w-full h-full object-cover pointer-events-none"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-[#1C1816] flex flex-col items-center justify-center p-3 pointer-events-none">
-                      <div className="w-12 h-12 rounded-full bg-[#262220] border border-[#4A3D33] flex items-center justify-center text-white text-base font-bold mb-2">
+                    <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-3 pointer-events-none">
+                      <div className="w-12 h-12 rounded-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex items-center justify-center text-white text-base font-bold mb-2">
                         {userProfile?.avatar_url ? (
                           <img src={userProfile.avatar_url} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -1093,7 +1108,7 @@ export function VideoCall({
 
                   {/* Mini Mute Indicator */}
                   {((isSecondaryLocal && isMuted) || (!isSecondaryLocal && isRemoteMuted)) && (
-                    <div className="absolute top-2 right-2 p-1 rounded-lg bg-[#EF4444] text-white z-20 shadow-md">
+                    <div className="absolute top-2 right-2 p-1 rounded-lg bg-red-500 text-white z-20 shadow-md">
                       <MicOff className="w-3 h-3" />
                     </div>
                   )}
@@ -1104,7 +1119,7 @@ export function VideoCall({
                       e.stopPropagation();
                       setSwappedStreams(!swappedStreams);
                     }}
-                    className="absolute bottom-2 left-2 p-1.5 rounded-lg bg-[#1C1816]/80 hover:bg-[#F97316] text-white border border-[#4A3D33] opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-20 duration-200"
+                    className="absolute bottom-2 left-2 p-1.5 rounded-lg bg-[var(--color-surface)]/80 hover:bg-blue-500 text-white border border-[var(--color-outline-variant)] opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-20 duration-200"
                     title="Swap streams view"
                   >
                     <SquareSplitHorizontal className="w-3.5 h-3.5" />
@@ -1119,7 +1134,7 @@ export function VideoCall({
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-[#0C0A09] z-0">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.12),transparent_60%)] pointer-events-none" />
           
-          <div className="relative flex flex-col items-center justify-center p-12 bg-white/5 backdrop-blur-2xl border border-[#4A3D33] rounded-[40px] shadow-2xl max-w-sm w-full text-center">
+          <div className="relative flex flex-col items-center justify-center p-12 bg-white/5 backdrop-blur-2xl border border-[var(--color-outline-variant)] rounded-[40px] shadow-2xl max-w-sm w-full text-center">
             {callState !== 'ended' && (
               <>
                 <div className="absolute w-44 h-44 rounded-full border border-[#F97316]/20 animate-ping pointer-events-none" />
@@ -1127,7 +1142,7 @@ export function VideoCall({
               </>
             )}
             
-            <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center text-white text-4xl font-bold overflow-hidden shadow-2xl mb-6 z-10 border-4 border-[#0C0A09] ember-glow">
+            <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center text-white text-4xl font-bold overflow-hidden shadow-2xl mb-6 z-10 border-4 border-[#0C0A09] ">
               {otherUser?.avatar_url ? (
                 <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -1141,7 +1156,7 @@ export function VideoCall({
             
             <span className="text-xs uppercase tracking-widest font-bold text-[#F97316] bg-[#F97316]/10 px-4 py-1.5 rounded-full border border-[#F97316]/20 z-10 animate-pulse">
               {callState === 'ringing-out' && 'Ringing...'}
-              {callState === 'ringing-in' && 'Incoming Call...'}
+              {false /* callState === 'ringing-in' */ && 'Incoming Call...'}
               {callState === 'connecting' && 'Connecting...'}
               {callState === 'ended' && 'Call Ended'}
             </span>
@@ -1153,8 +1168,8 @@ export function VideoCall({
       <div className="absolute top-6 left-6 right-6 z-20 flex items-center justify-between pointer-events-none">
         {/* Floating Profile Box */}
         {callState === 'connected' && (
-          <div className="flex items-center gap-3 bg-[#1C1816]/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-[#4A3D33] shadow-xl pointer-events-auto ember-glow-sm">
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-[#4A3D33] bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center font-bold text-sm">
+          <div className="flex items-center gap-3 bg-[var(--color-surface)]/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-[var(--color-outline-variant)] shadow-xl pointer-events-auto ">
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-[var(--color-outline-variant)] bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center font-bold text-sm">
               {otherUser?.avatar_url ? (
                 <img src={otherUser.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -1175,7 +1190,7 @@ export function VideoCall({
           {callState !== 'ended' && (
             <button
               onClick={() => setLayoutMode('minimized')}
-              className="p-2.5 rounded-2xl bg-[#1C1816]/80 hover:bg-[#262220]/80 backdrop-blur-md border border-[#4A3D33] text-white shadow-xl hover:scale-105 active:scale-95 transition-all"
+              className="p-2.5 rounded-2xl bg-[var(--color-surface)]/80 hover:bg-[var(--color-surface-container)]/80 backdrop-blur-md border border-[var(--color-outline-variant)] text-white shadow-xl hover:scale-105 active:scale-95 transition-all"
               title="Minimize Call"
             >
               <Minimize2 className="w-5 h-5" />
@@ -1185,12 +1200,12 @@ export function VideoCall({
       </div>
 
       {/* 3. Glassmorphic Bottom Controls Panel */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 bg-[#1C1816]/80 backdrop-blur-xl px-6 py-4 rounded-[28px] border border-[#4A3D33] shadow-2xl max-w-md w-[calc(100%-2rem)] justify-center transition-all duration-300">
-        {callState === 'ringing-in' ? (
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 bg-[var(--color-surface)]/80 backdrop-blur-xl px-6 py-4 rounded-[28px] border border-[var(--color-outline-variant)] shadow-2xl max-w-md w-[calc(100%-2rem)] justify-center transition-all duration-300">
+        {false /* callState === 'ringing-in' */ ? (
           <>
             <button
               onClick={declineCall}
-              className="w-14 h-14 rounded-full bg-[#EF4444] hover:bg-[#B91C1C] flex items-center justify-center text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
+              className="w-14 h-14 rounded-full bg-red-500 hover:bg-[#B91C1C] flex items-center justify-center text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
             >
               <PhoneOff className="w-6 h-6" />
             </button>
@@ -1208,7 +1223,7 @@ export function VideoCall({
               onClick={toggleMute}
               disabled={callState === 'ended'}
               className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 active:scale-95
-                ${isMuted ? 'bg-[#EF4444] text-white animate-pulse' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+                ${isMuted ? 'bg-red-500 text-white animate-pulse' : 'bg-white/10 hover:bg-white/20 text-white'}`}
               title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
             >
               {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -1217,7 +1232,7 @@ export function VideoCall({
             {/* End Call / Hang up */}
             <button
               onClick={hangUpCall}
-              className="w-14 h-14 rounded-full bg-[#EF4444] hover:bg-[#B91C1C] flex items-center justify-center text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
+              className="w-14 h-14 rounded-full bg-red-500 hover:bg-[#B91C1C] flex items-center justify-center text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
               title="Hang up"
             >
               <PhoneOff className="w-6 h-6" />
@@ -1229,7 +1244,7 @@ export function VideoCall({
                 onClick={toggleVideo}
                 disabled={callState === 'ended'}
                 className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105 active:scale-95
-                  ${isVideoOff ? 'bg-[#EF4444] text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+                  ${isVideoOff ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
                 title={isVideoOff ? 'Turn camera on' : 'Turn camera off'}
               >
                 {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}

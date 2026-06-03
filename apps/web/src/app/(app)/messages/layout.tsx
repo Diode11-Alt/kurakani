@@ -237,7 +237,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       if (!conversationId) {
         const { data: newConv, error: convErr } = await supabase
           .from('conversations')
-          .insert({ type: 'direct' })
+          .insert({ type: 'direct', created_by: userId })
           .select()
           .single();
           
@@ -308,43 +308,43 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const isInboxRoute = pathname === '/messages';
 
   return (
-    <div className="flex w-full h-[calc(100vh-64px)] md:h-screen overflow-hidden bg-[var(--color-guff-surface)]">
+    <div className="flex w-full h-[calc(100vh-64px)] md:h-screen overflow-hidden bg-[var(--color-background)]">
       <div
-        className={`w-full md:w-[360px] border-r border-[#4A3D33] flex flex-col flex-shrink-0 bg-[#1C1816] relative z-10
+        className={`w-full md:w-[360px] border-r border-[var(--color-outline-variant)] flex flex-col flex-shrink-0 bg-[var(--color-surface)] relative z-10
           ${!isInboxRoute ? 'hidden md:flex' : 'flex'}`}
       >
-        <div className="p-4 border-b border-[var(--color-guff-border)]/40 space-y-4">
+        <div className="p-4 border-b border-[var(--color-outline-variant)] space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-extrabold text-[var(--color-guff-text)]">Chats</h2>
+            <h2 className="text-xl font-extrabold text-[var(--color-on-surface)]">Chats</h2>
           </div>
           
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[var(--color-guff-text-muted)]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[var(--color-on-surface-variant)]" />
             <input
               type="text"
               placeholder="Search users to chat..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--color-guff-surface-container-low)] border-none rounded-xl pl-10 pr-4 py-2.5 text-xs focus:ring-2 focus:ring-[var(--color-guff-primary)] outline-none text-[var(--color-guff-text)]"
+              className="w-full bg-[var(--color-surface-container-low)] border-none rounded-xl pl-10 pr-4 py-2.5 text-xs focus:ring-2 focus:ring-[var(--color-primary)] outline-none text-[var(--color-on-surface)]"
             />
           </div>
 
           {searchQuery.trim() !== '' && (
-            <div className="absolute left-4 right-4 md:left-4 md:w-[328px] mt-1 bg-[#262220] rounded-xl shadow-xl border border-[#4A3D33] py-2 z-50 max-h-[250px] overflow-y-auto">
+            <div className="absolute left-4 right-4 md:left-4 md:w-[328px] mt-1 bg-[var(--color-surface-container-high)] rounded-xl shadow-xl py-2 z-50 max-h-[250px] overflow-y-auto">
               {searching ? (
                 <div className="flex justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-[var(--color-guff-primary)]" />
+                  <Loader2 className="w-5 h-5 animate-spin text-[var(--color-primary)]" />
                 </div>
               ) : searchResults.length === 0 ? (
-                <div className="text-center py-4 text-xs text-[var(--color-guff-text-muted)]">No users found</div>
+                <div className="text-center py-4 text-xs text-[var(--color-on-surface-variant)]">No users found</div>
               ) : (
                 searchResults.map((user) => (
                   <button
                     key={user.userId}
                     onClick={() => startConversation(user.userId)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#262220] text-left transition-colors cursor-pointer"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--color-surface-variant)] text-left transition-colors cursor-pointer"
                   >
-                    <div className="w-8 h-8 squircle bg-brand/20 flex items-center justify-center text-brand font-bold overflow-hidden text-xs">
+                    <div className="w-8 h-8 squircle bg-[var(--color-primary-container)] flex items-center justify-center text-[var(--color-on-primary-container)] font-bold overflow-hidden text-xs">
                       {user.avatarUrl ? (
                         <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -352,10 +352,10 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                       )}
                     </div>
                     <div>
-                      <div className="font-semibold text-xs text-[var(--color-guff-text)]">
+                      <div className="font-semibold text-xs text-[var(--color-on-surface)]">
                         {user.displayName || user.username}
                       </div>
-                      <div className="text-[10px] text-[var(--color-guff-text-muted)]">@{user.username}</div>
+                      <div className="text-[10px] text-[var(--color-on-surface-variant)]">@{user.username}</div>
                     </div>
                   </button>
                 ))
@@ -367,13 +367,13 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
           {loading ? (
             <div className="flex items-center justify-center h-48">
-              <Loader2 className="w-6 h-6 animate-spin text-[var(--color-guff-primary)]" />
+              <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
             </div>
           ) : conversations.length === 0 ? (
             <div className="text-center py-16 px-4">
-              <MessageSquare className="w-10 h-10 mx-auto text-content-muted mb-3" />
-              <p className="font-semibold text-[var(--color-guff-text-secondary)] text-sm">No conversations yet</p>
-              <p className="text-xs text-[var(--color-guff-text-muted)] mt-1">Search users above to start messaging!</p>
+              <MessageSquare className="w-10 h-10 mx-auto text-[var(--color-on-surface-variant)] mb-3" />
+              <p className="font-semibold text-[var(--color-on-surface-variant)] text-sm">No conversations yet</p>
+              <p className="text-xs text-[var(--color-outline-variant)] mt-1">Search users above to start messaging!</p>
             </div>
           ) : (
             conversations.map((c) => {
@@ -401,34 +401,34 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                   onClick={() => router.push(`/messages/${c.id}`)}
                   className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-all duration-200 cursor-pointer border-l-4
                     ${active 
-                      ? 'bg-[var(--color-guff-primary-light)]/40 border-[var(--color-guff-primary)]' 
-                      : 'hover:bg-[var(--color-guff-surface-container-low)] border-transparent'}`}
+                      ? 'bg-[var(--color-primary-container)] border-[var(--color-primary)]' 
+                      : 'hover:bg-[var(--color-surface-container-low)] border-transparent'}`}
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 squircle bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                    <div className="w-12 h-12 squircle bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
                       {c.otherUser?.avatarUrl ? (
                         <img src={c.otherUser.avatarUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
                         c.otherUser?.username?.[0]?.toUpperCase() || '?'
                       )}
                     </div>
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-spark border-2 border-[#1C1816] rounded-full"></div>
+                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                       <span className={`text-sm truncate max-w-[150px]
-                        ${hasUnread ? 'font-bold text-[var(--color-guff-text)]' : 'font-semibold text-[var(--color-guff-text)]'}`}
+                        ${hasUnread ? 'font-bold text-[var(--color-on-surface)]' : 'font-semibold text-[var(--color-on-surface)]'}`}
                       >
                         {c.otherUser?.displayName || c.otherUser?.username || 'Unknown User'}
                       </span>
-                      <span className={`text-[10px] flex-shrink-0 ${hasUnread ? 'text-[var(--color-guff-primary)] font-bold' : 'text-[var(--color-guff-text-muted)]'}`}>
+                      <span className={`text-[10px] flex-shrink-0 ${hasUnread ? 'text-[var(--color-primary)] font-bold' : 'text-[var(--color-on-surface-variant)]'}`}>
                         {timeDisplay}
                       </span>
                     </div>
 
                     <p className={`text-xs truncate
-                      ${hasUnread ? 'font-bold text-[var(--color-guff-text)]' : 'text-[var(--color-guff-text-secondary)]'}`}
+                      ${hasUnread ? 'font-bold text-[var(--color-on-surface)]' : 'text-[var(--color-on-surface-variant)]'}`}
                     >
                       {c.lastMessage
                         ? `${c.lastMessage.senderId === userId ? 'You: ' : ''}${c.lastMessage.content}`
@@ -437,7 +437,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                   </div>
 
                   {hasUnread && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-guff-primary)] flex-shrink-0" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-primary)] flex-shrink-0" />
                   )}
                 </button>
               );
@@ -446,7 +446,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         </div>
       </div>
 
-      <div className={`flex-1 flex flex-col h-full bg-[var(--color-guff-background)] relative
+      <div className={`flex-1 flex flex-col h-full bg-[var(--color-background)] relative
         ${isInboxRoute ? 'hidden md:flex' : 'flex'}`}
       >
         {children}

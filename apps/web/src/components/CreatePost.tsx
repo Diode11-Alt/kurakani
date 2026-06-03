@@ -80,10 +80,10 @@ export function CreatePost({ userId, userProfile, onPostCreated }: {
   };
 
   return (
-    <div className="card-ember p-4 shadow-[0_2px_8px_rgba(0,0,0,0.3)] rounded-xl transition-all duration-300">
+    <div className="glass-card p-4 shadow-sm rounded-3xl transition-all duration-300">
       <div className="flex gap-4">
         {/* Avatar */}
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 ember-glow-sm">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden bg-[var(--color-primary)]">
           {userProfile?.avatar_url ? (
             <img src={userProfile.avatar_url} alt="" className="w-full h-full object-cover" />
           ) : (

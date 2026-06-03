@@ -1,326 +1,193 @@
 @import "tailwindcss";
 
 @theme {
-  /* ══════════════════════════════════════════
-     🔥 EMBER FLAME — Design System Tokens
-     ══════════════════════════════════════════ */
+  --color-on-error: #ffffff;
+  --color-error: #ba1a1a;
+  --color-secondary: #855300;
+  --color-background: #f7f9fb;
+  --color-on-error-container: #93000a;
+  --color-primary-fixed: #e2dfff;
+  --color-surface-container-high: #e6e8ea;
+  --color-on-secondary-fixed-variant: #653e00;
+  --color-surface-container-highest: #e0e3e5;
+  --color-on-primary-fixed: #0f0069;
+  --color-secondary-fixed-dim: #ffb95f;
+  --color-surface-dim: #d8dadc;
+  --color-surface-container: #eceef0;
+  --color-on-background: #191c1e;
+  --color-primary: #3525cd;
+  --color-primary-fixed-dim: #c3c0ff;
+  --color-error-container: #ffdad6;
+  --color-on-secondary-container: #684000;
+  --color-inverse-surface: #2d3133;
+  --color-tertiary-fixed-dim: #c0c1ff;
+  --color-tertiary: #3130c0;
+  --color-on-surface: #191c1e;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-primary-container: #4f46e5;
+  --color-surface-bright: #f7f9fb;
+  --color-secondary-fixed: #ffddb8;
+  --color-tertiary-container: #4b4dd8;
+  --color-on-tertiary-fixed: #07006c;
+  --color-on-secondary-fixed: #2a1700;
+  --color-on-surface-variant: #464555;
+  --color-outline: #777587;
+  --color-on-primary-container: #dad7ff;
+  --color-secondary-container: #fea619;
+  --color-surface-variant: #e0e3e5;
+  --color-on-primary: #ffffff;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #d9d8ff;
+  --color-on-primary-fixed-variant: #3323cc;
+  --color-outline-variant: #c7c4d8;
+  --color-inverse-on-surface: #eff1f3;
+  --color-surface: #f7f9fb;
+  --color-on-tertiary-fixed-variant: #2f2ebe;
+  --color-inverse-primary: #c3c0ff;
+  --color-tertiary-fixed: #e1e0ff;
+  --color-surface-tint: #4d44e3;
+  --color-surface-container-low: #f2f4f6;
 
-  /* ── Core Surfaces (The Obsidian Layers) ── */
-  --color-base: #0C0A09;
-  --color-surface: #1C1816;
-  --color-elevated: #262220;
-  --color-surface-bright: #31302E;
+  --color-guff-primary: var(--color-primary);
+  --color-guff-primary-hover: #4f46e5;
+  --color-guff-primary-light: rgba(53, 37, 205, 0.15);
+  --color-guff-primary-container: var(--color-primary-container);
+  
+  --color-guff-text: var(--color-on-background);
+  --color-guff-text-secondary: var(--color-on-surface-variant);
+  --color-guff-text-muted: var(--color-outline);
+  
+  --color-guff-surface: var(--color-surface);
+  --color-guff-surface-container-low: var(--color-surface-container-low);
+  --color-guff-surface-container: var(--color-surface-container);
+  --color-guff-surface-container-high: var(--color-surface-container-high);
+  
+  --color-guff-border: var(--color-outline-variant);
 
-  /* ── Primary Accent (Ember Orange) ── */
-  --color-brand: #F97316;
-  --color-brand-hover: #EA580C;
-  --color-brand-dim: #C2410C;
-  --color-brand-muted: rgba(249, 115, 22, 0.15);
-  --color-brand-glow: rgba(249, 115, 22, 0.20);
-
-  /* ── Secondary (Blaze Red) ── */
-  --color-blaze: #EF4444;
-  --color-blaze-dim: #B91C1C;
-
-  /* ── Tertiary (Spark Amber) ── */
-  --color-spark: #FBBF24;
-  --color-spark-dim: #B45309;
-
-  /* ── Text Colors (Ash Scale) ── */
-  --color-content: #F5F0EB;
-  --color-content-secondary: #D4C4B0;
-  --color-content-muted: #9A8A7B;
-
-  /* ── Borders ── */
-  --color-border: #4A3D33;
-  --color-border-subtle: rgba(74, 61, 51, 0.5);
-
-  /* ── Semantic ── */
-  --color-secure: #FBBF24;
-  --color-error: #EF4444;
-  --color-success: #10B981;
-
-  /* ── Font Stacks ── */
-  --font-sora: 'Sora', system-ui, sans-serif;
-  --font-jakarta: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-mono: 'Space Mono', 'JetBrains Mono', monospace;
-
-  /* ══ Legacy GUFF Variables (Mapped to Ember Flame) ══ */
-  --color-guff-background: #0C0A09;
-  --color-guff-bg: #0C0A09;
-  --color-guff-surface: #1C1816;
-  --color-guff-surface-bright: #262220;
-  --color-guff-surface-container-lowest: #070504;
-  --color-guff-surface-container-low: #171311;
-  --color-guff-surface-container: #1C1816;
-  --color-guff-surface-container-high: #262220;
-  --color-guff-border: #4A3D33;
-  --color-guff-outline: #9A8A7B;
-  --color-guff-outline-variant: #4A3D33;
-
-  --color-guff-text: #F5F0EB;
-  --color-guff-text-secondary: #D4C4B0;
-  --color-guff-text-muted: #9A8A7B;
-
-  --color-guff-primary: #F97316;
-  --color-guff-primary-hover: #EA580C;
-  --color-guff-primary-light: rgba(249, 115, 22, 0.15);
-  --color-guff-primary-container: #C2410C;
-  --color-guff-primary-fixed: #F97316;
-
-  --color-guff-secondary: #EF4444;
-  --color-guff-secondary-container: #B91C1C;
-  --color-guff-tertiary: #FBBF24;
-
-  --color-guff-success: #FBBF24;
-  --color-guff-danger: #EF4444;
+  --font-body-lg: 'Inter', system-ui, sans-serif;
+  --font-headline-sm: 'Inter', system-ui, sans-serif;
+  --font-display-lg: 'Inter', system-ui, sans-serif;
+  --font-chat-text: 'Inter', system-ui, sans-serif;
+  --font-headline-md: 'Inter', system-ui, sans-serif;
+  --font-body-md: 'Inter', system-ui, sans-serif;
+  --font-label-md: 'Inter', system-ui, sans-serif;
 }
 
 @layer base {
   body {
-    color: var(--color-content);
-    background: var(--color-base);
-    font-family: var(--font-jakarta);
+    color: var(--color-on-background);
+    background: var(--color-background);
+    font-family: var(--font-body-lg);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   ::selection {
-    background: var(--color-brand);
+    background: var(--color-primary);
     color: white;
   }
 
-  /* Material Symbols Configuration */
   .material-symbols-outlined {
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-block;
+    vertical-align: middle;
   }
 
-  /* ── Dark Scrollbar ── */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 999px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--color-content-muted); }
+  ::-webkit-scrollbar-thumb { background: var(--color-outline-variant); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-outline); }
 }
 
 @layer components {
+  /* ══ Squircle Shape ══ */
+  .squircle {
+    border-radius: 22%;
+    mask-image: paint(squircle);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-surface-container) 25%, var(--color-surface-bright) 50%, var(--color-surface-container) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
   /* ══ Buttons ══ */
   .btn-primary {
-    background: linear-gradient(135deg, #F97316, #EA580C);
-    color: white;
-    font-family: var(--font-jakarta);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font-family: var(--font-body-lg);
     font-weight: 700;
     padding: 0.875rem 1.5rem;
     border-radius: 0.75rem;
     transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.875rem;
-    box-shadow: 0 0 20px var(--color-brand-glow), 0 4px 12px rgba(0,0,0,0.3);
   }
   .btn-primary:hover {
-    background: linear-gradient(135deg, #FB923C, #F97316);
-    box-shadow: 0 0 32px var(--color-brand-glow), 0 8px 24px rgba(0,0,0,0.4);
+    opacity: 0.9;
     transform: translateY(-1px);
   }
   .btn-primary:active { transform: scale(0.98) translateY(0); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
   .btn-secondary {
-    background: var(--color-surface);
-    color: var(--color-content-secondary);
+    background: var(--color-surface-container-low);
+    color: var(--color-on-surface);
     font-weight: 600;
     padding: 0.75rem 1.5rem;
     border-radius: 0.75rem;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-outline-variant);
     transition: all 200ms;
     font-size: 0.875rem;
   }
   .btn-secondary:hover {
-    border-color: rgba(249, 115, 22, 0.4);
-    color: var(--color-content);
-    background: var(--color-elevated);
+    background: var(--color-surface-container);
   }
 
   .btn-ghost {
     background: transparent;
-    color: var(--color-brand);
+    color: var(--color-primary);
     font-weight: 600;
     padding: 0.75rem 1.5rem;
     border-radius: 0.75rem;
     transition: all 200ms;
     font-size: 0.875rem;
   }
-  .btn-ghost:hover { background: var(--color-brand-muted); }
+  .btn-ghost:hover { background: rgba(53, 37, 205, 0.1); }
 
   /* ══ Input Fields ══ */
   .input-field {
     width: 100%;
-    background: #171311;
-    border: 1px solid var(--color-border);
+    background: var(--color-surface-container-low);
+    border: 1px solid var(--color-outline-variant);
     border-radius: 0.75rem;
     padding: 0.875rem 1rem;
     font-size: 0.875rem;
-    font-family: var(--font-jakarta);
-    color: var(--color-content);
+    color: var(--color-on-surface);
     outline: none;
-    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 250ms;
   }
   .input-field:focus {
-    border-color: var(--color-brand);
-    box-shadow: 0 0 0 3px var(--color-brand-muted), inset 0 0 12px rgba(249, 115, 22, 0.05);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(53, 37, 205, 0.15);
   }
-  .input-field::placeholder { color: var(--color-content-muted); }
-
-  /* ══ Floating Labels ══ */
-  .input-floating-label:focus-within label,
-  .input-floating-label input:not(:placeholder-shown) + label {
-    transform: translateY(-28px) scale(0.8);
-    color: var(--color-brand);
-    font-weight: 600;
-  }
-
-  /* ══ Cards ══ */
+  .input-field::placeholder { color: var(--color-outline); }
+  
   .card-ember {
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-outline-variant);
     border-radius: 1rem;
-    transition: border-color 300ms;
   }
-  .card-ember:hover {
-    border-color: rgba(249, 115, 22, 0.3);
-  }
-
-  /* ══ Ember Glow Effects ══ */
-  .ember-glow {
-    box-shadow: 0 0 20px var(--color-brand-glow);
-  }
-  .ember-glow-sm {
-    box-shadow: 0 0 12px var(--color-brand-glow);
-  }
-  .ember-glow-lg {
-    box-shadow: 0 0 40px var(--color-brand-glow), 0 0 80px rgba(249, 115, 22, 0.08);
-  }
-
-  /* ══ Glass (Dark) ══ */
-  .glass-dark {
-    background: rgba(28, 24, 22, 0.80);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--color-border-subtle);
-  }
-
-  /* ══ Gradients ══ */
-  .bg-ember-gradient {
-    background: linear-gradient(135deg, #0C0A09 0%, #1C1816 40%, #C2410C 100%);
-  }
-  .bg-auth-gradient {
-    background: linear-gradient(145deg, #0C0A09 0%, #1C1210 30%, #7C2D12 70%, #C2410C 100%);
-  }
-  .bg-ember-hero {
-    background: linear-gradient(135deg, #0C0A09 0%, #171311 40%, rgba(249, 115, 22, 0.15) 100%);
-  }
-
-  /* ══ Ember Ring (for avatars) ══ */
-  .ember-ring {
-    box-shadow: 0 0 0 2px var(--color-brand), 0 0 12px var(--color-brand-glow);
-  }
-
-  /* ══ Typography Scales ══ */
-  .text-display-lg {
-    font-family: var(--font-sora);
-    font-size: 52px;
-    line-height: 60px;
-    letter-spacing: -0.03em;
-    font-weight: 800;
-  }
-  .text-display-md {
-    font-family: var(--font-sora);
-    font-size: 40px;
-    line-height: 48px;
-    letter-spacing: -0.02em;
-    font-weight: 700;
-  }
-  .text-headline-lg {
-    font-family: var(--font-sora);
-    font-size: 28px;
-    line-height: 36px;
-    letter-spacing: -0.015em;
-    font-weight: 700;
-  }
-  .text-headline-md {
-    font-family: var(--font-sora);
-    font-size: 24px;
-    line-height: 32px;
-    letter-spacing: -0.01em;
-    font-weight: 600;
-  }
-  .text-headline-sm {
-    font-family: var(--font-sora);
-    font-size: 20px;
-    line-height: 28px;
-    font-weight: 600;
-  }
-  .text-body-lg {
-    font-family: var(--font-jakarta);
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-  }
-  .text-body-md {
-    font-family: var(--font-jakarta);
-    font-size: 14px;
-    line-height: 20px;
-    font-weight: 400;
-  }
-  .text-body-sm {
-    font-family: var(--font-jakarta);
-    font-size: 13px;
-    line-height: 18px;
-    font-weight: 400;
-  }
-  .text-label-lg {
-    font-family: var(--font-mono);
-    font-size: 14px;
-    line-height: 20px;
-    letter-spacing: 0.03em;
-    font-weight: 700;
-  }
-  .text-label-md {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    line-height: 16px;
-    letter-spacing: 0.05em;
-    font-weight: 700;
-  }
-  .text-label-sm {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    line-height: 14px;
-    letter-spacing: 0.06em;
-    font-weight: 600;
-  }
-}
-
-/* ══ Ember Particle Animation ══ */
-@keyframes ember-float {
-  0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
-  50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
-}
-@keyframes ember-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-}
-@keyframes ember-drift {
-  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-  10% { opacity: 0.7; }
-  90% { opacity: 0.5; }
-  100% { transform: translate(100px, -200px) rotate(45deg); opacity: 0; }
-}
-
-.animate-ember-float { animation: ember-float 3s ease-in-out infinite; }
-.animate-ember-pulse { animation: ember-pulse 2s ease-in-out infinite; }
-.animate-ember-drift { animation: ember-drift 8s linear infinite; }
-
-/* ══ Squircle Shape ══ */
-.squircle {
-  border-radius: 22%;
-  mask-image: paint(squircle);
 }

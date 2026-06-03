@@ -20,7 +20,7 @@ export default function FeedPage() {
       setSession(session);
 
       const { data: profileData } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('id', session.user.id)
         .single();
@@ -35,7 +35,7 @@ export default function FeedPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('posts')
-      .select('*, profiles:author_id(id, username, display_name, avatar_url)')
+      .select('*, users:author_id(id, username, display_name, avatar_url)')
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -48,15 +48,15 @@ export default function FeedPage() {
   if (!session) return null;
 
   return (
-    <div className="max-w-2xl mx-auto py-6 px-4 md:py-8">
+    <div className="max-w-2xl mx-auto py-6 px-4 md:py-8 lg:ml-64">
       {/* Header */}
       <div className="mb-6 select-none">
-        <h1 className="text-headline-lg text-content">Feed</h1>
-        <p className="text-body-sm text-content-muted mt-1">See what's happening securely</p>
+        <h1 className="text-headline-lg font-bold text-[var(--color-on-surface)] font-display-lg tracking-tight">Feed</h1>
+        <p className="text-body-sm text-[var(--color-on-surface-variant)] mt-1">See what's happening securely</p>
       </div>
 
       {/* Stories Tray */}
-      <div className="mb-6 p-4 card-ember rounded-xl overflow-hidden">
+      <div className="mb-6 p-4 glass-card rounded-3xl overflow-hidden">
         <StoriesTray
           currentUserId={session.user.id}
           currentProfile={profile}
@@ -75,13 +75,13 @@ export default function FeedPage() {
       {/* Posts */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-brand" />
+          <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-16 card-ember rounded-xl">
+        <div className="text-center py-16 glass-card rounded-3xl">
           <div className="text-4xl mb-3">📝</div>
-          <h3 className="font-semibold text-content">No posts yet</h3>
-          <p className="text-xs text-content-muted mt-1">Be the first to share something!</p>
+          <h3 className="font-semibold text-[var(--color-on-surface)]">No posts yet</h3>
+          <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Be the first to share something!</p>
         </div>
       ) : (
         <div className="space-y-6">
