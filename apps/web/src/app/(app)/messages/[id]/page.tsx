@@ -497,6 +497,10 @@ export default function ChatThreadPage() {
       
       // Establish new session
       await establishSessionAsInitiator(signalStoreRef.current, otherUser.id, 1, keyBundle);
+      
+      // We MUST send a message using the new session to transmit the PreKeySignalMessage to the other party
+      await handleSendMessage({ preventDefault: () => {} } as any, undefined, '🔄 Secure session re-established. We can now chat securely again.');
+      
       toast.success('Secure session re-established! Refreshing messages...');
       
       // Reload page to re-decrypt messages
