@@ -27,9 +27,14 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Generate new cryptographic identity for this device
+      // 1. Generate new cryptographic identity for this device only if not initialized
       const store = new WebSignalStore();
-      const basePayload = await generateSignalRegistrationPayload(store);
+      const isInit = await store.isInitialized();
+      
+      let basePayload = null;
+      if (!isInit) {
+        basePayload = await generateSignalRegistrationPayload(store);
+      }
       
       // Determine device ID
       let currentDeviceId = deviceId;
@@ -53,33 +58,35 @@ export default function LoginPage() {
         throw new Error("Authentication failed - no user returned.");
       }
       
-      // Upload new keys for this device session
-      // 1. Identity Key (upsert/insert)
-      const { error: idError } = await supabase.from('identity_keys').insert({
-        user_id: user.id,
-        device_id: currentDeviceId,
-        identity_key: basePayload.identityKey
-      });
-      if (idError) console.warn("Identity key might exist:", idError.message); // Could already exist
+      // Upload new keys for this device session only if they were just generated
+      if (!isInit && basePayload) {
+        // 1. Identity Key (upsert/insert)
+        const { error: idError } = await supabase.from('identity_keys').insert({
+          user_id: user.id,
+          device_id: currentDeviceId,
+          identity_key: basePayload.identityKey
+        });
+        if (idError) console.warn("Identity key might exist:", idError.message);
 
-      // 2. Signed Pre-Key
-      await supabase.from('signed_pre_keys').insert({
-        user_id: user.id,
-        device_id: currentDeviceId,
-        key_id: basePayload.signedPreKey.keyId,
-        public_key: basePayload.signedPreKey.publicKey,
-        signature: basePayload.signedPreKey.signature
-      });
+        // 2. Signed Pre-Key
+        await supabase.from('signed_pre_keys').insert({
+          user_id: user.id,
+          device_id: currentDeviceId,
+          key_id: basePayload.signedPreKey.keyId,
+          public_key: basePayload.signedPreKey.publicKey,
+          signature: basePayload.signedPreKey.signature
+        });
 
-      // 3. One-Time Pre-Keys
-      const preKeysToInsert = basePayload.oneTimePreKeys.map(pk => ({
-        user_id: user.id,
-        device_id: currentDeviceId,
-        key_id: pk.keyId,
-        public_key: pk.publicKey,
-        used: false
-      }));
-      await supabase.from('one_time_pre_keys').insert(preKeysToInsert);
+        // 3. One-Time Pre-Keys
+        const preKeysToInsert = basePayload.oneTimePreKeys.map((pk: any) => ({
+          user_id: user.id,
+          device_id: currentDeviceId,
+          key_id: pk.keyId,
+          public_key: pk.publicKey,
+          used: false
+        }));
+        await supabase.from('one_time_pre_keys').insert(preKeysToInsert);
+      }
 
       setKeysGenerated(true);
       

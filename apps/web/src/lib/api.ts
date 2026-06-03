@@ -6,15 +6,6 @@
 
 import { supabase } from './supabase';
 
-// ─── Legacy JWT Shim (no-ops for backward compat during migration) ────────
-/** @deprecated No longer stores JWT tokens — Supabase handles auth */
-export async function setTokens(_access: string, _refresh: string) { /* no-op */ }
-/** @deprecated Returns null — use supabase.auth.getSession() */
-export async function getAccessToken(): Promise<string | null> { return null; }
-/** @deprecated Returns null — use supabase.auth.getSession() */
-export async function getRefreshToken(): Promise<string | null> { return null; }
-/** @deprecated No-op — use supabase.auth.signOut() */
-export async function clearTokens() { /* no-op */ }
 
 // ─── Auth ─────────────────────────────────────────────────
 
@@ -82,10 +73,16 @@ export async function getUserById(id: string) {
 }
 
 export async function searchUsers(query: string) {
+  if (!query || query.length < 2) return { users: [] };
+  
+  // Sanitize input to prevent ReDoS and use prefix matching for index use
+  const safeQuery = query.replace(/[%_\\]/g, '');
+  if (safeQuery.length < 2) return { users: [] };
+
   const { data, error } = await supabase
     .from('users')
     .select('id, username, display_name, avatar_url')
-    .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+    .or(`username.ilike.${safeQuery}%,display_name.ilike.${safeQuery}%`)
     .limit(20);
 
   if (error) throw new Error(error.message);
@@ -218,13 +215,7 @@ export async function fetchKeyBundle(userId: string) {
     .single();
   if (spkErr) throw new Error(spkErr.message);
 
-  const { data: otpk } = await supabase
-    .from('one_time_pre_keys')
-    .select('key_id, public_key')
-    .eq('user_id', userId)
-    .eq('used', false)
-    .limit(1)
-    .single();
+  const { data: otpk } = await supabase.rpc('fetch_otpk', { target_user_id: userId }).maybeSingle();
 
   return {
     identityKey: ik.identity_key,

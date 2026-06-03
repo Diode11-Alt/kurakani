@@ -15,7 +15,6 @@ DROP TABLE IF EXISTS user_settings CASCADE;
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL, -- Keep for legacy or Supabase Auth mapping
   phone_hash VARCHAR(128) UNIQUE,
   username VARCHAR(50) UNIQUE,
   display_name VARCHAR(100),
@@ -74,9 +73,30 @@ CREATE POLICY "Users can create conversations" ON conversations FOR INSERT WITH 
 
 -- Conversation Members RLS
 CREATE POLICY "Users can see members of their conversations" ON conversation_members FOR SELECT
-USING (EXISTS (SELECT 1 FROM conversation_members cm WHERE cm.conversation_id = conversation_members.conversation_id AND cm.user_id = auth.uid()));
+USING (
+  conversation_id IN (
+    SELECT c.id FROM conversations c
+    JOIN conversation_members cm ON c.id = cm.conversation_id
+    WHERE cm.user_id = auth.uid()
+  )
+);
 
-CREATE POLICY "Users can add members" ON conversation_members FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Members can add other members to their conversations"
+  ON conversation_members FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM conversation_members cm
+      WHERE cm.conversation_id = conversation_members.conversation_id
+        AND cm.user_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM conversations c
+      WHERE c.id = conversation_members.conversation_id
+        AND c.created_by = auth.uid()
+    )
+    OR auth.uid() = conversation_members.user_id
+  );
+
 CREATE POLICY "Users can update their own membership" ON conversation_members FOR UPDATE USING (auth.uid() = user_id);
 
 -- ─── MESSAGES ─────────────────────────────────────────────
@@ -135,3 +155,49 @@ ALTER TABLE blocked_users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can read own blocks" ON blocked_users FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can block" ON blocked_users FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can unblock" ON blocked_users FOR DELETE USING (auth.uid() = user_id);
+
+-- ─── ATOMIC OPERATIONS (RPC) ──────────────────────────────
+-- Atomically fetch and mark a one-time pre-key as used
+CREATE OR REPLACE FUNCTION fetch_otpk(target_user_id UUID)
+RETURNS TABLE (id UUID, key_id INTEGER, public_key TEXT) AS $$
+BEGIN
+  RETURN QUERY
+  UPDATE one_time_pre_keys
+  SET used = true, used_at = now()
+  WHERE one_time_pre_keys.id = (
+    SELECT otp.id
+    FROM one_time_pre_keys otp
+    WHERE otp.user_id = target_user_id AND otp.used = false
+    LIMIT 1
+    FOR UPDATE SKIP LOCKED
+  )
+  RETURNING one_time_pre_keys.id, one_time_pre_keys.key_id, one_time_pre_keys.public_key;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Atomically transfer group admin role
+CREATE OR REPLACE FUNCTION transfer_conversation_admin(conv_id UUID, new_admin_id UUID)
+RETURNS void AS $$
+BEGIN
+  -- Verify the current user is an admin
+  IF NOT EXISTS (
+    SELECT 1 FROM conversation_members 
+    WHERE conversation_id = conv_id AND user_id = auth.uid() AND role = 'admin'
+  ) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  -- Verify the new admin is a member
+  IF NOT EXISTS (
+    SELECT 1 FROM conversation_members 
+    WHERE conversation_id = conv_id AND user_id = new_admin_id
+  ) THEN
+    RAISE EXCEPTION 'New admin is not a member';
+  END IF;
+
+  -- Update roles
+  UPDATE conversation_members SET role = 'admin' WHERE conversation_id = conv_id AND user_id = new_admin_id;
+  UPDATE conversation_members SET role = 'member' WHERE conversation_id = conv_id AND user_id = auth.uid();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+

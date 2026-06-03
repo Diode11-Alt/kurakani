@@ -41,6 +41,15 @@ export default function RegisterPage() {
         setDeviceId(currentDeviceId);
       }
 
+      // Hash the phone number if provided
+      let phoneHash = null;
+      if (phoneNumber) {
+        const msgUint8 = new TextEncoder().encode(phoneNumber + 'kurakani_default_pepper');
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        phoneHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+      }
+
       // Register with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -48,7 +57,7 @@ export default function RegisterPage() {
         options: {
           data: {
             username,
-            phone_number: phoneNumber,
+            phone_hash: phoneHash,
             registration_id: basePayload.registrationId,
           }
         }
@@ -213,6 +222,7 @@ export default function RegisterPage() {
               id="password" 
               type={showPassword ? "text" : "password"}
               required
+              minLength={12}
               className="w-full pl-12 pr-12 py-4 bg-[#171311] border border-border rounded-xl focus:ring-0 focus:border-brand transition-all peer text-content text-sm outline-none placeholder-transparent focus:shadow-[0_0_0_3px_rgba(249,115,22,0.15)]" 
               placeholder=" "
               value={password}

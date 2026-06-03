@@ -1,4 +1,4 @@
-import { getAccessToken } from './api';
+import { supabase } from './supabase';
 
 type EventHandler = (data: unknown) => void;
 
@@ -15,8 +15,9 @@ class SocketManager {
     return this.ws?.readyState === WebSocket.OPEN;
   }
 
-  connect() {
-    const token = getAccessToken();
+  async connect() {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
     if (!token) return;
 
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || (
@@ -34,9 +35,10 @@ class SocketManager {
       return;
     }
 
-    this.ws.onopen = () => {
+    this.ws.onopen = async () => {
       // Send auth as first message instead of in URL (CWE-598 fix)
-      const authToken = getAccessToken();
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
       if (authToken && this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({ type: 'auth', token: authToken }));
       }

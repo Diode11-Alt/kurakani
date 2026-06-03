@@ -7,6 +7,7 @@ import { RootStackParamList } from '../navigation/RootNavigator';
 import { SignalProtocolStore } from '../signal/SignalStore';
 import { KeyHelper } from '@privacyresearch/libsignal-protocol-typescript';
 import { bufferToBase64 } from '../signal/utils';
+import { supabase } from '../lib/supabase';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { Phone, User, ArrowRight, ShieldCheck } from 'lucide-react-native';
@@ -53,36 +54,52 @@ export default function LoginScreen({ navigation }: Props) {
         await store.storePreKey(1, preKey.keyPair);
         await store.storeSignedPreKey(1, signedPreKey.keyPair);
 
-        body = {
-          ...body,
-          registrationId,
-          identityKey: bufferToBase64(identityKeyPair.pubKey),
-          signedPreKey: {
-            keyId: signedPreKey.keyId,
-            publicKey: bufferToBase64(signedPreKey.keyPair.pubKey),
-            signature: bufferToBase64(signedPreKey.signature)
-          },
-          preKeys: [{
-            keyId: preKey.keyId,
-            publicKey: bufferToBase64(preKey.keyPair.pubKey)
-          }]
-        };
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: `${username}@example.com`,
+          password: phone, // using phone as password for MVP
+          options: {
+            data: {
+              username,
+              phone_number: phone,
+              registration_id: registrationId,
+            }
+          }
+        });
+        
+        if (authError) throw new Error(authError.message);
+        if (!authData.user) throw new Error('Registration failed');
+        
+        const currentDeviceId = 1;
+        
+        await supabase.from('identity_keys').insert({
+          user_id: authData.user.id,
+          device_id: currentDeviceId,
+          identity_key: bufferToBase64(identityKeyPair.pubKey)
+        });
+        await supabase.from('signed_pre_keys').insert({
+          user_id: authData.user.id,
+          device_id: currentDeviceId,
+          key_id: signedPreKey.keyId,
+          public_key: bufferToBase64(signedPreKey.keyPair.pubKey),
+          signature: bufferToBase64(signedPreKey.signature)
+        });
+        await supabase.from('one_time_pre_keys').insert([{
+          user_id: authData.user.id,
+          device_id: currentDeviceId,
+          key_id: preKey.keyId,
+          public_key: bufferToBase64(preKey.keyPair.pubKey),
+          used: false
+        }]);
+
+        await AsyncStorage.setItem('signal_user', JSON.stringify(authData.user));
+      } else {
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: `${username}@example.com`,
+          password: phone,
+        });
+        if (authError) throw new Error(authError.message);
+        await AsyncStorage.setItem('signal_user', JSON.stringify(authData.user));
       }
-
-      const res = await fetch(`http://localhost:4000/api/auth/${mode}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Authentication failed');
-      }
-
-      const { token, user } = await res.json();
-      await AsyncStorage.setItem('signal_token', token);
-      await AsyncStorage.setItem('signal_user', JSON.stringify(user));
       
       connect();
       navigation.replace('Home');

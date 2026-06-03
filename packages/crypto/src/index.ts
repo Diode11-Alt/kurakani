@@ -6,6 +6,8 @@ export {
   establishSessionAsInitiator,
   encryptMessage,
   decryptMessage,
+  arrayBufferToBase64,
+  base64ToArrayBuffer
 } from './session';
 
 // HKDF key derivation

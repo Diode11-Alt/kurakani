@@ -17,6 +17,7 @@ import Picker from '@emoji-mart/react';
 import { WebSignalStore } from '../../../../lib/crypto/WebSignalStore';
 import { establishSessionAsInitiator, encryptMessage, decryptMessage } from '@signal/crypto';
 import { supabase } from '@/lib/supabase';
+import { fetchKeyBundle } from '@/lib/api';
 
 export default function ChatThreadPage() {
   const params = useParams();
@@ -179,6 +180,12 @@ export default function ChatThreadPage() {
         const members = convData.conversation_members.map((m: any) => m.users);
         const conv = { ...convData, members };
 
+        if (conv.type === 'group') {
+          toast.error('Group messaging is temporarily disabled pending security review.');
+          router.push('/messages');
+          return;
+        }
+
         setConversation(conv);
         const other = conv.members.find((m: any) => m.id !== currentUserId);
         setOtherUser(other);
@@ -243,13 +250,14 @@ export default function ChatThreadPage() {
               status: 'sent',
               sentAt: new Date(msg.sent_at),
             });
-          } catch (err) {
+          } catch (err: any) {
             console.error("Decryption failed for incoming message:", err);
+            const isUntrusted = err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted');
             await db.local_messages.put({
               id: msg.id,
               conversationId: msg.conversation_id,
               senderId: msg.sender_id,
-              plaintext: '[Encrypted Message - Could not decrypt]',
+              plaintext: isUntrusted ? '[Identity Key changed. Connection not trusted.]' : '[Encrypted Message - Could not decrypt]',
               mediaUrl: null,
               contentType: 'text',
               status: 'sent',
@@ -326,8 +334,11 @@ export default function ChatThreadPage() {
             );
             payload = JSON.parse(decryptedJson);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Failed to decrypt past message", err);
+          if (err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted')) {
+            payload.content = '[Identity Key changed. Connection not trusted.]';
+          }
         }
 
         return {
@@ -391,8 +402,11 @@ export default function ChatThreadPage() {
             );
             payload = JSON.parse(decryptedJson);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Failed to decrypt past message in loadMore", err);
+          if (err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted')) {
+            payload.content = '[Identity Key changed. Connection not trusted.]';
+          }
         }
 
         return {
@@ -483,31 +497,8 @@ export default function ChatThreadPage() {
       const existingSession = await signalStoreRef.current.loadSession(sessionString);
       
       if (!existingSession) {
-        const { data: ik } = await supabase.from('identity_keys').select('*').eq('user_id', otherUser.id).single();
-        const { data: spk } = await supabase.from('signed_pre_keys').select('*').eq('user_id', otherUser.id).single();
-        const { data: opks } = await supabase.from('one_time_pre_keys').select('*').eq('user_id', otherUser.id).eq('used', false).limit(1);
-        
-        if (!ik || !spk) throw new Error("Could not fetch recipient keys");
-        const keyBundle = {
-          identityKey: ik.identity_key,
-          registrationId: ik.device_id,
-          signedPreKey: {
-            keyId: spk.key_id,
-            publicKey: spk.public_key,
-            signature: spk.signature
-          },
-          oneTimePreKey: opks && opks.length > 0 ? {
-            keyId: opks[0].key_id,
-            publicKey: opks[0].public_key
-          } : undefined
-        };
-        
+        const keyBundle = await fetchKeyBundle(otherUser.id);
         await establishSessionAsInitiator(signalStoreRef.current, otherUser.id, 1, keyBundle);
-        
-        // Mark OTPK as used
-        if (opks && opks.length > 0) {
-          await supabase.from('one_time_pre_keys').update({ used: true, used_at: new Date().toISOString() }).eq('id', opks[0].id);
-        }
       }
 
       const encrypted = await encryptMessage(signalStoreRef.current, otherUser.id, 1, payloadString);

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { KeyHelper } from '@privacyresearch/libsignal-protocol-typescript';
+import { arrayBufferToBase64 } from '@signal/crypto';
 import { WebSignalStore } from './WebSignalStore';
 
 export async function generateSignalRegistrationPayload(store: WebSignalStore) {
@@ -26,14 +27,6 @@ export async function generateSignalRegistrationPayload(store: WebSignalStore) {
 
   // 5. Structure the payload for the KDS (Key Distribution Server)
   // Note: Libsignal's ArrayBuffers must be converted to Base64 strings for JSON transmission.
-  const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  };
 
   const payload = {
     registrationId,

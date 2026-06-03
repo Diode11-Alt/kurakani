@@ -2,15 +2,14 @@
 CREATE OR REPLACE FUNCTION public.handle_new_user() 
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.users (id, email, username, display_name, phone_hash, registration_id, password_hash)
+  INSERT INTO public.users (id, email, username, display_name, phone_hash, registration_id)
   VALUES (
     NEW.id,
     NEW.email,
     NEW.raw_user_meta_data->>'username',
     NEW.raw_user_meta_data->>'username', -- Default display name to username
-    NEW.raw_user_meta_data->>'phone_number',
-    (NEW.raw_user_meta_data->>'registration_id')::INTEGER,
-    'supabase_auth' -- Dummy hash since supabase handles it
+    NEW.raw_user_meta_data->>'phone_hash',
+    (NEW.raw_user_meta_data->>'registration_id')::INTEGER
   );
   RETURN NEW;
 END;

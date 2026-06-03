@@ -50,7 +50,10 @@ ALTER TABLE one_time_pre_keys ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can read unused one time pre-keys" ON one_time_pre_keys FOR SELECT USING (true);
 CREATE POLICY "Users can insert own one time pre-keys" ON one_time_pre_keys FOR INSERT WITH CHECK (auth.uid() = user_id);
 -- The backend usually marks keys as used, but with Supabase, the client fetching the key needs to mark it as used.
-CREATE POLICY "Users can update one time pre-keys (mark as used)" ON one_time_pre_keys FOR UPDATE USING (true);
+-- Now we use the fetch_otpk RPC, but if we still allow updates, it must be the owner.
+CREATE POLICY "Only key owner can update their OTPKs" ON one_time_pre_keys FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS otpk_available_idx ON one_time_pre_keys(user_id) WHERE used = false;
 
 -- ─── ATTACHMENTS ─────────────────────────────────────────
 CREATE TABLE attachments (

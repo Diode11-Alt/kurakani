@@ -1,3 +1,4 @@
+// TODO: Integrate attachment encryption into the message send flow. Currently attachments are uploaded in plaintext.
 export async function encryptAttachment(file: File) {
   // 1. Generate a fresh 256-bit AES-GCM key
   const key = await crypto.subtle.generateKey(
