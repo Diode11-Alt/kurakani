@@ -251,7 +251,7 @@ export default function ChatThreadPage() {
               sentAt: new Date(msg.sent_at),
             });
           } catch (err: any) {
-            console.warn("Decryption failed for incoming message:", err);
+            // console.warn("Decryption failed for incoming message:", err);
             const isUntrusted = err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted');
             await db.local_messages.put({
               id: msg.id,
@@ -349,7 +349,7 @@ export default function ChatThreadPage() {
             );
             payload = JSON.parse(decryptedJson);
           } catch (err: any) {
-            console.warn("Expected decryption failure:", err.message);
+            // Silencing expected decryption errors to prevent Next.js dev overlay
             if (err.message?.includes('Invalid private key') || err.message?.includes('Bad MAC')) {
               payload.content = '[Session expired — re-establish to decrypt]';
             } else if (err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted')) {
@@ -432,7 +432,7 @@ export default function ChatThreadPage() {
             payload = JSON.parse(decryptedJson);
           }
         } catch (err: any) {
-          console.warn("Expected decryption failure in loadMore", err);
+          // console.warn("Expected decryption failure in loadMore", err);
           if (err.name === 'UntrustedIdentityKeyError' || err.message?.includes('Untrusted')) {
             payload.content = '[Identity Key changed. Connection not trusted.]';
           } else {
