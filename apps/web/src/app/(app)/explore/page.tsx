@@ -213,11 +213,7 @@ export default function ExplorePage() {
                         </div>
                       )}
                     </div>
-                    {user.verified !== false && (
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[var(--color-primary)] rounded-full border-4 border-white flex items-center justify-center shadow">
-                        <Check className="w-3 h-3 text-white stroke-[4]" />
-                      </div>
-                    )}
+
                   </div>
 
                   <div
@@ -252,18 +248,46 @@ export default function ExplorePage() {
                     {!isDefault && (
                       <button
                         onClick={async () => {
-                          const {
-                            data: { session },
-                          } = await supabase.auth.getSession();
-                          if (!session) return;
-                          const { data } = await supabase.rpc(
-                            "get_or_create_conversation",
-                            {
-                              user_a: session.user.id,
-                              user_b: user.id,
-                            },
-                          );
-                          if (data) router.push(`/messages/${data}`);
+                          if (!userId) return;
+                          try {
+                            // Find existing conversation
+                            const { data: myMemberships } = await supabase
+                              .from("conversation_members")
+                              .select("conversation_id")
+                              .eq("user_id", userId);
+                            const convIds = (myMemberships || []).map((m) => m.conversation_id);
+                            let conversationId = null;
+                            if (convIds.length > 0) {
+                              const { data: commonConv } = await supabase
+                                .from("conversation_members")
+                                .select("conversation_id")
+                                .in("conversation_id", convIds)
+                                .eq("user_id", user.id)
+                                .limit(1)
+                                .maybeSingle();
+                              conversationId = commonConv?.conversation_id;
+                            }
+                            // Create if doesn't exist
+                            if (!conversationId) {
+                              const newConvId = crypto.randomUUID();
+                              await supabase
+                                .from("conversations")
+                                .insert({ id: newConvId, type: "direct", created_by: userId });
+                              conversationId = newConvId;
+                              const { error: memErr1 } = await supabase.from("conversation_members").insert(
+                                { conversation_id: conversationId, user_id: userId }
+                              );
+                              if (memErr1) throw memErr1;
+
+                              const { error: memErr2 } = await supabase.from("conversation_members").insert(
+                                { conversation_id: conversationId, user_id: user.id }
+                              );
+                              if (memErr2) throw memErr2;
+                            }
+                            router.push(`/messages/${conversationId}`);
+                          } catch (err) {
+                            console.error("Error starting conversation:", err);
+                          }
                         }}
                         className="p-2 border border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)] rounded-xl transition-all cursor-pointer"
                       >

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getUserById, updateProfile } from "../../../../lib/api";
+import { supabase } from "../../../../lib/supabase";
 import { useAuthStore } from "../../../../store/authStore";
 import { PostCard } from "../../../../components/PostCard";
 import {
@@ -162,7 +163,47 @@ export default function ProfilePage() {
   };
 
   const handleMessage = async () => {
-    router.push(`/messages/${profileId}`);
+    if (!currentUserId) return;
+    try {
+      // Find existing conversation between these two users
+      const { data: myMemberships } = await supabase
+        .from("conversation_members")
+        .select("conversation_id")
+        .eq("user_id", currentUserId);
+      const convIds = (myMemberships || []).map((m) => m.conversation_id);
+      let conversationId = null;
+      if (convIds.length > 0) {
+        const { data: commonConv } = await supabase
+          .from("conversation_members")
+          .select("conversation_id")
+          .in("conversation_id", convIds)
+          .eq("user_id", profileId)
+          .limit(1)
+          .maybeSingle();
+        conversationId = commonConv?.conversation_id;
+      }
+      // Create if doesn't exist
+      if (!conversationId) {
+        const newConvId = crypto.randomUUID();
+        await supabase
+          .from("conversations")
+          .insert({ id: newConvId, type: "direct", created_by: currentUserId });
+        conversationId = newConvId;
+        const { error: memErr1 } = await supabase.from("conversation_members").insert(
+          { conversation_id: conversationId, user_id: currentUserId }
+        );
+        if (memErr1) throw memErr1;
+
+        const { error: memErr2 } = await supabase.from("conversation_members").insert(
+          { conversation_id: conversationId, user_id: profileId }
+        );
+        if (memErr2) throw memErr2;
+      }
+      router.push(`/messages/${conversationId}`);
+    } catch (err) {
+      console.error("Error starting conversation:", err);
+      toast.error("Failed to start conversation");
+    }
   };
 
   const saveProfileSettings = async () => {
@@ -224,9 +265,9 @@ export default function ProfilePage() {
           <div className="relative flex-shrink-0">
             <div className="w-20 h-20 sm:w-[150px] sm:h-[150px] rounded-full p-[3px] bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600">
               <div className="w-full h-full rounded-full border-[3px] border-[var(--color-background)] overflow-hidden bg-[var(--color-surface-container)] flex items-center justify-center">
-                {profile.avatar_url ? (
+                {profile.avatarUrl ? (
                   <img
-                    src={profile.avatar_url}
+                    src={profile.avatarUrl}
                     alt=""
                     className="w-full h-full object-cover"
                   />

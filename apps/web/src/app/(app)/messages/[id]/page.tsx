@@ -32,8 +32,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
-import { useUIStore } from "@/store/uiStore";
+import { Message, UIStore, useUIStore } from "@/store/uiStore";
 import toast from "react-hot-toast";
+import { db } from "@/lib/db";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 
@@ -190,9 +191,19 @@ export default function ChatThreadPage() {
           `,
           )
           .eq("id", conversationId)
-          .single();
+          .maybeSingle();
 
         if (convErr || !convData) {
+          console.error("Failed to load conversation from Supabase:", convErr);
+          
+          // If it doesn't exist on the server, it might be a stale local cache. Delete it.
+          try {
+            await db.local_conversations.delete(conversationId);
+          } catch (e) {
+            console.error("Failed to delete stale conversation from local DB", e);
+          }
+
+          toast.error("Conversation not found");
           router.push("/messages");
           return;
         }
@@ -209,7 +220,12 @@ export default function ChatThreadPage() {
         }
 
         setConversation(conv);
-        const other = conv.members.find((m: any) => m.id !== currentUserId);
+        const rawOther = conv.members.find((m: any) => m.id !== currentUserId);
+        const other = rawOther ? {
+          ...rawOther,
+          displayName: rawOther.display_name,
+          avatarUrl: rawOther.avatar_url,
+        } : null;
         setOtherUser(other);
 
         await loadMessages(other.id);
@@ -691,7 +707,7 @@ export default function ChatThreadPage() {
         .from("messages")
         .select("*")
         .eq("conversation_id", conversationId)
-        .textSearch("search_vector", query.trim().split(/\s+/).join(" & "))
+        .ilike("content", `%${query.trim()}%`)
         .order("sent_at", { ascending: false })
         .limit(50);
 

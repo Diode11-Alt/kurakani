@@ -5,8 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { Search, MessageSquare, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
-import { WebSignalStore } from '../../../lib/crypto/WebSignalStore';
-import { establishSessionAsInitiator, encryptMessage } from '@signal/crypto';
 import { db } from '../../../lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { supabase } from '../../../lib/supabase';
@@ -79,11 +77,16 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         `)
         .eq('user_id', userId);
 
-      if (memErr || !myMemberships) return;
+      if (memErr || !myMemberships) {
+        console.error("loadConversations: Error fetching memberships", memErr);
+        return;
+      }
 
+      console.log("loadConversations: myMemberships", myMemberships);
       const convIds = myMemberships.map(m => m.conversation_id);
       
       if (convIds.length === 0) {
+        console.log("loadConversations: No conversations found for user");
         return;
       }
 
@@ -99,15 +102,32 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         `)
         .in('conversation_id', convIds);
         
-      if (membersError || !allMembers) return;
+      if (membersError || !allMembers) {
+        console.error("loadConversations: Error fetching allMembers", membersError);
+        return;
+      }
+      console.log("loadConversations: allMembers", allMembers);
 
-      // 3. Fetch conversation summaries instead of N+1 queries
-      const { data: summaries, error: sumErr } = await supabase
-        .from('conversation_summaries')
-        .select('*')
-        .in('conversation_id', convIds);
+      // 3. Fetch latest messages for each conversation
+      const { data: allMessages, error: msgErr } = await supabase
+        .from('messages')
+        .select('id, conversation_id, content, media_url, sent_at, sender_id, read_at')
+        .in('conversation_id', convIds)
+        .order('sent_at', { ascending: false });
         
-      if (sumErr || !summaries) return;
+      if (msgErr) {
+        console.error("loadConversations: Error fetching messages", msgErr);
+        // Continue anyway to show empty conversations
+      }
+      
+      const latestMessagesMap: Record<string, any> = {};
+      if (allMessages) {
+        for (const msg of allMessages) {
+          if (!latestMessagesMap[msg.conversation_id]) {
+            latestMessagesMap[msg.conversation_id] = msg;
+          }
+        }
+      }
 
       // 4. Fetch unread counts
       const { data: unreadData } = await supabase
@@ -124,30 +144,33 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         });
       }
 
-      const enriched = summaries.map((c) => {
-        const members = allMembers.filter(m => m.conversation_id === c.conversation_id);
+      const enriched = myMemberships.map((membership) => {
+        const c = membership.conversations as any;
+        const members = allMembers.filter(m => m.conversation_id === c.id);
         const otherUserMember = members.find(m => m.user_id !== userId);
         const otherUser = otherUserMember?.users || { username: 'Unknown' };
 
+        const lastMsg = latestMessagesMap[c.id];
         let decryptedLastMsg = null;
-        if (c.last_message_id) {
+        
+        if (lastMsg) {
           decryptedLastMsg = {
-            id: c.last_message_id,
-            conversation_id: c.conversation_id,
-            senderId: c.last_message_sender_id,
-            sentAt: c.last_message_sent_at,
-            readAt: c.last_message_read_at,
-            content: c.last_message_content || (c.last_message_media_url ? 'Attachment 📎' : 'Empty message')
+            id: lastMsg.id,
+            conversation_id: lastMsg.conversation_id,
+            senderId: lastMsg.sender_id,
+            sentAt: lastMsg.sent_at,
+            readAt: lastMsg.read_at,
+            content: lastMsg.content || (lastMsg.media_url ? 'Attachment 📎' : 'Empty message')
           };
         }
 
         return {
-          id: c.conversation_id,
-          type: c.conversation_type,
-          name: c.conversation_name,
-          avatarUrl: c.conversation_avatar_url,
-          last_message_at: c.last_message_sent_at || c.conversation_updated_at,
-          unreadCount: unreadMap[c.conversation_id] || 0,
+          id: c.id,
+          type: c.type,
+          name: c.name,
+          avatarUrl: c.avatar_url,
+          last_message_at: lastMsg?.sent_at || c.updated_at,
+          unreadCount: unreadMap[c.id] || 0,
           otherUser: otherUser as any,
           lastMessage: decryptedLastMsg,
         };
@@ -246,70 +269,37 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
 
       // 2. Create if doesn't exist
       if (!conversationId) {
-        const { data: newConv, error: convErr } = await supabase
+        const newConvId = crypto.randomUUID();
+        console.log('Inserting conversation...');
+        const { error: convErr } = await supabase
           .from('conversations')
-          .insert({ type: 'direct', created_by: userId })
-          .select()
-          .single();
-          
-        if (convErr) throw convErr;
-        conversationId = newConv.id;
-        
-        await supabase.from('conversation_members').insert([
-          { conversation_id: conversationId, user_id: userId },
+          .insert({ id: newConvId, type: 'direct', created_by: userId });
+        if (convErr) {
+          console.error('Conversation insert error:', convErr);
+          throw convErr;
+        }
+
+        conversationId = newConvId;
+
+        console.log('Inserting creator member...');
+        const { error: memErr1 } = await supabase.from('conversation_members').insert(
+          { conversation_id: conversationId, user_id: userId }
+        );
+        if (memErr1) {
+          console.error('Member 1 insert error:', memErr1);
+          throw memErr1;
+        }
+
+        console.log('Inserting other member...');
+        const { error: memErr2 } = await supabase.from('conversation_members').insert(
           { conversation_id: conversationId, user_id: otherUserId }
-        ]);
-      }
-      
-      // 3. Establish Signal Session if needed
-      const store = new WebSignalStore();
-      let existingSession = await store.loadSession(otherUserId + '.1'); // assuming deviceId = 1 for MVP
-
-      if (!existingSession) {
-        // Fetch Keys from Supabase Crypto tables
-        const { data: ik } = await supabase.from('identity_keys').select('*').eq('user_id', otherUserId).single();
-        const { data: spk } = await supabase.from('signed_pre_keys').select('*').eq('user_id', otherUserId).single();
-        const { data: opks } = await supabase.from('one_time_pre_keys').select('*').eq('user_id', otherUserId).eq('used', false).limit(1);
-        const { data: otherUser } = await supabase.from('users').select('registration_id').eq('id', otherUserId).single();
-        
-        if (!ik || !spk || !otherUser) {
-          throw new Error("User has not set up E2EE keys");
+        );
+        if (memErr2) {
+          console.error('Member 2 insert error:', memErr2);
+          throw memErr2;
         }
-        
-        const keyBundle = {
-          identityKey: ik.identity_key,
-          registrationId: otherUser.registration_id,
-          signedPreKey: {
-            keyId: spk.key_id,
-            publicKey: spk.public_key,
-            signature: spk.signature
-          },
-          oneTimePreKey: opks && opks.length > 0 ? {
-            keyId: opks[0].key_id,
-            publicKey: opks[0].public_key
-          } : undefined
-        };
-        
-        await establishSessionAsInitiator(store, otherUserId, 1, keyBundle);
-        
-        // Mark OTPK as used
-        if (opks && opks.length > 0) {
-          await supabase.from('one_time_pre_keys').update({ used: true, used_at: new Date().toISOString() }).eq('id', opks[0].id);
-        }
+        console.log('Successfully inserted all rows');
       }
-
-      // 4. Send initial "Hello 👋" to register the conversation visually
-      const payload = JSON.stringify({ content: 'Hello 👋', media_url: null });
-      const encrypted = await encryptMessage(store, otherUserId, 1, payload);
-
-      await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        sender_id: userId,
-        ciphertext: encrypted.body,
-        ciphertext_type: encrypted.type,
-        content_type: 'text'
-      });
-
       router.push(`/messages/${conversationId}`);
     } catch (err) {
       console.error('Error creating conversation:', err);
@@ -353,7 +343,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 searchResults.map((user) => (
                   <button
                     key={user.userId}
-                    onClick={() => router.push(`/profile/${user.userId}`)}
+                    onClick={() => startConversation(user.userId)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--color-surface-variant)] text-left transition-colors cursor-pointer"
                   >
                     <div className="w-8 h-8 squircle bg-[var(--color-primary-container)] flex items-center justify-center text-[var(--color-on-primary-container)] font-bold overflow-hidden text-xs">
@@ -391,7 +381,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 Connect with friends and start your first secure conversation.
               </p>
               <button 
-                onClick={() => document.querySelector<HTMLInputElement>('input[placeholder="Search users..."]')?.focus()}
+                onClick={() => document.querySelector<HTMLInputElement>('input[placeholder="Search users to chat..."]')?.focus()}
                 className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-container)] transition-colors flex items-center gap-2 rounded-full px-6 py-3 font-semibold text-sm shadow-md active:scale-95"
               >
                 <Search className="w-4 h-4" />
