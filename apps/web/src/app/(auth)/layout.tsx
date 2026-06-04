@@ -14,11 +14,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div>
             <div className="flex items-center gap-4 mb-16">
               <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center">
-                <span className="text-white font-black text-2xl tracking-tighter font-display-lg">G</span>
+                <span className="text-white font-black text-2xl tracking-tighter font-display-lg">K</span>
               </div>
               <div>
-                <h1 className="text-white text-3xl font-extrabold tracking-tight font-display-lg">GUFF</h1>
-                <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] font-label-md">The Signal Fire</p>
+                <h1 className="text-white text-3xl font-extrabold tracking-tight font-display-lg">Kurakani</h1>
+                <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] font-label-md">Connect Securely</p>
               </div>
             </div>
 
@@ -30,7 +30,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 </div>
                 <div>
                   <h3 className="text-white font-semibold text-base font-headline-sm">Military-Grade Encryption</h3>
-                  <p className="text-white/70 text-sm mt-1">Signal Protocol E2EE. Your messages stay yours.</p>
+                  <p className="text-white/70 text-sm mt-1">End-to-End Encrypted. Your messages stay yours.</p>
                 </div>
               </div>
 
@@ -64,7 +64,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <div className="w-10 h-10 rounded-full border-2 border-[#3525cd] bg-white flex items-center justify-center text-[#3525cd] text-xs font-bold">R</div>
               <div className="w-10 h-10 rounded-full border-2 border-white bg-[#4f46e5] flex items-center justify-center text-white text-xs font-bold">+12K</div>
             </div>
-            <p className="text-white/80 text-sm font-body-md">Join <span className="font-bold text-white">12,000+ users</span> sharing securely on GUFF</p>
+            <p className="text-white/80 text-sm font-body-md">Join <span className="font-bold text-white">12,000+ users</span> sharing securely on Kurakani</p>
           </div>
         </div>
       </div>
@@ -76,9 +76,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="mb-12 lg:hidden">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)]/15 border border-[var(--color-primary)]/30 flex items-center justify-center">
-                <span className="text-[var(--color-primary)] font-black text-lg font-display-lg">G</span>
+                <span className="text-[var(--color-primary)] font-black text-lg font-display-lg">K</span>
               </div>
-              <span className="text-2xl font-extrabold text-[var(--color-primary)] tracking-tight font-display-lg">GUFF</span>
+              <span className="text-2xl font-extrabold text-[var(--color-primary)] tracking-tight font-display-lg">Kurakani</span>
             </div>
           </div>
           

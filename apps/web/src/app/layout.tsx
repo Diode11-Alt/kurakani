@@ -7,7 +7,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", weight: ["400", "500", "600", "700", "800"] });
 
 export const metadata: Metadata = {
-  title: "GUFF — The Signal Fire",
+  title: "Kurakani",
   description: "End-to-end encrypted messaging. Connect, share, and discover securely.",
 };
 
