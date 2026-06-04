@@ -7,7 +7,8 @@ export function useFileUpload(currentUserId: string | null) {
 
   const uploadToS3 = useCallback(async (file: File | Blob, contentType: string): Promise<string> => {
     if (!currentUserId) throw new Error("No user ID");
-    const ext = contentType.split('/')[1] || 'bin';
+    const extRaw = contentType.split('/')[1] || 'bin';
+    const ext = extRaw.split(';')[0];
     const s3Key = `${currentUserId}-${Date.now()}.${ext}`;
     
     const { error } = await supabase.storage.from('attachments').upload(s3Key, file, { contentType });
