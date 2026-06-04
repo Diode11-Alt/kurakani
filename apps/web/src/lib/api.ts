@@ -238,3 +238,29 @@ export async function fetchKeyBundle(userId: string) {
     oneTimePreKey: otpk ? { keyId: otpk.key_id, publicKey: otpk.public_key } : null,
   };
 }
+
+export async function uploadSignalKeys(userId: string, deviceId: number, payload: any) {
+  await supabase.from('users').update({ registration_id: payload.registrationId }).eq('id', userId);
+
+  await supabase.from('identity_keys').upsert({
+    user_id: userId,
+    device_id: deviceId,
+    identity_key: payload.identityKey
+  }, { onConflict: 'user_id,device_id' });
+
+  await supabase.from('signed_pre_keys').upsert({
+    user_id: userId,
+    device_id: deviceId,
+    key_id: payload.signedPreKey.keyId,
+    public_key: payload.signedPreKey.publicKey,
+    signature: payload.signedPreKey.signature
+  }, { onConflict: 'user_id,device_id' });
+
+  const otpkInserts = payload.oneTimePreKeys.map((pk: any) => ({
+    user_id: userId,
+    device_id: deviceId,
+    key_id: pk.keyId,
+    public_key: pk.publicKey
+  }));
+  await supabase.from('one_time_pre_keys').insert(otpkInserts);
+}

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { 
   SessionBuilder,
@@ -95,16 +93,7 @@ export async function decryptMessage(
   const address = new SignalProtocolAddress(senderId, deviceId);
   const cipher = new SessionCipher(store, address);
   
-  let ciphertext = ciphertextBase64;
-  try {
-    // Try converting from Base64 (new messages)
-    if (ciphertextBase64 && !ciphertextBase64.includes(' ') && /^[A-Za-z0-9+/=]+$/.test(ciphertextBase64)) {
-      ciphertext = atob(ciphertextBase64);
-    }
-  } catch (e) {
-    // Fall back to assuming it's already a binary string (older messages)
-    console.warn("atob failed, falling back to raw string", e);
-  }
+  const ciphertext = atob(ciphertextBase64); // Convert Base64 back to binary string for libsignal
 
   let plaintextBuffer: ArrayBuffer;
   if (type === 3) {

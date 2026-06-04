@@ -42,6 +42,7 @@ export default function ProfilePage() {
   // Slide-over settings state
   const [showSettings, setShowSettings] = useState(false);
   const [editDisplayName, setEditDisplayName] = useState("");
+  const [editUsername, setEditUsername] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editWebsite, setEditWebsite] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
@@ -57,6 +58,7 @@ export default function ProfilePage() {
 
       setProfile(userProfile);
       setEditDisplayName(userProfile.displayName || userProfile.username || "");
+      setEditUsername(userProfile.username || "");
       setEditBio(userProfile.bio || "");
       setEditWebsite("");
 
@@ -150,8 +152,8 @@ export default function ProfilePage() {
         status: "pending",
       });
       setConnectionStatus("pending");
-    } else if (connectionStatus === "pending") {
-      // Cancel request
+    } else if (connectionStatus === "pending" || connectionStatus === "accepted") {
+      // Cancel request or remove connection
       await supabase
         .from("user_connections")
         .delete()
@@ -212,6 +214,7 @@ export default function ProfilePage() {
     try {
       await updateProfile({
         displayName: editDisplayName.trim(),
+        username: editUsername.trim() || undefined,
         bio: editBio.trim(),
       });
 
@@ -219,6 +222,7 @@ export default function ProfilePage() {
       setProfile((prev: any) => ({
         ...prev,
         displayName: editDisplayName.trim(),
+        username: editUsername.trim() || prev.username,
         bio: editBio.trim(),
       }));
 
@@ -315,7 +319,7 @@ export default function ProfilePage() {
         <div className="mb-4 sm:px-2">
           <div className="flex items-center gap-1.5 mb-1">
             <h1 className="text-sm sm:text-base font-bold text-[var(--color-on-surface)] leading-tight">
-              {profile.displayName || profile.display_name || profile.username}
+              {profile.displayName || profile.username}
             </h1>
             <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-primary)]" />
           </div>
@@ -379,26 +383,25 @@ export default function ProfilePage() {
                 {isFollowing ? "Following" : "Follow"}
               </button>
 
-              {profile.requireConnectionRequests &&
-              connectionStatus !== "accepted" ? (
-                <button
-                  onClick={handleConnect}
-                  className={`flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold active:scale-95 transition-all ${
-                    connectionStatus === "pending"
-                      ? "bg-[var(--color-surface-container)] text-[var(--color-on-surface)]"
-                      : "bg-[var(--color-primary)] text-white"
-                  }`}
-                >
-                  {connectionStatus === "pending" ? "Requested" : "Connect"}
-                </button>
-              ) : (
-                <button
-                  onClick={handleMessage}
-                  className="flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold bg-[var(--color-surface-container)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)] active:scale-95 transition-all"
-                >
-                  Message
-                </button>
-              )}
+              <button
+                onClick={handleConnect}
+                className={`flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold active:scale-95 transition-all ${
+                  connectionStatus === "accepted"
+                    ? "bg-[var(--color-surface-container)] text-[var(--color-primary)] border border-[var(--color-primary)]"
+                    : connectionStatus === "pending"
+                    ? "bg-[var(--color-surface-container)] text-[var(--color-on-surface)]"
+                    : "bg-[var(--color-surface-container)] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]"
+                }`}
+              >
+                {connectionStatus === "accepted" ? "Connected" : connectionStatus === "pending" ? "Requested" : "Connect"}
+              </button>
+
+              <button
+                onClick={handleMessage}
+                className="flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold bg-[var(--color-surface-container)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)] active:scale-95 transition-all"
+              >
+                Message
+              </button>
             </>
           ) : isOwnProfile ? (
             <>
@@ -408,7 +411,13 @@ export default function ProfilePage() {
               >
                 Edit profile
               </button>
-              <button className="flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold bg-[var(--color-surface-container)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)] active:scale-95 transition-all">
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  toast.success("Profile link copied!");
+                }}
+                className="flex-1 py-1.5 sm:py-2 rounded-lg text-sm font-bold bg-[var(--color-surface-container)] text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)] active:scale-95 transition-all"
+              >
                 Share profile
               </button>
             </>
@@ -640,6 +649,20 @@ export default function ProfilePage() {
                       onChange={(e) => setEditDisplayName(e.target.value)}
                       className="input-field py-2.5 text-xs"
                       placeholder="Your Name"
+                    />
+                  </div>
+
+                  {/* Username */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-extrabold text-[var(--color-on-surface-variant)] uppercase tracking-wider">
+                      Username
+                    </label>
+                    <input
+                      type="text"
+                      value={editUsername}
+                      onChange={(e) => setEditUsername(e.target.value.replace(/\s+/g, '').toLowerCase())}
+                      className="input-field py-2.5 text-xs"
+                      placeholder="username"
                     />
                   </div>
 

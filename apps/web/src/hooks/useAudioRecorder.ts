@@ -27,10 +27,10 @@ export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<
 
       mediaRecorder.onstop = async () => {
         let mimeType = 'audio/webm';
-        let ext = 'webm';
+        let ext = 'weba';
         if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/mp4')) {
           mimeType = 'audio/mp4';
-          ext = 'mp4';
+          ext = 'm4a';
         }
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         if (audioBlob.size > 0) {

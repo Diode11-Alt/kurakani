@@ -160,7 +160,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
             senderId: lastMsg.sender_id,
             sentAt: lastMsg.sent_at,
             readAt: lastMsg.read_at,
-            content: lastMsg.content || (lastMsg.media_url ? 'Attachment 📎' : 'Empty message')
+            content: lastMsg.content || (lastMsg.media_url || lastMsg.ciphertext ? 'Attachment 📎' : 'Empty message')
           };
         }
 

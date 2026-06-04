@@ -9,6 +9,9 @@ import { MobileHeader } from "./MobileHeader";
 import { VideoCall } from "../../components/VideoCall";
 import { supabase } from "../../lib/supabase";
 
+import { WebSignalStore } from "../../lib/crypto/WebSignalStore";
+import { generateSignalRegistrationPayload } from "../../lib/crypto/registration";
+import { uploadSignalKeys } from "../../lib/api";
 import { useUIStore } from "../../store/uiStore";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -35,12 +38,31 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     // Register Web Push Token (Skipped for now during Supabase migration)
     const registerPushToken = async () => {
-      // Push tokens will need to be saved directly to a Supabase table
-      // e.g., supabase.from('push_tokens').upsert({ token, user_id })
       console.log('Push token registration skipped in MVP');
     };
     
     registerPushToken();
+
+    // E2EE Key Initialization
+    const initE2EE = async () => {
+      const { deviceId } = useAuthStore.getState();
+      if (!deviceId || !authSession?.user?.id) return;
+
+      try {
+        const store = new WebSignalStore();
+        const isInit = await store.isInitialized();
+        if (!isInit) {
+          console.log("E2EE: Generating local keys...");
+          const payload = await generateSignalRegistrationPayload(store);
+          await uploadSignalKeys(authSession.user.id, deviceId, payload);
+          console.log("E2EE: Keys generated and uploaded.");
+        }
+      } catch (err) {
+        console.error("E2EE Init Error:", err);
+      }
+    };
+
+    initE2EE();
   }, [authSession, mounted, router]);
 
   // Get Supabase session for incoming call listener and Presence

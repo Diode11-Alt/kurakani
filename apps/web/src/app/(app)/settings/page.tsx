@@ -50,8 +50,8 @@ export default function SettingsPage() {
         setDisplayName(profileRes.displayName || '');
         setBio(profileRes.bio || '');
         setUsername(profileRes.username || '');
-        setIsPublic(profileRes.isPublic ?? true);
-        setRequireConnectionRequests(profileRes.requireConnectionRequests ?? false);
+        setIsPublic((profileRes as any).isPublic ?? true);
+        setRequireConnectionRequests((profileRes as any).requireConnectionRequests ?? false);
       }
       if (privacyRes) {
         setLastSeen(privacyRes.lastSeen || 'everyone');
@@ -73,7 +73,7 @@ export default function SettingsPage() {
       if (section === 'profile') {
         await updateProfile({ displayName, bio, username });
       } else if (section === 'privacy') {
-        await updateProfile({ isPublic, requireConnectionRequests });
+        await updateProfile({ isPublic, requireConnectionRequests } as any);
         await updatePrivacySettings({ lastSeen, readReceipts, profilePhotoVisibility: profilePhoto });
       } else if (section === 'notifications') {
         await updateNotificationSettings({ pushNotifications: pushEnabled, notificationPreview: previewEnabled });

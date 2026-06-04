@@ -32,7 +32,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
-import { Message, UIStore, useUIStore } from "@/store/uiStore";
+import { useUIStore } from "@/store/uiStore";
+import { WebSignalStore } from "@/lib/crypto/WebSignalStore";
+import { fetchKeyBundle } from "@/lib/api";
+import { establishSessionAsInitiator, encryptMessage, decryptMessage } from "@signal/crypto";
 import toast from "react-hot-toast";
 import { db } from "@/lib/db";
 import data from "@emoji-mart/data";
@@ -40,8 +43,11 @@ import Picker from "@emoji-mart/react";
 
 import { supabase } from "@/lib/supabase";
 
+import SecureMediaRenderer from "@/components/chat/SecureMediaRenderer";
+import ChatInfoSidebar from "@/components/chat/ChatInfoSidebar";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { sanitizeMessage } from "@/lib/sanitize";
 
 const formatMessageDate = (date: Date) => {
   if (isToday(date)) return "Today";
@@ -62,6 +68,7 @@ export default function ChatThreadPage() {
   const { onlineUsers } = useUIStore();
 
   const [otherUser, setOtherUser] = useState<any>(null);
+  const [signalStore] = useState(() => typeof window !== "undefined" ? new WebSignalStore() : null);
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState("");
@@ -80,6 +87,7 @@ export default function ChatThreadPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearchingDb, setIsSearchingDb] = useState(false);
+  const [isInfoPaneOpen, setIsInfoPaneOpen] = useState(false);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -231,7 +239,7 @@ export default function ChatThreadPage() {
         } : null;
         setOtherUser(other);
 
-        await loadMessages(other.id);
+        await loadMessages();
 
         // Mark conversation as read
         try {
@@ -309,13 +317,31 @@ export default function ChatThreadPage() {
         async (payload) => {
           const msg = payload.new;
 
+          let decryptedText = msg.content;
+          let attachmentData = null;
+
+          if (msg.ciphertext && signalStore) {
+            try {
+              const { deviceId } = useAuthStore.getState();
+              const rawDecrypted = await decryptMessage(signalStore, msg.sender_id, deviceId || 1, msg.ciphertext, msg.ciphertext_type);
+              const parsed = JSON.parse(rawDecrypted);
+              decryptedText = parsed.text;
+              attachmentData = parsed.attachment;
+            } catch (e) {
+              console.error("Decryption failed for msg", msg.id, e);
+              decryptedText = "[Encrypted message - Decryption failed]";
+            }
+          }
+
           const newMsg = {
             id: msg.id,
             conversationId: msg.conversation_id,
             senderId: msg.sender_id,
-            plaintext: msg.content || "[Empty message]",
-            mediaUrl: msg.media_url || null,
-            contentType: msg.content_type === "call_log" ? "call_log" : (msg.media_url ? "attachment" : "text"),
+            plaintext: sanitizeMessage(decryptedText || "[Empty message]"),
+            mediaUrl: msg.media_url || attachmentData?.s3Key || null,
+            attachmentKey: attachmentData?.keyBase64 || null,
+            attachmentIv: attachmentData?.ivBase64 || null,
+            contentType: msg.content_type === "call_log" ? "call_log" : (msg.media_url || attachmentData ? "attachment" : "text"),
             status: "sent",
             sentAt: new Date(msg.sent_at),
             deliveredAt: msg.delivered_at ? new Date(msg.delivered_at) : null,
@@ -471,17 +497,39 @@ export default function ChatThreadPage() {
 
       const mData = messagesData.reverse();
 
-      const newMessages = mData.map((m) => {
+      const newMessages = await Promise.all(mData.map(async (m) => {
         const messageReactions = allReactions.filter(
           (r) => r.message_id === m.id,
         );
+
+        let decryptedText = m.content;
+        let attachmentData = null;
+
+        if (m.ciphertext && signalStore) {
+          try {
+            const { deviceId } = useAuthStore.getState();
+            const rawDecrypted = await decryptMessage(signalStore, m.sender_id, deviceId || 1, m.ciphertext, m.ciphertext_type);
+            const parsed = JSON.parse(rawDecrypted);
+            decryptedText = parsed.text;
+            attachmentData = parsed.attachment;
+          } catch (e) {
+            // Decryption failed. If we have plaintext fallback (m.content), use it.
+            // Otherwise show a generic message instead of crashing.
+            if (!m.content) {
+              decryptedText = "[Encrypted message]";
+            }
+          }
+        }
+
         return {
           id: m.id,
           conversationId: m.conversation_id,
           senderId: m.sender_id,
-          plaintext: m.content || "[Empty message]",
-          mediaUrl: m.media_url || null,
-          contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url ? "attachment" : "text")) as
+          plaintext: sanitizeMessage(decryptedText || (m.media_url || attachmentData ? "" : "[Empty message]")),
+          mediaUrl: m.media_url || attachmentData?.s3Key || null,
+          attachmentKey: attachmentData?.keyBase64 || null,
+          attachmentIv: attachmentData?.ivBase64 || null,
+          contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url || attachmentData ? "attachment" : "text")) as
             | "text"
             | "media"
             | "attachment"
@@ -493,7 +541,7 @@ export default function ChatThreadPage() {
           replyToMessageId: m.reply_to_message_id || null,
           reactions: messageReactions || [],
         };
-      });
+      }));
 
       setMessages(newMessages);
 
@@ -550,7 +598,7 @@ export default function ChatThreadPage() {
           id: m.id,
           conversationId: m.conversation_id,
           senderId: m.sender_id,
-          plaintext: m.content || "[Empty message]",
+          plaintext: sanitizeMessage(m.content || "[Empty message]"),
           mediaUrl: m.media_url || null,
           contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url ? "attachment" : "text")) as
             | "text"
@@ -630,16 +678,19 @@ export default function ChatThreadPage() {
 
   const handleSendMessage = async (
     e: React.FormEvent,
-    mediaUrlOverride?: string,
+    attachmentOverride?: { s3Key: string; keyBase64: string; ivBase64: string } | string | null,
     overrideContent?: string,
   ) => {
     e.preventDefault();
     
-    let finalMediaUrl = mediaUrlOverride;
+    let finalMediaUrl = typeof attachmentOverride === 'string' ? attachmentOverride : (attachmentOverride?.s3Key || null);
+    let attachmentData = typeof attachmentOverride === 'object' && attachmentOverride ? attachmentOverride : null;
     
     if (selectedFile && !finalMediaUrl) {
       try {
-        finalMediaUrl = await uploadFileHook(selectedFile);
+        const uploadResult = await uploadFileHook(selectedFile) as any;
+        finalMediaUrl = uploadResult.s3Key;
+        attachmentData = uploadResult;
       } catch (err) {
         console.error("File upload error:", err);
         toast.error("Failed to upload file");
@@ -647,9 +698,9 @@ export default function ChatThreadPage() {
       }
     }
     
-    const content = overrideContent || inputText.trim();
-    if (!content && !finalMediaUrl) return;
-    if (content.length > 4000) {
+    const rawContent = overrideContent || inputText.trim();
+    if (!rawContent && !finalMediaUrl) return;
+    if (rawContent.length > 4000) {
       toast.error('Message is too long (max 4000 characters)');
       return;
     }
@@ -662,13 +713,45 @@ export default function ChatThreadPage() {
     }
     if (fileRef.current) fileRef.current.value = "";
 
+    let ciphertext: string | null = null;
+    let ciphertextType: number | null = null;
+
+    // TEMPORARILY DISABLED E2EE for testing as requested by user
+    /*
+    if (signalStore && otherUser?.id && currentUserId) {
+      try {
+        const { deviceId } = useAuthStore.getState();
+        const dId = deviceId || 1;
+        const sessionRecord = await signalStore.loadSession(`${otherUser.id}.1`);
+        if (!sessionRecord) {
+           const bundle = await fetchKeyBundle(otherUser.id);
+           await establishSessionAsInitiator(signalStore, otherUser.id, 1, bundle);
+        }
+
+        const payloadObj = {
+          text: rawContent,
+          attachment: attachmentData
+        };
+        const payloadStr = JSON.stringify(payloadObj);
+        
+        const encrypted = await encryptMessage(signalStore, otherUser.id, 1, payloadStr);
+        ciphertext = encrypted.body;
+        ciphertextType = encrypted.type;
+      } catch (err) {
+        console.error("E2EE Encryption failed:", err);
+      }
+    }
+    */
+
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {
       id: tempId,
       conversationId: conversationId,
       senderId: currentUserId as string,
-      plaintext: content,
+      plaintext: sanitizeMessage(rawContent),
       mediaUrl: finalMediaUrl || null,
+      attachmentKey: attachmentData?.keyBase64 || null,
+      attachmentIv: attachmentData?.ivBase64 || null,
       contentType: (finalMediaUrl ? "attachment" : "text") as
         | "text"
         | "media"
@@ -688,8 +771,10 @@ export default function ChatThreadPage() {
         .insert({
           conversation_id: conversationId,
           sender_id: currentUserId,
-          content: content,
-          media_url: finalMediaUrl || null,
+          content: ciphertext ? null : rawContent,
+          media_url: ciphertext ? null : (finalMediaUrl || null),
+          ciphertext: ciphertext,
+          ciphertext_type: ciphertextType,
           content_type: finalMediaUrl ? "attachment" : "text",
           reply_to_message_id: optimisticMsg.replyToMessageId,
         })
@@ -729,7 +814,7 @@ export default function ChatThreadPage() {
         .from("messages")
         .select("*")
         .eq("conversation_id", conversationId)
-        .ilike("content", `%${query.trim()}%`)
+        .ilike("content", `%${query.trim().replace(/[%_\\]/g, '')}%`)
         .order("sent_at", { ascending: false })
         .limit(50);
 
@@ -766,7 +851,10 @@ export default function ChatThreadPage() {
 
     setSelectedFile(file);
     
-    if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+    const isImage = file.type.startsWith("image/") || file.name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
+    const isVideo = file.type.startsWith("video/") || file.name.match(/\.(mp4|webm|mov|mkv|avi)$/i);
+    
+    if (isImage || isVideo) {
       setFilePreview(URL.createObjectURL(file));
     } else {
       setFilePreview(null);
@@ -782,9 +870,10 @@ export default function ChatThreadPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[var(--color-background)] relative overflow-hidden select-none">
-      {/* Header */}
-      <div className="bg-[var(--color-surface)] px-4 py-3 border-b border-[var(--color-outline-variant)] flex items-center justify-between z-10 shadow-sm">
+    <div className="flex-1 flex h-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full bg-[var(--color-background)] relative overflow-hidden select-none">
+        {/* Header */}
+        <div className="bg-[var(--color-surface)] px-4 py-3 border-b border-[var(--color-outline-variant)] flex items-center justify-between z-10 shadow-sm">
         {isSearching ? (
           <div className="flex items-center gap-3 w-full animate-in fade-in slide-in-from-top-2">
             <button
@@ -833,7 +922,7 @@ export default function ChatThreadPage() {
           </button>
 
           <div
-            onClick={() => router.push(`/profile/${otherUser?.id}`)}
+            onClick={() => setIsInfoPaneOpen(!isInfoPaneOpen)}
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
           >
             {/* Avatar */}
@@ -966,7 +1055,7 @@ export default function ChatThreadPage() {
             No messages found for "{searchQuery}"
           </div>
         ) : isSearching && searchResults.length > 0 ? (
-          searchResults.reverse().map((m, index) => {
+          [...searchResults].reverse().map((m, index) => {
             const isSelf = m.senderId === currentUserId;
             return (
               <div key={`search-${m.id}`} className={`flex flex-col ${isSelf ? "items-end" : "items-start"} max-w-[85%] ${isSelf ? "self-end" : "self-start"} w-full`}>
@@ -1113,55 +1202,7 @@ export default function ChatThreadPage() {
                     {/* Media attachment */}
                     {m.mediaUrl && (
                       <div className={`${hasVisibleText ? "mb-2" : ""} max-w-xs rounded-xl overflow-hidden`}>
-                        {m.plaintext === "Voice Note 🎤" ||
-                        m.mediaUrl.match(/\.(mp3|wav|ogg|m4a|aac)(\?|$)/i) ? (
-                          <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-black/5">
-                            <audio
-                              src={m.mediaUrl}
-                              controls
-                              className="w-full h-10 min-w-[200px] max-w-[240px] focus:outline-none rounded-lg"
-                            />
-                          </div>
-                        ) : m.mediaUrl.match(/\.(mp4|webm|mov)(\?|$)/i) ? (
-                          <div className="bg-black/5 p-1 rounded-xl backdrop-blur-sm border border-black/10">
-                            <video
-                              src={m.mediaUrl}
-                              controls
-                              className="w-full max-h-64 object-cover rounded-lg focus:outline-none bg-black"
-                            />
-                          </div>
-                        ) : m.mediaUrl.match(
-                            /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i,
-                          ) ? (
-                          <img
-                            src={m.mediaUrl}
-                            alt=""
-                            className="max-h-48 object-cover w-full rounded-xl border border-black/5"
-                          />
-                        ) : (
-                          <a
-                            href={m.mediaUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`flex items-center gap-3 p-3 transition-colors rounded-xl border max-w-xs cursor-pointer no-underline ${isSelf ? "bg-white/10 hover:bg-white/20 border-white/20" : "bg-black/5 hover:bg-black/10 border-black/10"}`}
-                          >
-                            <div
-                              className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm ${isSelf ? "bg-white text-[var(--color-primary)]" : "bg-[var(--color-primary)] text-white"}`}
-                            >
-                              <FileIcon className="w-5 h-5" />
-                            </div>
-                            <div className="flex flex-col overflow-hidden min-w-[120px]">
-                              <span className="text-sm font-bold truncate">
-                                {m.mediaUrl.split("/").pop()?.split("?")[0] ||
-                                  "Document"}
-                              </span>
-                              <span className="text-[10px] uppercase opacity-80 mt-0.5">
-                                {m.mediaUrl.split(".").pop()?.split("?")[0] ||
-                                  "FILE"}
-                              </span>
-                            </div>
-                          </a>
-                        )}
+                        <SecureMediaRenderer mediaUrl={m.mediaUrl} isSelf={isSelf} plaintext={m.plaintext} attachmentKey={m.attachmentKey} attachmentIv={m.attachmentIv} />
                       </div>
                     )}
 
@@ -1281,8 +1322,14 @@ export default function ChatThreadPage() {
             </button>
             
             {filePreview ? (
-              selectedFile.type.startsWith("video/") ? (
-                <video src={filePreview} className="max-h-32 rounded-lg object-contain" controls />
+              (selectedFile.type.startsWith("video/") || selectedFile.name.match(/\.(mp4|webm|mov|mkv|avi)$/i)) ? (
+                <div className="relative bg-black rounded-lg overflow-hidden border border-black/10 group max-h-32">
+                  <video src={filePreview} className="max-h-32 rounded-lg object-contain" controls />
+                </div>
+              ) : (selectedFile.type.startsWith("audio/") || selectedFile.name.match(/\.(mp3|wav|ogg|m4a|aac)$/i)) ? (
+                <div className="bg-black/5 p-2 rounded-xl backdrop-blur-sm border border-black/10">
+                  <audio src={filePreview} controls className="w-64 h-10" />
+                </div>
               ) : (
                 <img src={filePreview} alt="Preview" className="max-h-32 rounded-lg object-contain" />
               )
@@ -1430,7 +1477,7 @@ export default function ChatThreadPage() {
           <div
             className="fixed z-[101] w-48 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)] shadow-xl rounded-xl py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
             style={{
-              top: `${Math.min(contextMenu.y, typeof window !== "undefined" ? window.innerHeight - 200 : contextMenu.y)}px`,
+              top: `${Math.min(contextMenu.y, typeof window !== "undefined" ? window.innerHeight - 300 : contextMenu.y)}px`,
               left: `${Math.min(contextMenu.x, typeof window !== "undefined" ? window.innerWidth - 200 : contextMenu.x)}px`,
             }}
           >
@@ -1494,6 +1541,17 @@ export default function ChatThreadPage() {
             )}
           </div>
         </>
+      )}
+      </div>
+
+      {/* Info Pane Sidebar */}
+      {isInfoPaneOpen && (
+        <ChatInfoSidebar
+          conversationId={conversationId}
+          otherUser={otherUser}
+          onClose={() => setIsInfoPaneOpen(false)}
+          signalStore={signalStore}
+        />
       )}
     </div>
   );

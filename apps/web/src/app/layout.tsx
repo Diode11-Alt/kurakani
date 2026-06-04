@@ -9,6 +9,24 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", weight: ["40
 export const metadata: Metadata = {
   title: "Kurakani",
   description: "End-to-end encrypted messaging. Connect, share, and discover securely.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Kurakani",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport = {
+  themeColor: "#0C0A09",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

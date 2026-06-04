@@ -27,6 +27,7 @@ export function Sidebar() {
     <aside className="hidden md:flex sidebar-transition flex-col h-screen w-64 fixed left-0 top-0 bg-[var(--color-surface)] z-50 pt-8 pb-6 px-4 shadow-sm border-r border-[var(--color-outline-variant)]/50">
       {/* Logo Header */}
       <div className="flex items-center gap-3 mb-10 px-4 cursor-pointer group">
+        <img src="/favicon.ico" alt="Kurakani Logo" className="w-8 h-8 object-contain" />
         <span className="font-display-lg text-[32px] leading-tight font-black text-[var(--color-primary)]">Kurakani</span>
       </div>
 

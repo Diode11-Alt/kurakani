@@ -13,8 +13,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {/* Brand Header */}
           <div>
             <div className="flex items-center gap-4 mb-16">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center">
-                <span className="text-white font-black text-2xl tracking-tighter font-display-lg">K</span>
+              <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden">
+                <img src="/favicon.ico" alt="Kurakani Logo" className="w-10 h-10 object-contain" />
               </div>
               <div>
                 <h1 className="text-white text-3xl font-extrabold tracking-tight font-display-lg">Kurakani</h1>
@@ -75,8 +75,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {/* Mobile brand */}
           <div className="mb-12 lg:hidden">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)]/15 border border-[var(--color-primary)]/30 flex items-center justify-center">
-                <span className="text-[var(--color-primary)] font-black text-lg font-display-lg">K</span>
+              <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)]/15 border border-[var(--color-primary)]/30 flex items-center justify-center overflow-hidden">
+                <img src="/favicon.ico" alt="Kurakani Logo" className="w-7 h-7 object-contain" />
               </div>
               <span className="text-2xl font-extrabold text-[var(--color-primary)] tracking-tight font-display-lg">Kurakani</span>
             </div>

@@ -93,6 +93,13 @@ export function VideoCall({
     }
   }, [remoteStream]);
 
+  const remoteAudioRef = useCallback((el: HTMLAudioElement | null) => {
+    if (el && remoteStream && el.srcObject !== remoteStream) {
+      el.srcObject = remoteStream;
+      el.play().catch(err => console.warn("Failed to play remote audio:", err));
+    }
+  }, [remoteStream]);
+
   // Synthesize Ringtone loop (Web Audio API)
   const startRingback = () => {
     try {
@@ -379,26 +386,40 @@ export function VideoCall({
     }
   };
 
-  const [rtcConfig] = useState(() => {
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const getIceServers = async () => {
+    try {
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+      const res = await fetch('/api/turn');
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            {
+              urls: `turn:${hostname}:3478`,
+              username: data.username,
+              credential: data.credential,
+            },
+            {
+              urls: `turn:${hostname}:5349`,
+              username: data.username,
+              credential: data.credential,
+            }
+          ]
+        };
+      }
+    } catch (e) {
+      console.warn("Failed to fetch TURN credentials, falling back to STUN only", e);
+    }
     return {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        {
-          urls: `turn:${hostname}:3478`,
-          username: 'guffuser',
-          credential: 'guffpass',
-        },
-        {
-          urls: `turn:${hostname}:5349`,
-          username: 'guffuser',
-          credential: 'guffpass',
-        }
-      ],
+      ]
     };
-  });
+  };
 
   // 1. Establish Signaling and Manage Call Flow
   useEffect(() => {
@@ -620,6 +641,7 @@ export function VideoCall({
       setLocalStream(stream);
       localStreamRef.current = stream;
 
+      const rtcConfig = await getIceServers();
       const pc = new RTCPeerConnection(rtcConfig);
       peerConnectionRef.current = pc;
 
@@ -696,6 +718,7 @@ export function VideoCall({
       setLocalStream(stream);
       localStreamRef.current = stream;
 
+      const rtcConfig = await getIceServers();
       const pc = new RTCPeerConnection(rtcConfig);
       peerConnectionRef.current = pc;
 
@@ -959,12 +982,7 @@ export function VideoCall({
         {/* Hidden Audio element for WebRTC audio delivery */}
         {remoteStream && (
           <audio
-            ref={(el) => {
-              if (el) {
-                el.srcObject = remoteStream;
-                el.play().catch(e => console.error("Audio autoplay block:", e));
-              }
-            }}
+            ref={remoteAudioRef}
             autoPlay
             style={{ display: 'none' }}
           />
@@ -990,7 +1008,7 @@ export function VideoCall({
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-black"
                 />
               ) : (
                 <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-6">
@@ -1021,7 +1039,7 @@ export function VideoCall({
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-black"
                 />
               ) : (
                 <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-6">
@@ -1063,7 +1081,7 @@ export function VideoCall({
                       autoPlay
                       playsInline
                       muted={true}
-                      className="absolute inset-0 w-full h-full object-cover z-0"
+                      className="absolute inset-0 w-full h-full object-contain bg-black z-0"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0C0A09]/60 via-transparent to-[#0C0A09]/40 z-10 pointer-events-none" />
                   </>
@@ -1114,7 +1132,7 @@ export function VideoCall({
                       autoPlay
                       playsInline
                       muted={true}
-                      className="w-full h-full object-cover pointer-events-none"
+                      className="w-full h-full object-contain bg-black pointer-events-none"
                     />
                   ) : (
                     <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-3 pointer-events-none">
@@ -1305,12 +1323,7 @@ export function VideoCall({
       {/* Hidden Audio element for WebRTC audio delivery */}
       {remoteStream && (
         <audio
-          ref={(el) => {
-            if (el) {
-              el.srcObject = remoteStream;
-              el.play().catch(e => console.error("Audio autoplay block:", e));
-            }
-          }}
+          ref={remoteAudioRef}
           autoPlay
           style={{ display: 'none' }}
         />
