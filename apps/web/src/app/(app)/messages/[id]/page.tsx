@@ -81,6 +81,9 @@ export default function ChatThreadPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearchingDb, setIsSearchingDb] = useState(false);
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -627,18 +630,37 @@ export default function ChatThreadPage() {
 
   const handleSendMessage = async (
     e: React.FormEvent,
-    mediaUrl?: string,
+    mediaUrlOverride?: string,
     overrideContent?: string,
   ) => {
     e.preventDefault();
+    
+    let finalMediaUrl = mediaUrlOverride;
+    
+    if (selectedFile && !finalMediaUrl) {
+      try {
+        finalMediaUrl = await uploadFileHook(selectedFile);
+      } catch (err) {
+        console.error("File upload error:", err);
+        toast.error("Failed to upload file");
+        return;
+      }
+    }
+    
     const content = overrideContent || inputText.trim();
-    if (!content && !mediaUrl) return;
+    if (!content && !finalMediaUrl) return;
     if (content.length > 4000) {
       toast.error('Message is too long (max 4000 characters)');
       return;
     }
 
     setInputText("");
+    setSelectedFile(null);
+    if (filePreview) {
+      URL.revokeObjectURL(filePreview);
+      setFilePreview(null);
+    }
+    if (fileRef.current) fileRef.current.value = "";
 
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {
@@ -646,8 +668,8 @@ export default function ChatThreadPage() {
       conversationId: conversationId,
       senderId: currentUserId as string,
       plaintext: content,
-      mediaUrl: mediaUrl || null,
-      contentType: (mediaUrl ? "attachment" : "text") as
+      mediaUrl: finalMediaUrl || null,
+      contentType: (finalMediaUrl ? "attachment" : "text") as
         | "text"
         | "media"
         | "attachment"
@@ -667,8 +689,8 @@ export default function ChatThreadPage() {
           conversation_id: conversationId,
           sender_id: currentUserId,
           content: content,
-          media_url: mediaUrl || null,
-          content_type: mediaUrl ? "attachment" : "text",
+          media_url: finalMediaUrl || null,
+          content_type: finalMediaUrl ? "attachment" : "text",
           reply_to_message_id: optimisticMsg.replyToMessageId,
         })
         .select()
@@ -736,22 +758,18 @@ export default function ChatThreadPage() {
     }
   };
 
-  const handleFileUpload = async (
+  const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement> | File,
   ) => {
     const file = "target" in e ? e.target.files?.[0] : e;
     if (!file || !authSession) return;
 
-    try {
-      const downloadUrl = await uploadFileHook(file);
-      await handleSendMessage(
-        { preventDefault: () => {} } as any,
-        downloadUrl,
-        "Attachment 📎",
-      );
-    } catch (err) {
-      console.error("File upload error:", err);
-      toast.error("Failed to upload file");
+    setSelectedFile(file);
+    
+    if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+      setFilePreview(URL.createObjectURL(file));
+    } else {
+      setFilePreview(null);
     }
   };
 
@@ -1247,6 +1265,43 @@ export default function ChatThreadPage() {
           </div>
         )}
 
+        {/* File Preview */}
+        {selectedFile && (
+          <div className="relative inline-block self-start bg-[var(--color-surface-container-low)] p-2 rounded-xl border border-[var(--color-outline-variant)]">
+            <button
+              onClick={() => {
+                setSelectedFile(null);
+                if (filePreview) URL.revokeObjectURL(filePreview);
+                setFilePreview(null);
+                if (fileRef.current) fileRef.current.value = "";
+              }}
+              className="absolute -top-2 -right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md cursor-pointer z-10"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            
+            {filePreview ? (
+              selectedFile.type.startsWith("video/") ? (
+                <video src={filePreview} className="max-h-32 rounded-lg object-contain" controls />
+              ) : (
+                <img src={filePreview} alt="Preview" className="max-h-32 rounded-lg object-contain" />
+              )
+            ) : (
+              <div className="flex items-center gap-3 p-2 bg-[var(--color-surface-container)] rounded-lg">
+                <FileIcon className="w-8 h-8 text-[var(--color-primary)]" />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-medium text-[var(--color-on-surface)] truncate max-w-[200px]">
+                    {selectedFile.name}
+                  </span>
+                  <span className="text-xs text-[var(--color-on-surface-variant)]">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center gap-3 w-full">
           {isRecording ? (
             <div className="flex-grow flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-full px-4 py-2 select-none">
@@ -1340,7 +1395,7 @@ export default function ChatThreadPage() {
                 </div>
               </div>
 
-              {!inputText.trim() && !uploading ? (
+              {!inputText.trim() && !uploading && !selectedFile ? (
                 <button
                   type="button"
                   onClick={startRecording}
@@ -1351,7 +1406,7 @@ export default function ChatThreadPage() {
               ) : (
                 <button
                   type="submit"
-                  disabled={uploading || !inputText.trim()}
+                  disabled={uploading || (!inputText.trim() && !selectedFile)}
                   className="p-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-white rounded-full flex items-center justify-center flex-shrink-0 shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer"
                 >
                   <Send className="w-4 h-4 fill-current" />
