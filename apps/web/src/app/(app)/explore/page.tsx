@@ -5,12 +5,10 @@ import { supabase } from "../../../lib/supabase";
 import {
   Search,
   Loader2,
-  ShieldCheck,
-  Check,
-  Terminal,
-  Brain,
-  Eye,
   MessageSquare,
+  UserPlus,
+  UserCheck,
+  Clock
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../../store/authStore";
@@ -19,44 +17,47 @@ export default function ExplorePage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [followedUserIds, setFollowedUserIds] = useState<Set<string>>(
-    new Set(),
-  );
+  const [connections, setConnections] = useState<Record<string, { status: string, isSender: boolean }>>({});
+  const [defaultExperts, setDefaultExperts] = useState<any[]>([]);
+  
   const router = useRouter();
   const { userId } = useAuthStore();
 
   useEffect(() => {
-    if (userId) {
-      supabase
-        .from("follows")
-        .select("following_id")
-        .eq("follower_id", userId)
-        .then(({ data }) => {
-          if (data) {
-            setFollowedUserIds(new Set(data.map((d) => d.following_id)));
-          }
+    const loadConnections = async () => {
+      if (!userId) return;
+      const { data } = await supabase
+        .from("user_connections")
+        .select("sender_id, receiver_id, status")
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+      
+      if (data) {
+        const connMap: Record<string, { status: string, isSender: boolean }> = {};
+        data.forEach(conn => {
+          const isSender = conn.sender_id === userId;
+          const otherId = isSender ? conn.receiver_id : conn.sender_id;
+          connMap[otherId] = { status: conn.status, isSender };
         });
-    }
+        setConnections(connMap);
+      }
+    };
+    loadConnections();
   }, [userId]);
-
-  const [defaultExperts, setDefaultExperts] = useState<any[]>([]);
 
   useEffect(() => {
     const loadExperts = async () => {
+      if (!userId) return;
       const { data } = await supabase
         .from("users")
         .select("*")
         .neq("id", userId)
-        .limit(3);
+        .limit(20);
 
       if (data) {
         setDefaultExperts(data);
       }
     };
-
-    if (userId) {
-      loadExperts();
-    }
+    loadExperts();
   }, [userId]);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -79,28 +80,28 @@ export default function ExplorePage() {
     }
   };
 
-  const toggleFollow = async (id: string) => {
+  const handleConnectAction = async (targetUserId: string, action: 'add' | 'cancel' | 'accept' | 'remove') => {
     if (!userId) return;
-    const isFollowing = followedUserIds.has(id);
-
+    
     // Optimistic update
-    setFollowedUserIds((prev) => {
-      const next = new Set(prev);
-      if (isFollowing) next.delete(id);
-      else next.add(id);
+    setConnections(prev => {
+      const next = { ...prev };
+      if (action === 'add') next[targetUserId] = { status: 'pending', isSender: true };
+      else if (action === 'accept') next[targetUserId] = { status: 'connected', isSender: prev[targetUserId]?.isSender || false };
+      else delete next[targetUserId];
       return next;
     });
 
-    if (isFollowing) {
-      await supabase
-        .from("follows")
-        .delete()
-        .eq("follower_id", userId)
-        .eq("following_id", id);
-    } else {
-      await supabase
-        .from("follows")
-        .insert({ follower_id: userId, following_id: id });
+    try {
+      if (action === 'add') {
+        await supabase.from("user_connections").insert({ sender_id: userId, receiver_id: targetUserId, status: "pending" });
+      } else if (action === 'cancel' || action === 'remove') {
+        await supabase.from("user_connections").delete().or(`and(sender_id.eq.${userId},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${userId})`);
+      } else if (action === 'accept') {
+        await supabase.from("user_connections").update({ status: 'connected' }).eq('sender_id', targetUserId).eq('receiver_id', userId);
+      }
+    } catch (error) {
+      console.error("Error updating connection:", error);
     }
   };
 
@@ -161,7 +162,7 @@ export default function ExplorePage() {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
                 className="glass-card p-6 rounded-3xl flex flex-col items-center space-y-4 animate-pulse"
@@ -186,7 +187,7 @@ export default function ExplorePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {(results.length > 0 ? results : defaultExperts).map((user) => {
-              const following = followedUserIds.has(user.id);
+              const conn = connections[user.id];
               const isDefault = user.id.startsWith("default-");
 
               return (
@@ -235,22 +236,53 @@ export default function ExplorePage() {
                   </p>
 
                   <div className="w-full flex gap-2">
-                    <button
-                      onClick={() => toggleFollow(user.id)}
-                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer ${
-                        following
-                          ? "bg-[var(--color-surface-container)] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]"
-                          : "btn-primary"
-                      }`}
-                    >
-                      {following ? "Following" : "Follow"}
-                    </button>
+                    {!conn || conn.status === 'none' ? (
+                      <button
+                        onClick={() => handleConnectAction(user.id, 'add')}
+                        className="flex-1 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer btn-primary flex items-center justify-center gap-1.5"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        Add Friend
+                      </button>
+                    ) : conn.status === 'pending' && conn.isSender ? (
+                      <button
+                        onClick={() => handleConnectAction(user.id, 'cancel')}
+                        className="flex-1 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer bg-[var(--color-surface-container)] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)] flex items-center justify-center gap-1.5"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        Requested
+                      </button>
+                    ) : conn.status === 'pending' && !conn.isSender ? (
+                      <>
+                        <button
+                          onClick={() => handleConnectAction(user.id, 'accept')}
+                          className="flex-1 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer btn-primary flex items-center justify-center gap-1"
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleConnectAction(user.id, 'remove')}
+                          className="flex-1 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer bg-[var(--color-surface-container)] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleConnectAction(user.id, 'remove')}
+                        className="flex-1 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer bg-[var(--color-surface-container)] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)] flex items-center justify-center gap-1.5"
+                      >
+                        <UserCheck className="w-3.5 h-3.5" />
+                        Friends
+                      </button>
+                    )}
+                    
                     {!isDefault && (
                       <button
                         onClick={async () => {
                           if (!userId) return;
                           try {
-                            // Find existing conversation
                             const { data: myMemberships } = await supabase
                               .from("conversation_members")
                               .select("conversation_id")
@@ -267,29 +299,23 @@ export default function ExplorePage() {
                                 .maybeSingle();
                               conversationId = commonConv?.conversation_id;
                             }
-                            // Create if doesn't exist
                             if (!conversationId) {
                               const newConvId = crypto.randomUUID();
                               await supabase
                                 .from("conversations")
                                 .insert({ id: newConvId, type: "direct", created_by: userId });
                               conversationId = newConvId;
-                              const { error: memErr1 } = await supabase.from("conversation_members").insert(
-                                { conversation_id: conversationId, user_id: userId }
-                              );
-                              if (memErr1) throw memErr1;
-
-                              const { error: memErr2 } = await supabase.from("conversation_members").insert(
+                              await supabase.from("conversation_members").insert([
+                                { conversation_id: conversationId, user_id: userId },
                                 { conversation_id: conversationId, user_id: user.id }
-                              );
-                              if (memErr2) throw memErr2;
+                              ]);
                             }
                             router.push(`/messages/${conversationId}`);
                           } catch (err) {
                             console.error("Error starting conversation:", err);
                           }
                         }}
-                        className="p-2 border border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)] rounded-xl transition-all cursor-pointer"
+                        className="p-2 border border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)] rounded-xl transition-all cursor-pointer flex items-center justify-center"
                       >
                         <MessageSquare className="w-4 h-4" />
                       </button>

@@ -9,7 +9,7 @@ export function BottomNavBar() {
   const { userId } = useAuthStore();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 w-full glass-dark flex justify-around items-center px-4 py-2 pb-6 z-50 rounded-t-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.3)]">
+    <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[var(--color-surface)]/90 backdrop-blur-md flex justify-around items-center px-4 py-2 pb-6 z-50 rounded-t-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.1)] border-t border-[var(--color-outline-variant)]/30">
       <Link 
         href="/feed"
         className={`flex flex-col items-center justify-center rounded-xl px-4 py-1 active:scale-95 duration-100 ${

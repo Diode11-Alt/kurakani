@@ -7,7 +7,7 @@ export function MobileHeader() {
   const { user, userId } = useAuthStore();
 
   return (
-    <header className="md:hidden fixed top-0 left-0 right-0 h-16 glass-dark flex items-center justify-between px-lg z-40 shadow-sm">
+    <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[var(--color-surface)]/90 backdrop-blur-md border-b border-[var(--color-outline-variant)]/30 flex items-center justify-between px-lg z-40 shadow-sm">
       <span className="text-headline-md font-black text-brand tracking-tight">GUFF</span>
       <div className="flex items-center gap-md">
         <span className="material-symbols-outlined text-content-muted hover:text-brand cursor-pointer transition-colors active:scale-95">

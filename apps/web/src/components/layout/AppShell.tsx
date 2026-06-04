@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "../../store/authStore";
 import { Sidebar } from "./Sidebar";
 import { BottomNavBar } from "./BottomNavBar";
@@ -16,6 +16,7 @@ import { useUIStore } from "../../store/uiStore";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { session: authSession } = useAuthStore();
   const { activeCall, setActiveCall } = useUIStore();
   const [mounted, setMounted] = useState(false);
@@ -185,18 +186,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const isChatThread = pathname?.match(/^\/messages\/[a-zA-Z0-9-]+$/);
+
   return (
     <div className="flex h-screen overflow-hidden bg-base text-content">
       <Sidebar />
-      <MobileHeader />
+      {!isChatThread && <MobileHeader />}
       
-      <main className="flex-1 md:ml-64 pt-20 md:pt-0 pb-32 md:pb-0 overflow-y-auto relative z-10">
-        <div className="max-w-[1280px] mx-auto">
+      <main className={`flex-1 md:ml-64 overflow-y-auto relative z-10 ${isChatThread ? '' : 'pt-20 md:pt-0 pb-32 md:pb-0'}`}>
+        <div className="max-w-[1280px] mx-auto h-full">
           {children}
         </div>
       </main>
 
-      <BottomNavBar />
+      {!isChatThread && <BottomNavBar />}
 
       {/* Video Call Overlay */}
       {activeCall && (
