@@ -1019,6 +1019,8 @@ export default function ChatThreadPage() {
                 hasText: !!m.plaintext,
               });
             };
+            const hasVisibleText = m.plaintext && m.plaintext !== "Voice Note 🎤" && m.plaintext !== "Attachment 📎";
+            const isOnlyMedia = m.mediaUrl && !hasVisibleText && !m.replyToMessageId;
 
             return (
               <div key={m.id}>
@@ -1069,7 +1071,7 @@ export default function ChatThreadPage() {
 
                   <div
                     onContextMenu={handleContextMenu}
-                    className={`max-w-[85%] md:max-w-[70%] p-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.08)] text-sm leading-relaxed break-words relative cursor-pointer
+                    className={`max-w-[85%] md:max-w-[70%] ${isOnlyMedia ? 'p-1' : 'p-3.5'} shadow-[0_1px_3px_rgba(15,23,42,0.08)] text-sm leading-relaxed break-words relative cursor-pointer
                       ${isSelf ? "msg-bubble-sent" : "msg-bubble-received"}`}
                   >
                     {/* Quoted Message */}
@@ -1092,7 +1094,7 @@ export default function ChatThreadPage() {
 
                     {/* Media attachment */}
                     {m.mediaUrl && (
-                      <div className="mb-2 max-w-xs rounded-xl overflow-hidden">
+                      <div className={`${hasVisibleText ? "mb-2" : ""} max-w-xs rounded-xl overflow-hidden`}>
                         {m.plaintext === "Voice Note 🎤" ||
                         m.mediaUrl.match(/\.(mp3|wav|ogg|m4a|aac)(\?|$)/i) ? (
                           <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-black/5">

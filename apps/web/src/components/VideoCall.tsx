@@ -2,7 +2,7 @@
 import { IncomingCallToast } from './IncomingCallToast';
 import toast from 'react-hot-toast';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Phone, 
@@ -79,19 +79,19 @@ export function VideoCall({
     intervalId: any;
   } | null>(null);
 
-  const localVideoRef = (el: HTMLVideoElement | null) => {
-    if (el && localStream) {
+  const localVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    if (el && localStream && el.srcObject !== localStream) {
       el.srcObject = localStream;
       el.play().catch(err => console.warn("Failed to play local video:", err));
     }
-  };
+  }, [localStream]);
 
-  const remoteVideoRef = (el: HTMLVideoElement | null) => {
-    if (el && remoteStream) {
+  const remoteVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    if (el && remoteStream && el.srcObject !== remoteStream) {
       el.srcObject = remoteStream;
       el.play().catch(err => console.warn("Failed to play remote video:", err));
     }
-  };
+  }, [remoteStream]);
 
   // Synthesize Ringtone loop (Web Audio API)
   const startRingback = () => {
