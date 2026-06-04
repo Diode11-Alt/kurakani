@@ -107,13 +107,16 @@ export default function SecureMediaRenderer({
         <video
           src={url}
           controls={isPlaying}
-          autoPlay={isPlaying}
+          autoPlay={true}
+          playsInline={true}
+          muted={!isPlaying}
+          loop={!isPlaying}
           preload="metadata"
           className="w-full max-h-64 object-contain focus:outline-none"
         />
         {!isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-            <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg group-hover:scale-110 transition-transform">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/30 transition-colors pointer-events-none">
+            <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg group-hover:scale-110 transition-transform">
               <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1" />
             </div>
           </div>

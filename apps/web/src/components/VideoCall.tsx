@@ -1008,7 +1008,7 @@ export function VideoCall({
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-contain bg-black"
+                  className="w-full h-full object-cover bg-black"
                 />
               ) : (
                 <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-6">
@@ -1039,7 +1039,7 @@ export function VideoCall({
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-contain bg-black"
+                  className="w-full h-full object-cover bg-black"
                 />
               ) : (
                 <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-6">
@@ -1081,7 +1081,7 @@ export function VideoCall({
                       autoPlay
                       playsInline
                       muted={true}
-                      className="absolute inset-0 w-full h-full object-contain bg-black z-0"
+                      className="absolute inset-0 w-full h-full object-cover bg-black z-0"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0C0A09]/60 via-transparent to-[#0C0A09]/40 z-10 pointer-events-none" />
                   </>
@@ -1132,7 +1132,7 @@ export function VideoCall({
                       autoPlay
                       playsInline
                       muted={true}
-                      className="w-full h-full object-contain bg-black pointer-events-none"
+                      className="w-full h-full object-cover bg-black pointer-events-none"
                     />
                   ) : (
                     <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-3 pointer-events-none">
