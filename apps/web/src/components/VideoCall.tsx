@@ -364,6 +364,8 @@ export function VideoCall({
       if (pc.iceConnectionState === 'failed') {
         console.warn('WebRTC ICE connection failed. Attempting ICE restart...');
         handleIceRestart(pc);
+      } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        setCallState('connected');
       }
     };
   };
@@ -393,41 +395,58 @@ export function VideoCall({
   };
 
   const getIceServers = async () => {
+    let servers = [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ];
+
     try {
-      // Use OpenRelay (metered.ca) for free global TURN servers 
-      // This solves the issue where users on strict NATs/cellular get stuck on "connecting"
-      // Trigger Vercel deployment
-        return {
-          iceServers: [
-            // Standard STUN servers
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-          {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-          },
-          {
-            urls: 'turn:openrelay.metered.ca:443',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-          },
-          {
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-          }
-        ]
-      };
+      // First try to get credentials from user's configured Coturn/TURN
+      const res = await fetch('/api/turn');
+      if (res.ok) {
+        const data = await res.json();
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+        
+        // Push user's custom TURN server
+        servers.push({
+          urls: `turn:${hostname}:3478`,
+          username: data.username,
+          credential: data.credential,
+        });
+        servers.push({
+          urls: `turn:${hostname}:5349`,
+          username: data.username,
+          credential: data.credential,
+        });
+      }
     } catch (e) {
-      console.warn("Failed to set TURN credentials, falling back to STUN only", e);
+      console.warn("Failed to fetch custom TURN credentials", e);
     }
-    return {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-      ]
-    };
+
+    try {
+      // Always add OpenRelay as a robust global fallback for cellular/strict NATs
+      servers.push(
+        {
+          urls: 'turn:openrelay.metered.ca:80',
+          username: 'openrelayproject',
+          credential: 'openrelayproject',
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443',
+          username: 'openrelayproject',
+          credential: 'openrelayproject',
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+          username: 'openrelayproject',
+          credential: 'openrelayproject',
+        }
+      );
+    } catch (e) {
+      console.warn("Failed to append fallback TURN servers", e);
+    }
+
+    return { iceServers: servers };
   };
 
   // 1. Establish Signaling and Manage Call Flow
