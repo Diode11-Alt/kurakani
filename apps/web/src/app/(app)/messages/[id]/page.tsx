@@ -624,12 +624,12 @@ export default function ChatThreadPage() {
       });
 
       // Restore scroll position after React renders
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         if (scrollContainerRef.current) {
           const newScrollHeight = scrollContainerRef.current.scrollHeight;
           scrollContainerRef.current.scrollTop = previousScrollTop + (newScrollHeight - previousScrollHeight);
         }
-      });
+      }, 0);
 
       setHasMore(mData.length === 20);
       if (mData.length > 0) {
