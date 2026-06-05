@@ -10,6 +10,13 @@ const getIceServers = () => {
     { urls: 'stun:stun.l.google.com:19302' }
   ];
 
+  // Free openrelay first
+  servers.push(
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
+  );
+
+  // Paid global metered as fallback
   servers.push(
     { urls: 'stun:stun.relay.metered.ca:80' },
     { urls: 'turn:global.relay.metered.ca:80', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
@@ -184,7 +191,7 @@ export default function CallScreen() {
   return (
     <View style={styles.container}>
       {remoteStream ? (
-        <RTCView streamURL={remoteStream.toURL()} style={styles.remoteVideo} objectFit="cover" />
+        <RTCView streamURL={remoteStream.toURL()} style={styles.remoteVideo} objectFit="contain" />
       ) : (
         <View style={styles.connectingContainer}>
           <Text style={styles.callingText}>Calling {peerName}...</Text>
@@ -192,7 +199,7 @@ export default function CallScreen() {
       )}
 
       {localStream && isVideoEnabled && (
-        <RTCView streamURL={localStream.toURL()} style={styles.localVideo} objectFit="cover" zOrder={1} />
+        <RTCView streamURL={localStream.toURL()} style={styles.localVideo} objectFit="contain" zOrder={1} />
       )}
 
       <View style={styles.controls}>

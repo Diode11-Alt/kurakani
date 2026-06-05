@@ -427,7 +427,13 @@ export function VideoCall({
       console.warn("Failed to fetch custom TURN credentials", e);
     }
 
-    // Metered.ca TURN servers
+    // Add free openrelay TURN server first to save paid quota
+    servers.push(
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    );
+
+    // Add paid Metered.ca TURN servers as fallback
     servers.push(
       { urls: 'stun:stun.relay.metered.ca:80' },
       { urls: 'turn:global.relay.metered.ca:80', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
@@ -1033,7 +1039,7 @@ export function VideoCall({
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover bg-black"
+                  className="w-full h-full object-contain bg-black"
                 />
               ) : (
                 <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-6">
@@ -1064,7 +1070,7 @@ export function VideoCall({
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover bg-black"
+                  className="w-full h-full object-contain bg-black"
                 />
               ) : (
                 <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-6">
@@ -1106,7 +1112,7 @@ export function VideoCall({
                       autoPlay
                       playsInline
                       muted={true}
-                      className="absolute inset-0 w-full h-full object-cover bg-black z-0"
+                      className="absolute inset-0 w-full h-full object-contain bg-black z-0"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0C0A09]/60 via-transparent to-[#0C0A09]/40 z-10 pointer-events-none" />
                   </>
@@ -1157,7 +1163,7 @@ export function VideoCall({
                       autoPlay
                       playsInline
                       muted={true}
-                      className="w-full h-full object-cover bg-black pointer-events-none"
+                      className="w-full h-full object-contain bg-black pointer-events-none"
                     />
                   ) : (
                     <div className="absolute inset-0 bg-[var(--color-surface)] flex flex-col items-center justify-center p-3 pointer-events-none">
