@@ -41,7 +41,7 @@ export default function FeedPage() {
         .eq('follower_id', activeSession.user.id);
       
       const followedIds = followsData ? followsData.map(f => f.following_id) : [];
-      followedIds.push(currentSession.user.id);
+      followedIds.push(activeSession.user.id);
 
       const { data, error } = await supabase
         .from('posts')
