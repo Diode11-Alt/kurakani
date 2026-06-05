@@ -388,30 +388,31 @@ export function VideoCall({
 
   const getIceServers = async () => {
     try {
-      const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-      const res = await fetch('/api/turn');
-      if (res.ok) {
-        const data = await res.json();
-        return {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            {
-              urls: `turn:${hostname}:3478`,
-              username: data.username,
-              credential: data.credential,
-            },
-            {
-              urls: `turn:${hostname}:5349`,
-              username: data.username,
-              credential: data.credential,
-            }
-          ]
-        };
-      }
+      // Use OpenRelay (metered.ca) for free global TURN servers 
+      // This solves the issue where users on strict NATs/cellular get stuck on "connecting"
+      return {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+          }
+        ]
+      };
     } catch (e) {
-      console.warn("Failed to fetch TURN credentials, falling back to STUN only", e);
+      console.warn("Failed to set TURN credentials, falling back to STUN only", e);
     }
     return {
       iceServers: [
