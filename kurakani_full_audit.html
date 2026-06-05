@@ -1,0 +1,284 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  h2.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+  .root { padding: 1.5rem 0; }
+
+  /* Tab bar */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); padding-bottom: 0.75rem; }
+  .tab { padding: 6px 14px; border-radius: var(--border-radius-md); font-size: 13px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-secondary); transition: all 0.15s; }
+  .tab:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .tab.active { background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-primary); }
+  .tab .badge { display: inline-flex; align-items: center; justify-content: center; background: var(--color-background-tertiary); border-radius: 999px; padding: 1px 7px; font-size: 11px; margin-left: 5px; font-weight: 500; color: var(--color-text-secondary); }
+  .tab.active .badge { background: #3266ad; color: #fff; }
+
+  /* Section */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Stats row */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.875rem 1rem; }
+  .stat-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .stat-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+
+  /* Feature list */
+  .feature-grid { display: flex; flex-direction: column; gap: 8px; }
+  .feature-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); cursor: pointer; transition: border-color 0.15s; }
+  .feature-item:hover { border-color: var(--color-border-secondary); }
+  .feature-item.expanded { border-color: var(--color-border-primary); }
+  .feat-num { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); min-width: 26px; padding-top: 1px; }
+  .feat-body { flex: 1; min-width: 0; }
+  .feat-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .feat-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
+  .pill-high { background: #fde8e8; color: #991f1f; }
+  .pill-med { background: #fef3cd; color: #7c5608; }
+  .pill-low { background: #e8f5e9; color: #1b5e20; }
+  .pill-idea { background: #e8eaf6; color: #283593; }
+  .feat-detail { font-size: 13px; color: var(--color-text-secondary); margin-top: 6px; line-height: 1.6; display: none; }
+  .feat-detail.show { display: block; }
+  .feat-file { font-size: 11px; font-family: var(--font-mono); color: var(--color-text-tertiary); margin-top: 4px; display: none; }
+  .feat-file.show { display: block; }
+  .chevron { font-size: 12px; color: var(--color-text-tertiary); margin-left: auto; transition: transform 0.2s; flex-shrink: 0; }
+  .feature-item.expanded .chevron { transform: rotate(90deg); }
+
+  /* Filter bar */
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .filter-btn { padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-secondary); transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.on { background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-primary); }
+
+  /* Ideas section */
+  .idea-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+  .idea-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; }
+  .idea-icon { font-size: 22px; margin-bottom: 8px; }
+  .idea-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+  .idea-desc { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
+  .idea-tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-top: 8px; background: var(--color-background-info); color: var(--color-text-info); font-weight: 500; }
+
+  /* Also-fix section */
+  .bug-item { display: flex; gap: 10px; padding: 10px 14px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin-bottom: 8px; }
+  .bug-num { font-size: 11px; font-weight: 500; color: #991f1f; min-width: 26px; padding-top: 1px; }
+  .bug-body { flex: 1; }
+  .bug-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .bug-file { font-size: 11px; font-family: var(--font-mono); color: var(--color-text-tertiary); margin-top: 2px; }
+  .bug-desc { font-size: 13px; color: var(--color-text-secondary); margin-top: 4px; line-height: 1.6; }
+
+  .section-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-tertiary); margin-bottom: 10px; }
+  .count-tag { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 2px 8px; font-size: 12px; color: var(--color-text-secondary); margin-left: 6px; }
+</style>
+
+<h2 class="sr-only">Kurakani full codebase audit — missing features, improvements, and unique ideas</h2>
+
+<div class="root">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('missing')">Missing Features <span class="badge">52</span></div>
+    <div class="tab" onclick="switchTab('bugs')">More Bugs <span class="badge">8</span></div>
+    <div class="tab" onclick="switchTab('unique')">Unique Ideas <span class="badge">18</span></div>
+  </div>
+
+  <!-- MISSING FEATURES -->
+  <div class="section active" id="tab-missing">
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Total missing</div><div class="stat-value">52</div><div class="stat-sub">features</div></div>
+      <div class="stat"><div class="stat-label">Critical</div><div class="stat-value" style="color:#b91c1c">14</div><div class="stat-sub">ship-blockers</div></div>
+      <div class="stat"><div class="stat-label">Important</div><div class="stat-value" style="color:#b45309">24</div><div class="stat-sub">high value</div></div>
+      <div class="stat"><div class="stat-label">Nice to have</div><div class="stat-value" style="color:#15803d">14</div><div class="stat-sub">polish</div></div>
+    </div>
+
+    <div class="filters">
+      <div class="filter-btn on" onclick="filterFeatures('all', this)">All 52</div>
+      <div class="filter-btn" onclick="filterFeatures('high', this)">🔴 Critical</div>
+      <div class="filter-btn" onclick="filterFeatures('med', this)">🟡 Important</div>
+      <div class="filter-btn" onclick="filterFeatures('low', this)">🟢 Nice to have</div>
+    </div>
+
+    <div class="feature-grid" id="featureList"></div>
+  </div>
+
+  <!-- MORE BUGS -->
+  <div class="section" id="tab-bugs">
+    <div class="section-label">Additional bugs found in this audit (beyond the 6 WebRTC bugs already fixed)</div>
+    <div id="bugList"></div>
+  </div>
+
+  <!-- UNIQUE IDEAS -->
+  <div class="section" id="tab-unique">
+    <div class="section-label">Out-of-the-box ideas to make Kurakani different from every other social app</div>
+    <div class="idea-grid" id="ideaList"></div>
+  </div>
+</div>
+
+<script>
+const features = [
+  // ── CRITICAL (14) ──────────────────────────────────────────────────────────
+  { title: "Call log / history", pri: "high", detail: "Zero call history. Users can't see missed calls, past call durations, who called them, or call timestamps. This is a baseline feature of any communication app.", file: "VideoCall.tsx — no call_logs table write on endCallAndClose()" },
+  { title: "Push notifications for calls & messages", pri: "high", detail: "Firebase is imported but no FCM token is ever registered or sent to the server. Calls and messages only arrive if the app is open. Background notifications are completely absent.", file: "apps/web/src/lib/firebase.ts — token never registered" },
+  { title: "Message search", pri: "high", detail: "No way to search inside a conversation or across all conversations. 'Search' icon is imported in the chat page but the UI is never rendered.", file: "messages/[id]/page.tsx — Search imported, never used" },
+  { title: "Unread message badge / count", pri: "high", detail: "No unread indicator anywhere — not in the sidebar, not on the bottom nav, not on the app icon. Users can't tell if they have new messages without opening every conversation.", file: "Sidebar.tsx, BottomNavBar.tsx — no unread query" },
+  { title: "Message delivery receipts (sent/delivered/read)", pri: "high", detail: "CheckCheck icon is imported and used in the UI but delivery_status is never written to the DB and read events (typing+read) are never persisted. Single/double tick states are fake.", file: "messages/[id]/page.tsx — delivery_status never updated via realtime" },
+  { title: "Group chats", pri: "high", detail: "The DB has a conversations table with is_group column and there's even group settings UI code, but creating a group from scratch is not possible. No member management screen.", file: "conversations table has is_group but no create-group flow" },
+  { title: "Profile avatar upload", pri: "high", detail: "Settings page has display_name / bio / username fields but no avatar upload. The avatar_url field exists in DB but users can't change their own photo.", file: "settings/page.tsx — no file input for avatar" },
+  { title: "Offline message queue", pri: "high", detail: "If the user loses connection while typing, the message is dropped silently. No queue for retrying failed sends when reconnecting.", file: "messages/[id]/page.tsx — no retry/queue on send failure" },
+  { title: "Message pagination / infinite scroll", pri: "high", detail: "All messages are fetched in one query with .order('created_at') and no limit. With 1000+ messages this will freeze the browser.", file: "messages/[id]/page.tsx — no cursor/pagination on message fetch" },
+  { title: "Block / report user", pri: "high", detail: "Users can't block someone or report abusive content. No block_list table. Privacy settings exist but no block feature.", file: "No block_users table or UI anywhere" },
+  { title: "Story reply / reaction", pri: "high", detail: "StoriesTray lets you view stories but there's no way to react or reply. Viewer count is also missing.", file: "StoriesTray.tsx — viewer modal has no reply/reaction UI" },
+  { title: "Post comments threading", pri: "high", detail: "Comments on posts are flat — no replies to comments, no nested threads. showComments loads top-level only.", file: "PostCard.tsx — comments fetch has no parent_id support" },
+  { title: "Notification center page", pri: "high", detail: "NotificationSettings screen exists on mobile but there's no actual notification inbox. Likes, comments, follows, missed calls never produce a notification row.", file: "No /notifications page or notifications table queries" },
+  { title: "E2E encrypted group messages", pri: "high", detail: "1-to-1 E2E works via Signal protocol but group messages completely skip encryption — they go plaintext into Supabase.", file: "messages/[id]/page.tsx — group messages have no encrypt call" },
+
+  // ── IMPORTANT (24) ─────────────────────────────────────────────────────────
+  { title: "Call log screen (dedicated UI)", pri: "med", detail: "Even once the DB writes exist, there needs to be a dedicated screen showing all call history with type (audio/video), direction (in/out/missed), duration, and a callback button.", file: "No CallLog page or route exists" },
+  { title: "Typing indicator persistence", pri: "med", detail: "Typing events are broadcast via Supabase realtime but never throttled — every keystroke fires an event, hammering the websocket. Should debounce at 300ms and send a 'stopped' event.", file: "messages/[id]/page.tsx — typing broadcast on every onChange" },
+  { title: "Voice messages playback speed", pri: "med", detail: "useAudioRecorder records audio but the playback UI only has a play button. No 1x/1.5x/2x speed, no waveform visualizer, no seek bar.", file: "useAudioRecorder.ts + messages/[id]/page.tsx" },
+  { title: "Image/video in-app viewer", pri: "med", detail: "Media messages open in a new browser tab (window.open). A proper lightbox/modal viewer is needed with pinch-to-zoom and swipe between media.", file: "SecureMediaRenderer.tsx — uses window.open for images" },
+  { title: "Link previews in messages", pri: "med", detail: "URLs in messages are just text. No unfurling to show page title, image, and description the way every modern chat app does.", file: "messages/[id]/page.tsx — no URL detection or preview fetch" },
+  { title: "Post media (image/video in posts)", pri: "med", detail: "CreatePost.tsx only has a text input. No ability to attach images or videos to posts. The feed is text-only.", file: "CreatePost.tsx — no media upload" },
+  { title: "Follow/unfollow from feed", pri: "med", detail: "Feed shows posts from follows but you can only follow from the Explore/profile page. No inline follow button on feed post cards.", file: "PostCard.tsx — no follow action" },
+  { title: "Post detail page", pri: "med", detail: "Tapping a post opens comment section inline. No standalone /posts/[id] page for sharing a direct link to a post.", file: "No /posts/[id] route" },
+  { title: "User profile page (public view)", pri: "med", detail: "Profile page exists but shows your own profile. Tapping another user's username/avatar doesn't reliably route to their public profile.", file: "profile/[id]/page.tsx — exists but not linked from PostCard" },
+  { title: "Story text/drawing overlay", pri: "med", detail: "Stories only support raw photo/video uploads. No text overlay, stickers, drawing tools, or captions before posting.", file: "StoriesTray.tsx — no editor, raw upload only" },
+  { title: "Multiple images per story", pri: "med", detail: "handleFileUpload only takes a single file. No multi-select or album story.", file: "StoriesTray.tsx — single file input, no multiple attribute" },
+  { title: "Message reactions (emoji)", pri: "med", detail: "Emoji picker exists in the chat input but reactions to individual messages are missing. No long-press to react.", file: "messages/[id]/page.tsx — emoji picker is for input only" },
+  { title: "Saved posts / bookmarks page", pri: "med", detail: "saved_posts table is queried and setSaved state exists but there is no /saved page to view your bookmarked posts.", file: "No /saved route — only the toggle in PostCard.tsx" },
+  { title: "Connection requests inbox", pri: "med", detail: "Connections page only shows existing connections. Pending incoming requests have no dedicated inbox or accept/decline UI.", file: "connections/page.tsx — no pending_requests view" },
+  { title: "Message forward", pri: "med", detail: "Forward icon is imported in the chat but the forward action is never implemented — no UI to pick a target conversation.", file: "messages/[id]/page.tsx — Forward icon present, no handler" },
+  { title: "Message pin", pri: "med", detail: "No ability to pin important messages in a conversation. Common in every major chat app.", file: "messages/[id]/page.tsx — missing" },
+  { title: "Chat wallpaper / theme", pri: "med", detail: "No way to customise the background of a chat thread. Could differentiate app feel.", file: "messages/[id]/page.tsx — hardcoded bg" },
+  { title: "Post share / repost", pri: "med", detail: "Share icon exists and post_shares table is queried for count, but actually sharing (reposting to your own feed or copying a link) is not implemented.", file: "PostCard.tsx — Share icon does nothing" },
+  { title: "Explore page: trending / hashtag feed", pri: "med", detail: "Explore only has user search. No trending posts, no hashtag discovery, no topic-based browsing.", file: "explore/page.tsx — user search only" },
+  { title: "Mute conversation", pri: "med", detail: "No way to mute notifications for a specific chat. Chat settings sidebar exists but has no mute toggle.", file: "ChatInfoSidebar.tsx — no mute action" },
+  { title: "Archive conversation", pri: "med", detail: "No ability to archive a chat out of the main list without deleting it.", file: "messages/page.tsx — no archive action" },
+  { title: "Video call — screen share", pri: "med", detail: "VideoCall supports video/audio but no screen sharing. getDisplayMedia is never called.", file: "VideoCall.tsx — no getDisplayMedia" },
+  { title: "Video call — picture-in-picture", pri: "med", detail: "Minimising the call to a floating PiP window while browsing other parts of the app is missing.", file: "VideoCall.tsx — no PiP API call" },
+  { title: "Rate limiting on message send", pri: "med", detail: "No client or server rate limiting on message sends. A user can spam thousands of messages per second.", file: "messages/[id]/page.tsx — no debounce/throttle on send" },
+
+  // ── NICE TO HAVE (14) ──────────────────────────────────────────────────────
+  { title: "Dark / light mode toggle", pri: "low", detail: "The app uses CSS variables that support dark mode but there's no manual toggle. It only follows OS preference. Users expect to switch manually.", file: "No theme toggle anywhere in settings/layout" },
+  { title: "Message translate", pri: "low", detail: "For an international audience, a one-tap translate button on messages would be highly useful.", file: "messages/[id]/page.tsx — missing" },
+  { title: "GIF support", pri: "low", detail: "No GIF picker in chat. Tenor/GIPHY integration would improve expression.", file: "messages/[id]/page.tsx — no GIF picker" },
+  { title: "Stickers", pri: "low", detail: "No sticker packs. Could be a differentiator with local/regional sticker sets for Nepal.", file: "messages/[id]/page.tsx — missing" },
+  { title: "Emoji keyboard in posts", pri: "low", detail: "Emoji picker exists in chat but not in post creation.", file: "CreatePost.tsx — no emoji picker" },
+  { title: "Keyboard shortcuts", pri: "low", detail: "No keyboard shortcuts for send (Cmd+Enter), new message, search, etc.", file: "Global missing" },
+  { title: "Export chat history", pri: "low", detail: "No way for users to export their chat data. Required by GDPR and good practice.", file: "settings/page.tsx — missing" },
+  { title: "Contact sync / invite friends", pri: "low", detail: "No way to invite non-users via SMS/link. No contact book sync.", file: "No invite flow anywhere" },
+  { title: "Profile bio link", pri: "low", detail: "Bio is plain text with no clickable URL support. Common on all social profiles.", file: "profile/[id]/page.tsx — no link parsing in bio" },
+  { title: "Hashtag support in posts", pri: "low", detail: "No #hashtag detection, linking, or discovery. Needed for Explore page to make sense.", file: "PostCard.tsx + CreatePost.tsx — no hashtag parsing" },
+  { title: "Mention @user in posts/comments", pri: "low", detail: "No @mention autocomplete in post or comment input.", file: "CreatePost.tsx, PostCard.tsx — missing" },
+  { title: "Post poll", pri: "low", detail: "No ability to create a poll post. Highly engaging feature.", file: "CreatePost.tsx — missing" },
+  { title: "Call quality feedback", pri: "low", detail: "After a call ends there's no 'how was your call quality?' prompt, which would help diagnose TURN/ICE issues.", file: "VideoCall.tsx — onClose has no rating prompt" },
+  { title: "Mobile app: iOS / Android deep links", pri: "low", detail: "The React Native mobile app has no deep linking configured — sharing a post URL won't open in the app.", file: "apps/mobile — no linking config in app.json" },
+];
+
+const bugs = [
+  { title: "TURN credentials hardcoded in git (mobile)", file: "apps/mobile/src/screens/CallScreen.tsx", desc: "The metered.ca username '555b2cd36bf24ad2ad21d583' and credential 'W+kerXypxn7ObzV5' are hardcoded in the mobile CallScreen, same as the web. If these credentials get rotated, every existing mobile build breaks silently. Move to env vars." },
+  { title: "openrelay.metered.ca still in mobile", file: "apps/mobile/src/screens/CallScreen.tsx line 10-14", desc: "Mobile CallScreen still lists openrelay.metered.ca with the public demo credentials first — the fix made to web VideoCall was never ported to the mobile app." },
+  { title: "Search query not sanitized in Explore", file: "apps/web/src/app/(app)/explore/page.tsx", desc: "handleSearch uses .ilike('%${query}%') without escaping % and _ characters. A query like '%' matches every user. Should use the same safeQuery escaping already done in api.ts searchUsers()." },
+  { title: "Story viewer has no 'seen by me' tracking", file: "apps/web/src/components/StoriesTray.tsx", desc: "Stories are fetched without filtering by 'already seen'. Every time you open the tray, all stories appear as new with no visual distinction. No story_views table write on view." },
+  { title: "Feed fetchPosts called before session is set", file: "apps/web/src/app/(app)/feed/page.tsx line 22", desc: "fetchPosts(session) is called inside init() before setSession(session) resolves in React state. The fetchPosts default parameter fallback is session (old state, null on first load). Should pass the local variable directly." },
+  { title: "Comment delete doesn't update count", file: "apps/web/src/components/PostCard.tsx", desc: "There is a delete handler for posts but deleting a comment never decrements commentsCount state — the counter stays wrong until page refresh." },
+  { title: "setCallState('connected') also updates callStateRef manually", file: "apps/web/src/components/VideoCall.tsx line 487", desc: "In the answer handler, the code sets callStateRef.current = 'connected' manually AND then calls setCallState('connecting'). The ref is now out of sync with the React state — ref says connected, state says connecting. The ref should not be manually set here; the useEffect sync handles it." },
+  { title: "WebSignalStore initialized with window check but used immediately", file: "apps/web/src/lib/crypto/WebSignalStore.ts", desc: "useState(() => typeof window !== 'undefined' ? new WebSignalStore() : null) returns null on SSR, but the code immediately uses signalStore.loadSession() without null-checking, causing runtime errors on any server-side render pass." },
+];
+
+const ideas = [
+  { icon: "🌄", title: "Local language UI (Nepali/Newari)", tag: "Localization", desc: "Build the first social app with a fully native Nepali/Newari interface and keyboard. Kurakani literally means 'conversation' in Nepali — lean into this identity hard. Auto-translate posts between Nepali and English inline." },
+  { icon: "🗺️", title: "Neighborhood & locality feed", tag: "Hyper-local", desc: "Let users post to a 'local feed' for their ward/VDC/city. Not just a city-wide feed — a street-level bulletin board. Events, lost & found, local alerts. No other app does this for Nepal." },
+  { icon: "🔐", title: "Disappearing mode (entire session)", tag: "Privacy", desc: "One tap to enter 'ghost mode' — all messages auto-delete after session ends, no media saved, no typing indicators sent. Marketed as 'for sensitive conversations', not just Snapchat-style." },
+  { icon: "📻", title: "Clubhouse-style voice rooms", tag: "Audio social", desc: "Temporary public voice rooms tied to a topic. Anyone can listen, raise hand to speak. Works brilliantly for live sports commentary, news reaction, local events. Low infra cost vs video." },
+  { icon: "🎙️", title: "Audio posts (voice notes as posts)", tag: "Voice-first", desc: "Post a 30-second voice note to your feed instead of text. Nepal has high voice message usage on WhatsApp. A voice-native feed is genuinely unexplored territory globally." },
+  { icon: "📍", title: "Live location sharing in chat", tag: "Safety", desc: "Share your live GPS location inside a conversation for a set duration (15min, 1hr, until you stop). Telegram has this — nobody else pairs it with E2E encryption by default." },
+  { icon: "🧩", title: "Mini-apps inside chat", tag: "Platform", desc: "Let developers embed lightweight web apps inside a conversation — shared todo lists, polls, music queues, chess, expense splitting. WeChat pioneered this; nobody in South Asia has done it well." },
+  { icon: "🌐", title: "Federated identity (ActivityPub)", tag: "Decentralization", desc: "Make Kurakani accounts interoperable with Mastodon/Pixelfed via ActivityPub. Posts and follows work across the fediverse. Huge differentiator for privacy-conscious users globally." },
+  { icon: "💸", title: "Peer-to-peer payments in chat", tag: "Fintech", desc: "Send eSewa/Khalti/ConnectIPS payments directly inside a chat thread. 'Send रु500' button next to the message input. Deep integrations with Nepal's local payment rails." },
+  { icon: "🎮", title: "In-chat games", tag: "Engagement", desc: "Built-in casual games playable directly in a conversation — word games using Nepali vocab, chess, tic-tac-toe. Keeps people in the app and makes chats more fun." },
+  { icon: "👁️", title: "Anonymous mode with reveal", tag: "Social discovery", desc: "Post or message anonymously within your connection network. The recipient can 'request reveal' and you choose to unmask yourself or stay hidden. Novel social mechanic." },
+  { icon: "🎨", title: "Collaborative story canvas", tag: "Creative", desc: "A 'group story' where multiple friends each add a layer — one draws, one adds text, one adds a photo. The result is a collaborative piece posted to all their feeds." },
+  { icon: "📡", title: "Mesh/offline messaging via Bluetooth", tag: "Connectivity", desc: "When internet is down (common during Nepal load-shedding / disasters), messages relay device-to-device over BLE mesh. Only Briar does this; nobody else in South Asia has attempted it." },
+  { icon: "🤝", title: "Skills marketplace inside connections", tag: "Professional", desc: "Users can list a skill ('I teach tabla', 'I do freelance design') visible only to connections. A lightweight micro-gig layer on top of the social graph." },
+  { icon: "📸", title: "BeReal-style daily moment", tag: "Authenticity", desc: "Once per day, everyone gets a notification at the same random time: both front and back cameras fire simultaneously. Adds authentic, unfiltered content to the feed." },
+  { icon: "🔊", title: "Spatial audio in group calls", tag: "Immersive", desc: "In group video calls, position each participant's audio based on where their tile sits on screen. Left person sounds from the left. Makes calls feel spatial and less fatiguing." },
+  { icon: "📖", title: "Shared reading / watchlist", tag: "Social learning", desc: "A tab on any profile showing books, films, or articles marked as 'reading/watching'. Friends can join the same list and discuss asynchronously — like Goodreads inside your messenger." },
+  { icon: "🚨", title: "Safety check broadcast", tag: "Civic", desc: "In earthquake/flood/crisis, one tap broadcasts 'I am safe' to all connections simultaneously. Supabase realtime makes this trivially easy to build. High social value for Nepal." },
+];
+
+function renderFeatures(filter) {
+  const list = document.getElementById('featureList');
+  list.innerHTML = '';
+  features.forEach((f, i) => {
+    if (filter !== 'all' && f.pri !== filter) return;
+    const div = document.createElement('div');
+    div.className = 'feature-item';
+    div.innerHTML = `
+      <div class="feat-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="feat-body">
+        <div class="feat-header">
+          <span class="feat-title">${f.title}</span>
+          <span class="pill pill-${f.pri}">${f.pri === 'high' ? '🔴 Critical' : f.pri === 'med' ? '🟡 Important' : '🟢 Nice to have'}</span>
+        </div>
+        <div class="feat-detail">${f.detail}</div>
+        <div class="feat-file">${f.file}</div>
+      </div>
+      <span class="chevron">›</span>
+    `;
+    div.onclick = () => {
+      const expanded = div.classList.toggle('expanded');
+      div.querySelector('.feat-detail').classList.toggle('show', expanded);
+      div.querySelector('.feat-file').classList.toggle('show', expanded);
+    };
+    list.appendChild(div);
+  });
+}
+
+function renderBugs() {
+  const list = document.getElementById('bugList');
+  list.innerHTML = '';
+  bugs.forEach((b, i) => {
+    list.innerHTML += `
+      <div class="bug-item">
+        <div class="bug-num">B${i+1}</div>
+        <div class="bug-body">
+          <div class="bug-title">${b.title}</div>
+          <div class="bug-file">${b.file}</div>
+          <div class="bug-desc">${b.desc}</div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function renderIdeas() {
+  const list = document.getElementById('ideaList');
+  list.innerHTML = '';
+  ideas.forEach(idea => {
+    list.innerHTML += `
+      <div class="idea-card">
+        <div class="idea-icon">${idea.icon}</div>
+        <div class="idea-title">${idea.title}</div>
+        <div class="idea-desc">${idea.desc}</div>
+        <span class="idea-tag">${idea.tag}</span>
+      </div>
+    `;
+  });
+}
+
+function filterFeatures(filter, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderFeatures(filter);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.closest('.tab').classList.add('active');
+}
+
+renderFeatures('all');
+renderBugs();
+renderIdeas();
+</script>

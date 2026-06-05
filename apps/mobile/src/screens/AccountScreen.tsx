@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import EncryptedStorage from 'react-native-encrypted-storage';
 import { colors } from '../theme/colors';
 import { API_BASE } from '../lib/api';
 

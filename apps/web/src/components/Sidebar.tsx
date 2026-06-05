@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { Rss, Compass, PlusSquare, MessageSquare, User, LogOut, Settings, HelpCircle } from 'lucide-react';
+import { NotificationBell } from './NotificationBell';
 import { useAuthStore } from '../store/authStore';
 
 const NAV_ITEMS = [
@@ -60,6 +61,10 @@ export function Sidebar({ profile }: { profile: any }) {
 
       {/* Profile & Settings Footer */}
       <div className="space-y-3 pt-6 border-t border-[var(--color-guff-border)]/40">
+        
+        {/* Notifications */}
+        <NotificationBell userId={profile?.id} />
+
         {/* Settings button */}
         <button
           onClick={() => router.push('/settings')}

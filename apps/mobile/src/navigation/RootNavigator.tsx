@@ -15,10 +15,13 @@ import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { colors } from '../theme/colors';
 
+import NotificationsScreen from '../screens/NotificationsScreen';
+
 export type RootStackParamList = {
   Login: undefined;
   Home: undefined;
   Explore: undefined;
+  Notifications: undefined;
   Messages: undefined;
   Profile: undefined;
   Chat: { id: string; name: string };
@@ -139,6 +142,11 @@ export default function RootNavigator() {
         <Stack.Screen 
           name="Explore" 
           component={ExploreScreen} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="Notifications" 
+          component={NotificationsScreen} 
           options={{ headerShown: false }} 
         />
         <Stack.Screen 
