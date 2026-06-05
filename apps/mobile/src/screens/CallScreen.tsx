@@ -5,7 +5,29 @@ import { useSocket } from '../signal/SocketContext';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react-native';
 
-const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const getIceServers = () => {
+  return {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      }
+    ]
+  };
+};
 
 export default function CallScreen() {
   const { socket } = useSocket();
@@ -36,7 +58,7 @@ export default function CallScreen() {
       }
 
       // 2. Setup PC
-      const peer = new RTCPeerConnection(iceServers);
+      const peer = new RTCPeerConnection(getIceServers());
       pc.current = peer;
 
       stream.getTracks().forEach(t => peer.addTrack(t, stream));
