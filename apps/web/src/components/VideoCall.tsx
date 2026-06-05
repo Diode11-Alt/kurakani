@@ -82,21 +82,27 @@ export function VideoCall({
   const localVideoRef = useCallback((el: HTMLVideoElement | null) => {
     if (el && localStream && el.srcObject !== localStream) {
       el.srcObject = localStream;
-      el.play().catch(err => console.warn("Failed to play local video:", err));
+      el.play().catch(err => {
+        if (err.name !== 'AbortError') console.warn("Failed to play local video:", err);
+      });
     }
   }, [localStream]);
 
   const remoteVideoRef = useCallback((el: HTMLVideoElement | null) => {
     if (el && remoteStream && el.srcObject !== remoteStream) {
       el.srcObject = remoteStream;
-      el.play().catch(err => console.warn("Failed to play remote video:", err));
+      el.play().catch(err => {
+        if (err.name !== 'AbortError') console.warn("Failed to play remote video:", err);
+      });
     }
   }, [remoteStream]);
 
   const remoteAudioRef = useCallback((el: HTMLAudioElement | null) => {
     if (el && remoteStream && el.srcObject !== remoteStream) {
       el.srcObject = remoteStream;
-      el.play().catch(err => console.warn("Failed to play remote audio:", err));
+      el.play().catch(err => {
+        if (err.name !== 'AbortError') console.warn("Failed to play remote audio:", err);
+      });
     }
   }, [remoteStream]);
 
