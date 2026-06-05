@@ -313,8 +313,12 @@ export function VideoCall({
   const setupPeerConnectionListeners = (pc: RTCPeerConnection) => {
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        // BUG FIX: Removed canSendCandidatesRef check to allow immediate Trickle ICE over long distances
-        if (isChannelSubscribedRef.current && signalChannelRef.current) {
+        // FIX: Ephemeral Signaling Race Condition ("Void Broadcast")
+        // If we are the caller and the callee hasn't answered yet, buffer candidates.
+        // Supabase broadcast is ephemeral — if callee isn't listening, candidates vanish.
+        const isCallerWaiting = !incomingOfferPayload && callStateRef.current !== 'connected';
+
+        if (!isCallerWaiting && isChannelSubscribedRef.current && signalChannelRef.current) {
           signalChannelRef.current.send({
             type: 'broadcast',
             event: 'signal',
@@ -325,7 +329,7 @@ export function VideoCall({
             },
           });
         } else {
-          console.log('Queuing local candidate (channel or peer not ready)');
+          console.log('Queuing local candidate (waiting for remote peer to answer)');
           localCandidatesQueueRef.current.push(event.candidate);
         }
       }
@@ -493,8 +497,13 @@ export function VideoCall({
               try {
                 await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(payload.answer));
                 await flushCandidateQueue();
+
+                // Update ref immediately so onicecandidate stops buffering and sends directly
+                callStateRef.current = 'connected';
+                setCallState('connecting'); // UI stays 'connecting' until ICE actually connects
+
+                // Flush all caller candidates we buffered while waiting for the answer
                 flushLocalCandidates();
-                setCallState('connected');
               } catch (err) {
                 console.error('Error applying SDP answer:', err);
               }

@@ -41,6 +41,7 @@ export default function CallScreen() {
   
   const pc = useRef<RTCPeerConnection | null>(null);
   const candidateQueueRef = useRef<any[]>([]);
+  const localCandidatesQueueRef = useRef<any[]>([]); // Buffer for caller's outgoing candidates
 
   useEffect(() => {
     const setupWebrtc = async () => {
@@ -71,10 +72,17 @@ export default function CallScreen() {
 
       peer.addEventListener('icecandidate', (event: any) => {
         if (event.candidate && socket) {
-          socket.emit('ice-candidate', {
-            targetUserId: peerId,
-            candidate: event.candidate,
-          });
+          // FIX: Void Broadcast race condition
+          // If we are the caller and callee hasn't answered yet, buffer candidates
+          if (isIncoming || peer.remoteDescription) {
+            socket.emit('ice-candidate', {
+              targetUserId: peerId,
+              candidate: event.candidate,
+            });
+          } else {
+            // Caller waiting for callee to accept — buffer locally
+            localCandidatesQueueRef.current.push(event.candidate);
+          }
         }
       });
 
@@ -114,11 +122,22 @@ export default function CallScreen() {
       socket.on('webrtc-answer', async (payload: any) => {
         if (pc.current && pc.current.signalingState !== 'stable') {
           await pc.current.setRemoteDescription(new RTCSessionDescription(payload.answer));
-          // Process queued candidates
+          // Process queued remote candidates
           for (const c of candidateQueueRef.current) {
             await pc.current.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
           }
           candidateQueueRef.current = [];
+
+          // Flush local buffered candidates now that callee is actively listening
+          if (socket) {
+            for (const c of localCandidatesQueueRef.current) {
+              socket.emit('ice-candidate', {
+                targetUserId: peerId,
+                candidate: c,
+              });
+            }
+            localCandidatesQueueRef.current = [];
+          }
         }
       });
 
