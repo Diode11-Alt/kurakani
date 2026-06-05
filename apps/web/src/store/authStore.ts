@@ -49,6 +49,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 if (typeof window !== 'undefined') {
   supabase.auth.getSession().then(({ data: { session } }) => {
     useAuthStore.getState().setSession(session);
+  }).catch((error) => {
+    console.warn("Failed to get session:", error);
+    useAuthStore.getState().setSession(null);
   });
 
   supabase.auth.onAuthStateChange((_event, session) => {

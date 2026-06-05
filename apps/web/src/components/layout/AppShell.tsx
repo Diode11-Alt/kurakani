@@ -74,7 +74,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       if (s) setSession(s);
-    });
+    }).catch(console.warn);
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
