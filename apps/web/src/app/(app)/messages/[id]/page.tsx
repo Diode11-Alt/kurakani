@@ -718,14 +718,14 @@ export default function ChatThreadPage() {
     let ciphertext: string | null = null;
     let ciphertextType: number | null = null;
 
-    // TEMPORARILY DISABLED E2EE for testing as requested by user
-    /*
+    // E2EE re-enabled
     if (signalStore && otherUser?.id && currentUserId) {
       try {
         const { deviceId } = useAuthStore.getState();
         const dId = deviceId || 1;
         const sessionRecord = await signalStore.loadSession(`${otherUser.id}.1`);
         if (!sessionRecord) {
+           const { fetchKeyBundle } = await import('@/lib/api');
            const bundle = await fetchKeyBundle(otherUser.id);
            await establishSessionAsInitiator(signalStore, otherUser.id, 1, bundle);
         }
@@ -743,7 +743,6 @@ export default function ChatThreadPage() {
         console.error("E2EE Encryption failed:", err);
       }
     }
-    */
 
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {

@@ -54,6 +54,7 @@ export default function SecureMediaRenderer({
           else if (ext === 'gif') mime = 'image/gif';
           else if (ext === 'webp') mime = 'image/webp';
           else if (ext === 'svg') mime = 'image/svg+xml';
+          else if (ext === 'mp4' && plaintext === "Voice Note 🎤") mime = 'audio/mp4';
           else if (ext === 'mp4') mime = 'video/mp4';
           else if (ext === 'webm' && plaintext === "Voice Note 🎤") mime = 'audio/webm';
           else if (ext === 'webm') mime = 'video/webm';
