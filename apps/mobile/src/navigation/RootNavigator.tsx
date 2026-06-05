@@ -37,7 +37,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const IncomingCallOverlay = () => {
-  const socket = useSocket();
+  const { socket } = useSocket();
   const navigation = useNavigation<any>();
   const [incomingCall, setIncomingCall] = React.useState<any>(null);
 

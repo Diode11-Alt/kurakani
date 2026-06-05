@@ -64,13 +64,13 @@ export default function CallScreen() {
 
       stream.getTracks().forEach(t => peer.addTrack(t, stream));
 
-      peer.addEventListener('track', (event: any) => {
+      peer.ontrack = (event: any) => {
         if (event.streams && event.streams[0]) {
           setRemoteStream(event.streams[0]);
         }
-      });
+      };
 
-      peer.addEventListener('icecandidate', (event: any) => {
+      peer.onicecandidate = (event: any) => {
         if (event.candidate && socket) {
           // FIX: Void Broadcast race condition
           // If we are the caller and callee hasn't answered yet, buffer candidates
@@ -84,7 +84,7 @@ export default function CallScreen() {
             localCandidatesQueueRef.current.push(event.candidate);
           }
         }
-      });
+      };
 
       if (!isIncoming) {
         // We are calling
