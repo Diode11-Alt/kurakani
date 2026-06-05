@@ -27,6 +27,9 @@ importers:
       '@expo-google-fonts/public-sans':
         specifier: ^0.4.2
         version: 0.4.2
+      '@privacyresearch/libsignal-protocol-typescript':
+        specifier: ^0.0.16
+        version: 0.0.16
       '@react-native-async-storage/async-storage':
         specifier: ^2.2.0
         version: 2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@12.3.6)(@types/react@19.1.17)(react@19.1.0))

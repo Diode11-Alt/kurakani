@@ -114,7 +114,7 @@ export default function App() {
     };
   }, []);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded) { return null; 
     return null;
   }
 
