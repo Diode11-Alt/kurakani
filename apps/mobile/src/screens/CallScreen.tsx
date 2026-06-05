@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, RTCView, mediaDevices } from 'react-native-webrtc';
 import { useSocket } from '../signal/SocketContext';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react-native';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, SwitchCamera } from 'lucide-react-native';
 
 const getIceServers = () => {
   let servers: any[] = [
@@ -188,6 +188,16 @@ export default function CallScreen() {
     }
   };
 
+  const toggleCamera = () => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach((track: any) => {
+        if (typeof track._switchCamera === 'function') {
+          track._switchCamera();
+        }
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
       {remoteStream ? (
@@ -208,6 +218,9 @@ export default function CallScreen() {
         </TouchableOpacity>
         <TouchableOpacity style={[styles.controlBtn, !isVideoEnabled && styles.controlBtnOff]} onPress={toggleVideo}>
           {isVideoEnabled ? <Video color="#fff" /> : <VideoOff color="#fff" />}
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.controlBtn} onPress={toggleCamera}>
+          <SwitchCamera color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity style={[styles.controlBtn, styles.endCallBtn]} onPress={() => handleEndCall(true)}>
           <PhoneOff color="#fff" />

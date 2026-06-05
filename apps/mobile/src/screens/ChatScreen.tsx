@@ -25,6 +25,7 @@ export default function ChatScreen() {
   const [input, setInput] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [expiresIn, setExpiresIn] = useState<number>(0); // 0 = off, else seconds
+  const [isTyping, setIsTyping] = useState(false);
   const { socket } = useSocket();
   const flatListRef = useRef<FlatList>(null);
 
@@ -92,7 +93,7 @@ export default function ChatScreen() {
         await saveMessage(newMsg);
 
         if (activeContact === payload.fromUserId) {
-          setMessages(prev => [...prev, newMsg]);
+          setMessages(prev => [newMsg, ...prev]);
           
           // Mark as read
           try {
@@ -116,18 +117,26 @@ export default function ChatScreen() {
     };
 
     const handleTypingStart = (data: any) => {
-      if (data.conversationId === activeContact && data.fromUserId !== activeContact) {
-        // We could add isTyping state here
+      if (data.fromUserId === activeContact) {
+        setIsTyping(true);
+      }
+    };
+
+    const handleTypingStop = (data: any) => {
+      if (data.fromUserId === activeContact) {
+        setIsTyping(false);
       }
     };
 
     socket.on('message', handleMessage);
     socket.on('message:read', handleRead);
     socket.on('typing:start', handleTypingStart);
+    socket.on('typing:stop', handleTypingStop);
     return () => {
       socket.off('message', handleMessage);
       socket.off('message:read', handleRead);
       socket.off('typing:start', handleTypingStart);
+      socket.off('typing:stop', handleTypingStop);
     };
   }, [socket, activeContact]);
 
@@ -136,7 +145,7 @@ export default function ChatScreen() {
 
   const loadMessages = async () => {
     const msgs = await getMessages(activeContact);
-    setMessages(msgs.sort((a: any, b: any) => a.timestamp - b.timestamp));
+    setMessages(msgs.sort((a: any, b: any) => b.timestamp - a.timestamp));
     
     // Attempt initial fetch from API
     try {
@@ -191,7 +200,7 @@ export default function ChatScreen() {
       }
       
       if (newMsgs.length > 0) {
-        setMessages(prev => [...newMsgs, ...prev].sort((a: any, b: any) => a.timestamp - b.timestamp));
+        setMessages(prev => [...prev, ...newMsgs].sort((a: any, b: any) => b.timestamp - a.timestamp));
       }
       setNextCursor(data.nextCursor);
     } catch (err) {
@@ -262,7 +271,7 @@ export default function ChatScreen() {
         timestamp: Date.now(),
         status: 'sent'
       };
-      setMessages(prev => [...prev, newMsg]);
+      setMessages(prev => [newMsg, ...prev]);
       await saveMessage(newMsg);
     }
   };
@@ -300,7 +309,7 @@ export default function ChatScreen() {
       status: 'sending'
     };
 
-    setMessages(prev => [...prev, newMsg]);
+    setMessages(prev => [newMsg, ...prev]);
     await saveMessage(newMsg);
 
     try {
@@ -330,7 +339,8 @@ export default function ChatScreen() {
   };
 
   const renderItem = useCallback(({ item, index }: { item: any, index: number }) => {
-    const isFirstInGroup = index === 0 || messages[index - 1]?.sent !== item.sent;
+    // Inverted list means index 0 is at the bottom, so previous visually is index+1
+    const isFirstInGroup = index === messages.length - 1 || messages[index + 1]?.sent !== item.sent;
 
     return (
       <View style={[styles.messageWrapper, item.sent ? styles.messageSentWrapper : styles.messageReceivedWrapper, isFirstInGroup && { marginTop: 12 }]}>
@@ -431,11 +441,19 @@ export default function ChatScreen() {
           keyExtractor={item => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
           showsVerticalScrollIndicator={false}
           onEndReached={loadMoreMessages}
           onEndReachedThreshold={0.5}
+          inverted={true}
+          ListHeaderComponent={
+            isTyping ? (
+              <View style={[styles.messageWrapper, styles.messageReceivedWrapper]}>
+                <View style={[styles.messageBubble, styles.messageBubbleReceived, { paddingVertical: 12, paddingHorizontal: 16 }]}>
+                  <ActivityIndicator size="small" color={colors.onSurfaceVariant} />
+                </View>
+              </View>
+            ) : null
+          }
         />
 
         {/* Composer */}
