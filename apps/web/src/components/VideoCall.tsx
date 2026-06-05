@@ -461,7 +461,7 @@ export function VideoCall({
 
         switch (payload.type) {
           case 'offer':
-            if (incomingOfferPayload && callState === 'ringing-in') {
+            if (incomingOfferPayload && callStateRef.current === 'ringing-in') {
               // Handled on accept
             } else if (peerConnectionRef.current) {
               console.log('Received renegotiation/ICE restart offer');
@@ -773,7 +773,8 @@ export function VideoCall({
         });
       }
 
-      setCallState('connected');
+      // Let onconnectionstatechange handle the transition when WebRTC is actually ready
+      setCallState('connecting');
       flushLocalCandidates();
     } catch (err) {
       console.error('Error accepting call:', err);
