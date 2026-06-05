@@ -344,6 +344,23 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
                       <span className="font-semibold text-xs text-[var(--color-on-surface)]">
                         @{c.users?.username}
                       </span>
+                      {c.author_id === currentUserId && (
+                        <button
+                          onClick={async () => {
+                            const { error } = await supabase.from('comments').delete().eq('id', c.id);
+                            if (!error) {
+                              setComments(prev => prev.filter(comment => comment.id !== c.id));
+                              setCommentsCount(count => Math.max(0, count - 1));
+                            } else {
+                              toast.error('Failed to delete comment');
+                            }
+                          }}
+                          className="text-[var(--color-error)] hover:bg-[var(--color-error-container)] p-1 rounded-md transition-colors"
+                          title="Delete comment"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                     <div 
                       className="text-xs text-[var(--color-on-surface-variant)] mt-1 whitespace-pre-wrap"

@@ -10,20 +10,19 @@ const getIceServers = () => {
     { urls: 'stun:stun.l.google.com:19302' }
   ];
 
-  // Free openrelay first
-  servers.push(
-    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
-  );
-
   // Paid global metered as fallback
-  servers.push(
-    { urls: 'stun:stun.relay.metered.ca:80' },
-    { urls: 'turn:global.relay.metered.ca:80', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
-    { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
-    { urls: 'turn:global.relay.metered.ca:443', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
-    { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' }
-  );
+  const turnUsername = process.env.EXPO_PUBLIC_TURN_USERNAME;
+  const turnCredential = process.env.EXPO_PUBLIC_TURN_CREDENTIAL;
+
+  if (turnUsername && turnCredential) {
+    servers.push(
+      { urls: 'stun:stun.relay.metered.ca:80' },
+      { urls: 'turn:global.relay.metered.ca:80', username: turnUsername, credential: turnCredential },
+      { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: turnUsername, credential: turnCredential },
+      { urls: 'turn:global.relay.metered.ca:443', username: turnUsername, credential: turnCredential },
+      { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: turnUsername, credential: turnCredential }
+    );
+  }
 
   return { iceServers: servers };
 };

@@ -66,10 +66,13 @@ export default function ExplorePage() {
     setLoading(true);
 
     try {
+      const safeQuery = query.replace(/[%_\\]/g, '');
+      if (safeQuery.length < 1) return;
+
       const { data } = await supabase
         .from("users")
         .select("*")
-        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+        .or(`username.ilike.%${safeQuery}%,display_name.ilike.%${safeQuery}%`)
         .limit(20);
 
       setResults(data || []);

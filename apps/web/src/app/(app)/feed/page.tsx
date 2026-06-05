@@ -31,13 +31,14 @@ export default function FeedPage() {
     init();
   }, []);
 
-  async function fetchPosts(currentSession = session) {
+  async function fetchPosts(providedSession?: any) {
+    const activeSession = providedSession || session;
     setLoading(true);
-    if (currentSession) {
+    if (activeSession) {
       const { data: followsData } = await supabase
         .from('follows')
         .select('following_id')
-        .eq('follower_id', currentSession.user.id);
+        .eq('follower_id', activeSession.user.id);
       
       const followedIds = followsData ? followsData.map(f => f.following_id) : [];
       followedIds.push(currentSession.user.id);

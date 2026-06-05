@@ -14,19 +14,27 @@ import {
 export class WebSignalStore implements SignalProtocolStore {
   private dbName = 'signal_store';
   private dbVersion = 1;
-  private dbPromise: Promise<IDBPDatabase>;
+  private _dbPromise: Promise<IDBPDatabase> | null = null;
 
-  constructor() {
-    this.dbPromise = openDB(this.dbName, this.dbVersion, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains('identityKey')) db.createObjectStore('identityKey');
-        if (!db.objectStoreNames.contains('registrationId')) db.createObjectStore('registrationId');
-        if (!db.objectStoreNames.contains('sessions')) db.createObjectStore('sessions');
-        if (!db.objectStoreNames.contains('preKeys')) db.createObjectStore('preKeys');
-        if (!db.objectStoreNames.contains('signedPreKeys')) db.createObjectStore('signedPreKeys');
-        if (!db.objectStoreNames.contains('identityKeys')) db.createObjectStore('identityKeys'); // Stores trusted keys of others
+  constructor() {}
+
+  private get dbPromise(): Promise<IDBPDatabase> {
+    if (!this._dbPromise) {
+      if (typeof window === 'undefined') {
+        return Promise.reject(new Error('IndexedDB is not available on the server'));
       }
-    });
+      this._dbPromise = openDB(this.dbName, this.dbVersion, {
+        upgrade(db) {
+          if (!db.objectStoreNames.contains('identityKey')) db.createObjectStore('identityKey');
+          if (!db.objectStoreNames.contains('registrationId')) db.createObjectStore('registrationId');
+          if (!db.objectStoreNames.contains('sessions')) db.createObjectStore('sessions');
+          if (!db.objectStoreNames.contains('preKeys')) db.createObjectStore('preKeys');
+          if (!db.objectStoreNames.contains('signedPreKeys')) db.createObjectStore('signedPreKeys');
+          if (!db.objectStoreNames.contains('identityKeys')) db.createObjectStore('identityKeys'); // Stores trusted keys of others
+        }
+      });
+    }
+    return this._dbPromise;
   }
 
   // --- Identity ---

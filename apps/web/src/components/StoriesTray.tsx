@@ -55,6 +55,18 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
 
     const activeUser = groupedStories[activeUserIndex];
     const activeStory = activeUser.stories[activeStoryIndex];
+    
+    // Track viewed status locally
+    try {
+      const viewedStories = JSON.parse(localStorage.getItem('viewedStories') || '{}');
+      if (!viewedStories[activeStory.id]) {
+        viewedStories[activeStory.id] = true;
+        localStorage.setItem('viewedStories', JSON.stringify(viewedStories));
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+
     const duration = activeStory.media_type === 'video' ? 8000 : 5000; // 8s for video, 5s for image
     const intervalTime = 50;
     const increment = (intervalTime / duration) * 100;
@@ -236,17 +248,24 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
         </div>
 
         {/* Existing Stories Users */}
-        {groupedStories.map((group, userIdx) => (
+        {groupedStories.map((group, userIdx) => {
+          let allSeen = false;
+          try {
+             const viewedStories = JSON.parse(localStorage.getItem('viewedStories') || '{}');
+             allSeen = group.stories.every(s => viewedStories[s.id]);
+          } catch(e) {}
+
+          return (
           <div
             key={group.author.id}
-            className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
+            className={`flex flex-col items-center flex-shrink-0 cursor-pointer group ${allSeen ? 'opacity-70' : ''}`}
             onClick={() => {
               setActiveUserIndex(userIdx);
               setActiveStoryIndex(0);
             }}
           >
             {/* Story Ring wrapper */}
-            <div className="relative p-[3px] rounded-[22px] bg-gradient-to-tr from-blue-600 to-indigo-500 shadow-sm group-hover:scale-105 transition-transform duration-200">
+            <div className={`relative p-[3px] rounded-[22px] ${allSeen ? 'bg-[var(--color-outline-variant)]' : 'bg-gradient-to-tr from-blue-600 to-indigo-500'} shadow-sm group-hover:scale-105 transition-transform duration-200`}>
               <div className="bg-white p-0.5 rounded-[19px]">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden bg-[var(--color-surface-container)]">
                   {group.author.avatar_url ? (
@@ -263,7 +282,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
               {group.author.display_name || group.author.username}
             </span>
           </div>
-        ))}
+        )})}
       </div>
 
       {/* FULLSCREEN STORY VIEWER MODAL */}

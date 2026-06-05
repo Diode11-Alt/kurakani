@@ -491,7 +491,7 @@ export function VideoCall({
 
                 // Update ref immediately so onicecandidate stops buffering and sends directly
                 callStateRef.current = 'connected';
-                setCallState('connecting'); // UI stays 'connecting' until ICE actually connects
+                setCallState('connected');
 
                 // Flush all caller candidates we buffered while waiting for the answer
                 flushLocalCandidates();
