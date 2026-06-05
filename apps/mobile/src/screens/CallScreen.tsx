@@ -41,6 +41,7 @@ export default function CallScreen() {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   
   const pc = useRef<RTCPeerConnection | null>(null);
+  const candidateQueueRef = useRef<any[]>([]);
 
   useEffect(() => {
     const setupWebrtc = async () => {
@@ -91,6 +92,13 @@ export default function CallScreen() {
       } else if (offerPayload) {
         // We are receiving
         await peer.setRemoteDescription(new RTCSessionDescription(offerPayload.offer));
+        
+        // Process queued candidates that arrived before the offer
+        for (const c of candidateQueueRef.current) {
+          await peer.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+        }
+        candidateQueueRef.current = [];
+
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
         socket?.emit('webrtc-answer', {
@@ -107,12 +115,21 @@ export default function CallScreen() {
       socket.on('webrtc-answer', async (payload: any) => {
         if (pc.current && pc.current.signalingState !== 'stable') {
           await pc.current.setRemoteDescription(new RTCSessionDescription(payload.answer));
+          // Process queued candidates
+          for (const c of candidateQueueRef.current) {
+            await pc.current.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+          }
+          candidateQueueRef.current = [];
         }
       });
 
       socket.on('ice-candidate', async (payload: any) => {
         if (pc.current && payload.candidate) {
-          await pc.current.addIceCandidate(new RTCIceCandidate(payload.candidate));
+          if (pc.current.remoteDescription) {
+            await pc.current.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(console.error);
+          } else {
+            candidateQueueRef.current.push(payload.candidate);
+          }
         }
       });
 
