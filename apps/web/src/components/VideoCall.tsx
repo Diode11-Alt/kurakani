@@ -434,17 +434,23 @@ export function VideoCall({
 
     // Fallback TURN servers for remote users who can't reach self-hosted Coturn
     const meteredKey = process.env.NEXT_PUBLIC_METERED_API_KEY;
-    if (meteredKey) {
-      servers.push(
-        { urls: 'stun:stun.relay.metered.ca:80' },
-        { urls: 'turn:standard.relay.metered.ca:80', username: meteredKey, credential: meteredKey },
-        { urls: 'turn:standard.relay.metered.ca:80?transport=tcp', username: meteredKey, credential: meteredKey },
-        { urls: 'turn:standard.relay.metered.ca:443', username: meteredKey, credential: meteredKey },
-        { urls: 'turns:standard.relay.metered.ca:443?transport=tcp', username: meteredKey, credential: meteredKey }
-      );
+    const meteredDomain = process.env.NEXT_PUBLIC_METERED_DOMAIN; // e.g., kurakani1.metered.live
+    
+    if (meteredKey && meteredDomain) {
+      try {
+        const response = await fetch(`https://${meteredDomain}/api/v1/turn/credentials?apiKey=${meteredKey}`);
+        if (response.ok) {
+          const meteredServers = await response.json();
+          servers = [...servers, ...meteredServers];
+        } else {
+          console.warn("Failed to fetch from Metered API:", response.status);
+        }
+      } catch (e) {
+        console.error("Error fetching Metered ICE servers:", e);
+      }
     } else {
       // Last-resort public relay — unreliable, for dev/testing only
-      console.warn('[ICE] No NEXT_PUBLIC_METERED_API_KEY set. Remote calls (different network/city) will likely fail.');
+      console.warn('[ICE] NEXT_PUBLIC_METERED_API_KEY or NEXT_PUBLIC_METERED_DOMAIN not set. Remote calls will likely fail.');
       servers.push(
         { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
         { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }

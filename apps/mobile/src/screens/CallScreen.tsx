@@ -5,15 +5,31 @@ import { useSocket } from '../signal/SocketContext';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react-native';
 
-const getIceServers = () => {
-  return {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun3.l.google.com:19302' },
-      { urls: 'stun:stun4.l.google.com:19302' },
-      { urls: 'stun:stun.cloudflare.com:3478' },
+const getIceServers = async () => {
+  let servers: any[] = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+  ];
+
+  const meteredKey = process.env.EXPO_PUBLIC_METERED_API_KEY;
+  const meteredDomain = process.env.EXPO_PUBLIC_METERED_DOMAIN;
+
+  if (meteredKey && meteredDomain) {
+    try {
+      const response = await fetch(`https://${meteredDomain}/api/v1/turn/credentials?apiKey=${meteredKey}`);
+      if (response.ok) {
+        const meteredServers = await response.json();
+        servers = [...servers, ...meteredServers];
+      }
+    } catch (e) {
+      console.error("Error fetching Metered ICE servers:", e);
+    }
+  } else {
+    servers.push(
       {
         urls: 'turn:openrelay.metered.ca:80',
         username: 'openrelayproject',
@@ -23,9 +39,11 @@ const getIceServers = () => {
         urls: 'turn:openrelay.metered.ca:443',
         username: 'openrelayproject',
         credential: 'openrelayproject',
-      },
-    ]
-  };
+      }
+    );
+  }
+
+  return { iceServers: servers };
 };
 
 export default function CallScreen() {
@@ -59,7 +77,8 @@ export default function CallScreen() {
       }
 
       // 2. Setup PC
-      const peer = new RTCPeerConnection(getIceServers());
+      const rtcConfig = await getIceServers();
+      const peer = new RTCPeerConnection(rtcConfig);
       pc.current = peer;
 
       stream.getTracks().forEach(t => peer.addTrack(t, stream));
