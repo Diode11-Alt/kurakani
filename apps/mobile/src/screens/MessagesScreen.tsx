@@ -1,11 +1,42 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TextInput, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Search, Menu, Lock, BadgeCheck } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { BottomNavBar } from '../components/BottomNavBar';
+import { supabase } from '../lib/supabase';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 export default function MessagesScreen({ navigation }: any) {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const userStr = await EncryptedStorage.getItem('signal_user');
+        const currentUser = userStr ? JSON.parse(userStr) : null;
+        
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name, phone, avatar_url, public_key');
+          
+        if (data) {
+          if (currentUser) {
+            setUsers(data.filter(u => u.id !== currentUser.id));
+          } else {
+            setUsers(data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -45,63 +76,53 @@ export default function MessagesScreen({ navigation }: any) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Thread 1 */}
-        <TouchableOpacity 
-          style={styles.threadItem}
-          onPress={() => navigation.navigate('Chat', { id: '1', name: 'Dr. Elias Vance' })}
-        >
-          <View style={styles.avatarContainer}>
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200' }} 
-              style={styles.avatar} 
-            />
-            <View style={styles.verifiedBadge}>
-              <BadgeCheck size={12} color={colors.onTertiary} fill={colors.tertiary} />
-            </View>
+        {loading ? (
+          <View style={{ padding: 24, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color={colors.primary} />
           </View>
-          
-          <View style={styles.threadContent}>
-            <View style={styles.threadHeader}>
-              <Text style={styles.threadName} numberOfLines={1}>Dr. Elias Vance</Text>
-              <Text style={[styles.threadTime, styles.unreadTime]}>10:42 AM</Text>
-            </View>
-            <View style={styles.threadSnippet}>
-              <Lock size={14} color={colors.primary} style={{ marginRight: 4 }} />
-              <Text style={[styles.snippetText, styles.unreadText]} numberOfLines={1}>
-                The encrypted archival files are ready for review.
-              </Text>
-            </View>
+        ) : users.length === 0 ? (
+          <View style={{ padding: 24, alignItems: 'center' }}>
+            <Text style={{ color: colors.onSurfaceVariant, fontFamily: typography.fonts.body }}>No secure contacts found</Text>
           </View>
-
-          <View style={styles.unreadBadge}>
-            <Text style={styles.unreadBadgeText}>3</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Thread 2 */}
-        <TouchableOpacity 
-          style={styles.threadItem}
-          onPress={() => navigation.navigate('Chat', { id: '2', name: 'Curatorial Board' })}
-        >
-          <View style={styles.avatarContainer}>
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200' }} 
-              style={styles.avatar} 
-            />
-          </View>
-          
-          <View style={styles.threadContent}>
-            <View style={styles.threadHeader}>
-              <Text style={styles.threadName} numberOfLines={1}>Curatorial Board</Text>
-              <Text style={styles.threadTime}>Yesterday</Text>
-            </View>
-            <View style={styles.threadSnippet}>
-              <Text style={styles.snippetText} numberOfLines={1}>
-                Sarah: We need to finalize the typography hierarchy.
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+        ) : (
+          users.map((user) => (
+            <TouchableOpacity 
+              key={user.id}
+              style={styles.threadItem}
+              onPress={() => navigation.navigate('Chat', { id: user.id, name: user.name || user.phone })}
+            >
+              <View style={styles.avatarContainer}>
+                {user.avatar_url ? (
+                  <Image 
+                    source={{ uri: user.avatar_url }} 
+                    style={styles.avatar} 
+                  />
+                ) : (
+                  <View style={[styles.avatar, { backgroundColor: colors.surfaceContainerHighest, justifyContent: 'center', alignItems: 'center' }]}>
+                    <Text style={{ color: colors.onSurface, fontSize: 20, fontWeight: 'bold' }}>
+                      {(user.name || user.phone || '?').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.verifiedBadge}>
+                  <BadgeCheck size={12} color={colors.onTertiary} fill={colors.tertiary} />
+                </View>
+              </View>
+              
+              <View style={styles.threadContent}>
+                <View style={styles.threadHeader}>
+                  <Text style={styles.threadName} numberOfLines={1}>{user.name || 'Unknown'}</Text>
+                </View>
+                <View style={styles.threadSnippet}>
+                  <Lock size={14} color={colors.primary} style={{ marginRight: 4 }} />
+                  <Text style={styles.snippetText} numberOfLines={1}>
+                    {user.phone ? user.phone : 'Tap to start secure chat'}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
         
         <View style={styles.divider} />
       </ScrollView>
