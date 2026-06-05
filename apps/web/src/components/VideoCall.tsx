@@ -396,10 +396,12 @@ export function VideoCall({
     try {
       // Use OpenRelay (metered.ca) for free global TURN servers 
       // This solves the issue where users on strict NATs/cellular get stuck on "connecting"
-      return {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
+      // Trigger Vercel deployment
+        return {
+          iceServers: [
+            // Standard STUN servers
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
           {
             urls: 'turn:openrelay.metered.ca:80',
             username: 'openrelayproject',
