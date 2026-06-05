@@ -8,28 +8,18 @@ export function useFileUpload(currentUserId: string | null) {
   const uploadToS3 = useCallback(async (file: File | Blob, contentType: string): Promise<{ s3Key: string; keyBase64: string; ivBase64: string }> => {
     if (!currentUserId) throw new Error("No user ID");
     
-    // Convert file to bytes and encrypt
-    const arrayBuffer = await file.arrayBuffer();
-    const fileBytes = new Uint8Array(arrayBuffer);
-    const { encryptAttachmentBase64 } = await import('@signal/crypto');
-    const { encryptedDataBase64, keyBase64, ivBase64 } = encryptAttachmentBase64(fileBytes);
-    
-    // Convert base64 ciphertext to Blob for upload
-    const { decodeBase64 } = await import('tweetnacl-util');
-    const encryptedData = decodeBase64(encryptedDataBase64);
-    const encryptedBlob = new Blob([encryptedData], { type: contentType });
-    
     const extRaw = contentType.split('/')[1] || 'bin';
     const ext = extRaw.split(';')[0];
     const s3Key = `${currentUserId}-${Date.now()}.${ext}`;
     
-    const { error } = await supabase.storage.from('attachments').upload(s3Key, encryptedBlob, { contentType });
+    // TEMPORARILY DISABLED FILE ENCRYPTION to match disabled text E2EE
+    const { error } = await supabase.storage.from('attachments').upload(s3Key, file, { contentType });
     if (error) throw error;
     
     return { 
       s3Key, 
-      keyBase64, 
-      ivBase64 
+      keyBase64: "", 
+      ivBase64: "" 
     };
   }, [currentUserId]);
 

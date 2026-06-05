@@ -718,7 +718,8 @@ export default function ChatThreadPage() {
     let ciphertext: string | null = null;
     let ciphertextType: number | null = null;
 
-    // E2EE re-enabled
+    // TEMPORARILY DISABLED E2EE for testing as requested by user
+    /*
     if (signalStore && otherUser?.id && currentUserId) {
       try {
         const { deviceId } = useAuthStore.getState();
@@ -743,6 +744,7 @@ export default function ChatThreadPage() {
         console.error("E2EE Encryption failed:", err);
       }
     }
+    */
 
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {
