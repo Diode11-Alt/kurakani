@@ -70,7 +70,6 @@ export function VideoCall({
   const signalChannelRef = useRef<any>(null);
   const candidateQueueRef = useRef<any[]>([]);
   const localCandidatesQueueRef = useRef<any[]>([]);
-  const canSendCandidatesRef = useRef<boolean>(false);
   const isChannelSubscribedRef = useRef<boolean>(false);
 
   // Synth Audio Ref
@@ -314,7 +313,8 @@ export function VideoCall({
   const setupPeerConnectionListeners = (pc: RTCPeerConnection) => {
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        if (isChannelSubscribedRef.current && canSendCandidatesRef.current && signalChannelRef.current) {
+        // BUG FIX: Removed canSendCandidatesRef check to allow immediate Trickle ICE over long distances
+        if (isChannelSubscribedRef.current && signalChannelRef.current) {
           signalChannelRef.current.send({
             type: 'broadcast',
             event: 'signal',
@@ -371,8 +371,9 @@ export function VideoCall({
   };
 
   const flushLocalCandidates = () => {
-    if (isChannelSubscribedRef.current && canSendCandidatesRef.current && signalChannelRef.current) {
-      console.log(`Flushing ${localCandidatesQueueRef.current.length} queued local candidates to remote peer`);
+    // BUG FIX: Removed canSendCandidatesRef check
+    if (isChannelSubscribedRef.current && signalChannelRef.current) {
+      console.log(`Flushing ${localCandidatesQueueRef.current.length} queued local candidates`);
       while (localCandidatesQueueRef.current.length > 0) {
         const cand = localCandidatesQueueRef.current.shift();
         if (cand) {
@@ -395,26 +396,30 @@ export function VideoCall({
   };
 
   const getIceServers = async () => {
-    let servers = [
+    let servers: any[] = [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+      { urls: 'stun:stun.cloudflare.com:3478' },
     ];
 
     try {
-      // First try to get credentials from user's configured Coturn/TURN
       const res = await fetch('/api/turn');
       if (res.ok) {
         const data = await res.json();
-        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+        // Use explicitly configured TURN host (must be the server's public IP or domain).
+        // window.location.hostname is the web app host — NOT the TURN server host.
+        const turnHost = data.host || process.env.NEXT_PUBLIC_TURN_HOST || (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
         
-        // Push user's custom TURN server
         servers.push({
-          urls: `turn:${hostname}:3478`,
+          urls: `turn:${turnHost}:3478`,
           username: data.username,
           credential: data.credential,
         });
         servers.push({
-          urls: `turn:${hostname}:5349`,
+          urls: `turn:${turnHost}:3478?transport=tcp`,
           username: data.username,
           credential: data.credential,
         });
@@ -423,27 +428,23 @@ export function VideoCall({
       console.warn("Failed to fetch custom TURN credentials", e);
     }
 
-    try {
-      // Always add OpenRelay as a robust global fallback for cellular/strict NATs
+    // Fallback TURN servers for remote users who can't reach self-hosted Coturn
+    const meteredKey = process.env.NEXT_PUBLIC_METERED_API_KEY;
+    if (meteredKey) {
       servers.push(
-        {
-          urls: 'turn:openrelay.metered.ca:80',
-          username: 'openrelayproject',
-          credential: 'openrelayproject',
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443',
-          username: 'openrelayproject',
-          credential: 'openrelayproject',
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-          username: 'openrelayproject',
-          credential: 'openrelayproject',
-        }
+        { urls: 'stun:stun.relay.metered.ca:80' },
+        { urls: 'turn:standard.relay.metered.ca:80', username: meteredKey, credential: meteredKey },
+        { urls: 'turn:standard.relay.metered.ca:80?transport=tcp', username: meteredKey, credential: meteredKey },
+        { urls: 'turn:standard.relay.metered.ca:443', username: meteredKey, credential: meteredKey },
+        { urls: 'turns:standard.relay.metered.ca:443?transport=tcp', username: meteredKey, credential: meteredKey }
       );
-    } catch (e) {
-      console.warn("Failed to append fallback TURN servers", e);
+    } else {
+      // Last-resort public relay — unreliable, for dev/testing only
+      console.warn('[ICE] No NEXT_PUBLIC_METERED_API_KEY set. Remote calls (different network/city) will likely fail.');
+      servers.push(
+        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+      );
     }
 
     return { iceServers: servers };
@@ -487,14 +488,16 @@ export function VideoCall({
             break;
 
           case 'answer':
-            if (peerConnectionRef.current && (callState === 'ringing-out' || callState === 'connecting')) {
+            if (peerConnectionRef.current && (callStateRef.current === 'ringing-out' || callStateRef.current === 'connecting')) {
               console.log('Received SDP answer');
-              setCallState('connected');
-              await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(payload.answer));
-              await flushCandidateQueue();
-
-              canSendCandidatesRef.current = true;
-              flushLocalCandidates();
+              try {
+                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(payload.answer));
+                await flushCandidateQueue();
+                flushLocalCandidates();
+                setCallState('connected');
+              } catch (err) {
+                console.error('Error applying SDP answer:', err);
+              }
             }
             break;
 
@@ -710,7 +713,6 @@ export function VideoCall({
 
   const acceptIncomingCall = async () => {
     if (!incomingOfferPayload) return;
-    canSendCandidatesRef.current = true;
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       toast.error("WebRTC Calling requires a secure context (HTTPS) or a supported browser. Please access the site via HTTPS.");

@@ -447,19 +447,21 @@ export default function ChatThreadPage() {
     };
   }, [conversationId, currentUserId]);
 
+  const isNearBottomRef = useRef(true);
+
   // Scroll to bottom whenever messages list changes
   useEffect(() => {
     const scrollToBottom = () => {
-      if (messagesEndRef.current) {
+      if (messagesEndRef.current && isNearBottomRef.current) {
         messagesEndRef.current.scrollIntoView({
-          behavior: "smooth",
+          behavior: "auto",
           block: "end",
         });
       }
     };
-    const timeoutId = setTimeout(scrollToBottom, 150);
+    const timeoutId = setTimeout(scrollToBottom, 100);
     return () => clearTimeout(timeoutId);
-  }, [messages, isTyping]);
+  }, [messages.length, isTyping]);
 
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -1041,7 +1043,12 @@ export default function ChatThreadPage() {
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6"
         onScroll={(e) => {
-          if (!isSearching && e.currentTarget.scrollTop === 0 && hasMore && !loading) {
+          const target = e.currentTarget;
+          // Track if user is near the bottom (within 150px)
+          const distanceFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
+          isNearBottomRef.current = distanceFromBottom < 150;
+
+          if (!isSearching && target.scrollTop === 0 && hasMore && !loading) {
             loadMoreMessages();
           }
         }}
