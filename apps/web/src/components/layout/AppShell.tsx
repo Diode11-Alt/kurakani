@@ -17,7 +17,7 @@ import { useUIStore } from "../../store/uiStore";
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { session: authSession } = useAuthStore();
+  const { session: authSession, isLoading: authLoading } = useAuthStore();
   const { activeCall, setActiveCall } = useUIStore();
   const [mounted, setMounted] = useState(false);
   const [session, setSession] = useState<any>(null);
@@ -28,6 +28,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!mounted) return;
+
+    // Wait for Supabase to resolve session from localStorage before deciding
+    if (authLoading) return;
 
     // Strict Zero-Knowledge Auth Check
     // If we have no session, we are totally unauthenticated.
@@ -171,7 +174,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [session?.user?.id]);
 
   // Prevent SSR flash of unauthenticated content
-  if (!mounted || !authSession) {
+  if (!mounted || authLoading || !authSession) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-base">
         <div className="flex flex-col items-center gap-4">

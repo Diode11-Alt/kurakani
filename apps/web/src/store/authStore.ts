@@ -7,6 +7,7 @@ interface AuthState {
   userId: string | null;
   deviceId: number | null;
   user: { name?: string; phone?: string; email?: string } | null;
+  isLoading: boolean; // True until first session check completes
   setSession: (session: Session | null) => void;
   setDeviceId: (id: number | null) => void;
   setUser: (user: AuthState['user']) => void;
@@ -18,9 +19,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   userId: null,
   deviceId: typeof window !== 'undefined' && localStorage.getItem('deviceId') ? parseInt(localStorage.getItem('deviceId')!, 10) : null,
   user: null,
+  isLoading: true, // Start true to prevent flash-redirect to /login
   
   setSession: (session) => {
-    set({ session, userId: session?.user?.id || null });
+    set({ session, userId: session?.user?.id || null, isLoading: false });
   },
   
   setDeviceId: (deviceId) => {
@@ -39,7 +41,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     // Single auth system: Supabase only
     await supabase.auth.signOut();
-    set({ session: null, userId: null, deviceId: null, user: null });
+    set({ session: null, userId: null, deviceId: null, user: null, isLoading: false });
   }
 }));
 
