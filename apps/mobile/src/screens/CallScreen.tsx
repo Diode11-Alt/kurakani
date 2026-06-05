@@ -5,7 +5,7 @@ import { useSocket } from '../signal/SocketContext';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react-native';
 
-const getIceServers = async () => {
+const getIceServers = () => {
   let servers: any[] = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
@@ -15,33 +15,13 @@ const getIceServers = async () => {
     { urls: 'stun:stun.cloudflare.com:3478' },
   ];
 
-  const meteredKey = process.env.EXPO_PUBLIC_METERED_API_KEY;
-  const meteredDomain = process.env.EXPO_PUBLIC_METERED_DOMAIN;
-
-  if (meteredKey && meteredDomain) {
-    try {
-      const response = await fetch(`https://${meteredDomain}/api/v1/turn/credentials?apiKey=${meteredKey}`);
-      if (response.ok) {
-        const meteredServers = await response.json();
-        servers = [...servers, ...meteredServers];
-      }
-    } catch (e) {
-      console.error("Error fetching Metered ICE servers:", e);
-    }
-  } else {
-    servers.push(
-      {
-        urls: 'turn:openrelay.metered.ca:80',
-        username: 'openrelayproject',
-        credential: 'openrelayproject',
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443',
-        username: 'openrelayproject',
-        credential: 'openrelayproject',
-      }
-    );
-  }
+  servers.push(
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    { urls: 'turn:global.relay.metered.ca:80', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
+    { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
+    { urls: 'turn:global.relay.metered.ca:443', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
+    { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' }
+  );
 
   return { iceServers: servers };
 };
@@ -77,8 +57,7 @@ export default function CallScreen() {
       }
 
       // 2. Setup PC
-      const rtcConfig = await getIceServers();
-      const peer = new RTCPeerConnection(rtcConfig);
+      const peer = new RTCPeerConnection(getIceServers());
       pc.current = peer;
 
       stream.getTracks().forEach(t => peer.addTrack(t, stream));
