@@ -89,14 +89,16 @@ export async function getUserById(id: string) {
 export async function searchUsers(query: string) {
   if (!query || query.length < 2) return { users: [] };
   
-  // Sanitize input to prevent SQL injection via ilike
+  // Clean basic pattern matching chars, but encode for PostgREST to prevent injection
   const safeQuery = query.replace(/[%_\\]/g, '');
   if (safeQuery.length < 2) return { users: [] };
+
+  const encodedQuery = encodeURIComponent(safeQuery);
 
   const { data, error } = await supabase
     .from('users')
     .select('id, username, display_name, avatar_url')
-    .or(`username.ilike.${safeQuery}%,display_name.ilike.${safeQuery}%`)
+    .or(`username.ilike.${encodedQuery}%,display_name.ilike.${encodedQuery}%`)
     .limit(20);
 
   if (error) throw new Error(error.message);

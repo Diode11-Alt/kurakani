@@ -58,6 +58,11 @@ export default function RegisterPage() {
         phoneHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
       }
 
+      // VULN-020 Fix: Generate secure 14-bit registration ID for Signal Protocol
+      const regIdArray = new Uint16Array(1);
+      crypto.getRandomValues(regIdArray);
+      const registrationId = (regIdArray[0] % 16383) + 1;
+
       // Register with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -66,7 +71,7 @@ export default function RegisterPage() {
           data: {
             username,
             phone_hash: phoneHash,
-            registration_id: 1, // Fallback placeholder since we removed crypto
+            registration_id: registrationId,
           }
         }
       });

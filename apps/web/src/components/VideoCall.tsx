@@ -259,6 +259,11 @@ export function VideoCall({
   };
 
   const saveCallLog = async (reason: string) => {
+    // BUG-011 Fix: Verify currentUserId before inserting
+    if (!currentUserId) {
+      console.warn("Attempted to log call without authenticated user.");
+      return;
+    }
     try {
       await supabase.from('messages').insert({
         conversation_id: conversationId,

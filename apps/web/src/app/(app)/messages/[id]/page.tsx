@@ -443,7 +443,10 @@ export default function ChatThreadPage() {
     });
 
     return () => {
-      supabase.removeChannel(channel);
+      // BUG-013 Fix: Ensure channel is unsubscribed before removal to prevent memory leak
+      channel.unsubscribe().then(() => {
+        supabase.removeChannel(channel);
+      });
     };
   }, [conversationId, currentUserId]);
 
@@ -742,6 +745,8 @@ export default function ChatThreadPage() {
         ciphertextType = encrypted.type;
       } catch (err) {
         console.error("E2EE Encryption failed:", err);
+        toast.error("Message encryption failed. Message not sent.");
+        return; // BUG-004 Fix: Halt send instead of falling back to plaintext
       }
     }
 

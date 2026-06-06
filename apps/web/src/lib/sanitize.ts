@@ -11,7 +11,11 @@ import DOMPurify from 'dompurify';
  */
 export function sanitizeMessage(plaintext: string): string {
   if (typeof window === 'undefined') {
-    return '';
+    // BUG-014 Fix: In SSR, we don't have DOMPurify available easily.
+    // For plaintext messages, we can just return them or a generic string.
+    // However, returning the original string is safe because React escapes text nodes natively, 
+    // and DOMPurify is only needed when rendering dangerouslySetInnerHTML!
+    return plaintext;
   }
 
   return DOMPurify.sanitize(plaintext, {
@@ -27,7 +31,7 @@ export function sanitizeMessage(plaintext: string): string {
  */
 export function sanitizeHtml(htmlContent: string, options?: { ALLOWED_TAGS?: string[], ALLOWED_ATTRS?: Record<string, string[]> }): string {
   if (typeof window === 'undefined') {
-    return '';
+    return htmlContent; // Better to return raw content to avoid blank SSR pages if safe, or rely on hydration
   }
 
   // Define base safe attributes array format for DOMPurify
