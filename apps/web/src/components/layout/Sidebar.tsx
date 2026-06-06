@@ -1,13 +1,46 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStore";
+import { useUIStore } from "../../store/uiStore";
+import { supabase } from "../../lib/supabase";
+import { NotificationSidebar } from "./NotificationSidebar";
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, userId, clearAuth } = useAuthStore();
+  const { isNotificationsOpen, setIsNotificationsOpen } = useUIStore();
+
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchUnread = async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_read', false);
+      if (data) setUnreadNotifications(data.length);
+    };
+
+    fetchUnread();
+
+    const channel = supabase
+      .channel('public:notifications:badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => {
+        fetchUnread();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
   const handleLogout = () => {
     clearAuth();
@@ -17,6 +50,7 @@ export function Sidebar() {
   const navItems = [
     { icon: "dynamic_feed", label: "Feed", href: "/feed" },
     { icon: "explore", label: "Explore", href: "/explore" },
+    { icon: "notifications", label: "Notifications", action: () => setIsNotificationsOpen(!isNotificationsOpen), badge: unreadNotifications },
     { icon: "add_box", label: "Create", href: "/create" },
     { icon: "chat", label: "Messages", href: "/messages", badge: 0 },
     { icon: "group", label: "Connections", href: "/connections" },
@@ -24,43 +58,57 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="hidden md:flex sidebar-transition flex-col h-screen w-64 fixed left-0 top-0 bg-[var(--color-surface)] z-50 pt-8 pb-6 px-4 shadow-sm border-r border-[var(--color-outline-variant)]/50">
-      {/* Logo Header */}
-      <div className="flex items-center gap-3 mb-10 px-4 cursor-pointer group">
-        <img src="/favicon.ico" alt="Kurakani Logo" className="w-8 h-8 object-contain" />
-        <span className="font-display-lg text-[32px] leading-tight font-black text-[var(--color-primary)]">Kurakani</span>
-      </div>
+    <>
+      <aside className="hidden md:flex sidebar-transition flex-col h-screen w-64 fixed left-0 top-0 bg-[var(--color-surface)] z-[70] pt-8 pb-6 px-4 shadow-sm border-r border-[var(--color-outline-variant)]/50">
+        {/* Logo Header */}
+        <div className="flex items-center gap-3 mb-10 px-4 cursor-pointer group">
+          <img src="/favicon.ico" alt="Kurakani Logo" className="w-8 h-8 object-contain" />
+          <span className="font-display-lg text-[32px] leading-tight font-black text-[var(--color-primary)]">Kurakani</span>
+        </div>
 
-      {/* Main Navigation */}
-      <nav className="flex-1 space-y-2">
-        {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`flex items-center justify-between px-4 py-3 rounded-xl transition-colors relative group active:scale-[0.98] duration-200 overflow-hidden ${
-                isActive
-                  ? "text-[var(--color-primary)] font-bold border-r-4 border-[var(--color-primary)] bg-[var(--color-surface-container-low)]"
-                  : "text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] font-body-lg"
-              }`}
-            >
-              <div className="flex items-center gap-3 z-10 relative">
-                <span className={`material-symbols-outlined transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </div>
+        {/* Main Navigation */}
+        <nav className="flex-1 space-y-2">
+          {navItems.map((item) => {
+            const isActive = item.href ? pathname.startsWith(item.href) : (item.label === 'Notifications' && isNotificationsOpen);
+            
+            const content = (
+              <>
+                <div className="flex items-center gap-3 z-10 relative">
+                  <span className={`material-symbols-outlined transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </div>
 
-              {item.badge ? (
-                <span className="bg-[var(--color-primary)] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 relative">
-                  {item.badge}
-                </span>
-              ) : null}
-            </Link>
-          );
-        })}
-      </nav>
+                {item.badge ? (
+                  <span className="bg-[var(--color-error)] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 relative">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                ) : null}
+              </>
+            );
+
+            const className = `flex items-center justify-between px-4 py-3 rounded-xl transition-colors relative group active:scale-[0.98] duration-200 overflow-hidden ${
+              isActive
+                ? "text-[var(--color-primary)] font-bold border-r-4 border-[var(--color-primary)] bg-[var(--color-surface-container-low)]"
+                : "text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] font-body-lg"
+            }`;
+
+            if (item.action) {
+              return (
+                <button key={item.label} onClick={item.action} className={`w-full text-left ${className}`}>
+                  {content}
+                </button>
+              );
+            }
+
+            return (
+              <Link key={item.label} href={item.href!} className={className}>
+                {content}
+              </Link>
+            );
+          })}
+        </nav>
 
       {/* Bottom Section (Settings & User) */}
       <div className="mt-auto space-y-2">
@@ -108,5 +156,12 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
+
+      <NotificationSidebar 
+        userId={userId!} 
+        isOpen={isNotificationsOpen} 
+        onClose={() => setIsNotificationsOpen(false)} 
+      />
+    </>
   );
 }

@@ -1,18 +1,23 @@
 "use client";
 
 import { useAuthStore } from "../../store/authStore";
+import { useUIStore } from "../../store/uiStore";
 import Link from "next/link";
 
 export function MobileHeader() {
   const { user, userId } = useAuthStore();
+  const { isNotificationsOpen, setIsNotificationsOpen } = useUIStore();
 
   return (
     <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[var(--color-surface)]/90 backdrop-blur-md border-b border-[var(--color-outline-variant)]/30 flex items-center justify-between px-lg z-40 shadow-sm">
       <span className="text-headline-md font-black text-brand tracking-tight">GUFF</span>
       <div className="flex items-center gap-md">
-        <span className="material-symbols-outlined text-content-muted hover:text-brand cursor-pointer transition-colors active:scale-95">
+        <button 
+          onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+          className="material-symbols-outlined text-content-muted hover:text-brand cursor-pointer transition-colors active:scale-95 bg-transparent border-none p-0"
+        >
           notifications
-        </span>
+        </button>
         <span 
           className="material-symbols-outlined text-spark cursor-pointer active:scale-95" 
           style={{ fontVariationSettings: "'FILL' 1" }}

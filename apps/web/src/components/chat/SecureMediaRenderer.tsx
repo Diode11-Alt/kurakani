@@ -63,8 +63,7 @@ export default function SecureMediaRenderer({
           else if (ext === 'wav') mime = 'audio/wav';
           else if (ext === 'weba') mime = 'audio/webm';
           else if (ext === 'm4a') mime = 'audio/mp4';
-          
-          const blob = new Blob([decryptedData], { type: mime });
+          const blob = new Blob([decryptedData as unknown as BlobPart], { type: mime });
           const objectUrl = URL.createObjectURL(blob);
           if (isMounted) setUrl(objectUrl);
         } catch (err) {

@@ -220,6 +220,10 @@ export function VideoCall({
       clearInterval(ringtoneRef.current.intervalId);
       ringtoneRef.current.intervalId = null;
     }
+    if (ringtoneRef.current?.ctx) {
+      ringtoneRef.current.ctx.close().catch(() => {});
+      ringtoneRef.current.ctx = null;
+    }
   };
 
   const flushCandidateQueue = async () => {
@@ -405,7 +409,12 @@ export function VideoCall({
     ];
 
     try {
-      const res = await fetch('/api/turn');
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/turn', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         // Use explicitly configured TURN host (must be the server's public IP or domain).
@@ -433,14 +442,8 @@ export function VideoCall({
       { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
     );
 
-    // Add paid Metered.ca TURN servers as fallback
-    servers.push(
-      { urls: 'stun:stun.relay.metered.ca:80' },
-      { urls: 'turn:global.relay.metered.ca:80', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
-      { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
-      { urls: 'turn:global.relay.metered.ca:443', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' },
-      { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: '555b2cd36bf24ad2ad21d583', credential: 'W+kerXypxn7ObzV5' }
-    );
+    // Removed hardcoded paid Metered.ca TURN servers for security.
+    // Ensure you use the /api/turn route.
 
     return { iceServers: servers };
   };

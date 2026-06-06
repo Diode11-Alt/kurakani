@@ -45,6 +45,16 @@ export async function updateProfile(updates: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  if (updates.username && !/^[a-zA-Z0-9_]{3,20}$/.test(updates.username)) {
+    throw new Error('Username must be 3-20 characters and contain only letters, numbers, and underscores');
+  }
+  if (updates.bio && updates.bio.length > 160) {
+    throw new Error('Bio must be 160 characters or less');
+  }
+  if (updates.displayName && updates.displayName.length > 50) {
+    throw new Error('Display name must be 50 characters or less');
+  }
+
   const { error } = await supabase
     .from('users')
     .update({

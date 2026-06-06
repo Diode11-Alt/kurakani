@@ -678,6 +678,8 @@ export default function ChatThreadPage() {
     }
   };
 
+  const { deviceId } = useAuthStore();
+
   const handleSendMessage = async (
     e: React.FormEvent,
     attachmentOverride?: { s3Key: string; keyBase64: string; ivBase64: string } | string | null,
@@ -718,11 +720,9 @@ export default function ChatThreadPage() {
     let ciphertext: string | null = null;
     let ciphertextType: number | null = null;
 
-    // TEMPORARILY DISABLED E2EE for testing as requested by user
-    /*
+    // Re-enabled E2EE
     if (signalStore && otherUser?.id && currentUserId) {
       try {
-        const { deviceId } = useAuthStore.getState();
         const dId = deviceId || 1;
         const sessionRecord = await signalStore.loadSession(`${otherUser.id}.1`);
         if (!sessionRecord) {
@@ -744,7 +744,6 @@ export default function ChatThreadPage() {
         console.error("E2EE Encryption failed:", err);
       }
     }
-    */
 
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {

@@ -25,5 +25,5 @@ DROP POLICY IF EXISTS "Users can read their conversations" ON conversations;
 CREATE POLICY "Users can read their conversations" ON conversations FOR SELECT
 USING (
   created_by = auth.uid() OR
-  EXISTS (SELECT 1 FROM conversation_members WHERE conversation_id = conversations.id AND user_id = auth.uid())
+  auth.uid() IN (SELECT user_id FROM conversation_members WHERE conversation_id = conversations.id)
 );

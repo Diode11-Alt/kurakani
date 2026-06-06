@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { supabase } from '../../../lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const token = authHeader.replace('Bearer ', '');
+  const { data: { user } } = await supabase.auth.getUser(token);
+  
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const turnSecret = process.env.TURN_SECRET || 'your_super_secret_turn_key_here'; // Fallback for local dev
 
   if (!turnSecret) {

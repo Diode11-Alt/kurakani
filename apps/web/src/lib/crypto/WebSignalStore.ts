@@ -39,8 +39,25 @@ export class WebSignalStore implements SignalProtocolStore {
 
   // --- Identity ---
   async getIdentityKeyPair(): Promise<IdentityKeyPair | undefined> {
-    const db = await this.dbPromise;
-    return db.get('identityKey', 'keyPair');
+    try {
+      const db = await this.dbPromise;
+      const keyPair = await db.get('identityKey', 'keyPair');
+      if (!keyPair) return undefined;
+      
+      // Validate structure matches expected ArrayBuffer allocation bounds
+      if (!keyPair.pubKey || !keyPair.privKey) throw new Error("Malformed state");
+      
+      return keyPair as IdentityKeyPair;
+    } catch (e) {
+      console.error("Cryptographic state corrupted. Resetting session context cleanly.");
+      try {
+        const db = await this.dbPromise;
+        await db.delete('identityKey', 'keyPair');
+      } catch (err) {
+        // Ignore errors during reset
+      }
+      return undefined;
+    }
   }
 
   async getLocalRegistrationId(): Promise<number | undefined> {

@@ -20,6 +20,18 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+
+  const getOrCreateDeviceId = () => {
+    let currentDeviceId = deviceId;
+    if (!currentDeviceId) {
+      const arr = new Uint32Array(1);
+      crypto.getRandomValues(arr);
+      currentDeviceId = (arr[0] % 2147483646) + 1;
+      setDeviceId(currentDeviceId);
+    }
+    return currentDeviceId;
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,24 +42,17 @@ export default function RegisterPage() {
     if (botField) {
       // Honeypot tripped: silently "succeed" to fool the bot, but do nothing
       await new Promise(r => setTimeout(r, 1500));
-      router.replace("/feed");
       return;
     }
 
     try {
-      // Determine device ID using cryptographically secure randomness
-      let currentDeviceId = deviceId;
-      if (!currentDeviceId) {
-        const arr = new Uint32Array(1);
-        crypto.getRandomValues(arr);
-        currentDeviceId = (arr[0] % 2147483646) + 1;
-        setDeviceId(currentDeviceId);
-      }
+      getOrCreateDeviceId();
 
       // Hash the phone number if provided
       let phoneHash = null;
       if (phoneNumber) {
-        const msgUint8 = new TextEncoder().encode(phoneNumber + 'kurakani_default_pepper');
+        const pepper = process.env.NEXT_PUBLIC_PHONE_PEPPER || 'kurakani_default_pepper';
+        const msgUint8 = new TextEncoder().encode(phoneNumber + pepper);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         phoneHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -70,16 +75,34 @@ export default function RegisterPage() {
         throw new Error(authError.message);
       }
 
-      const user = authData.user;
-      if (!user) {
+      if (!authData.user) {
         throw new Error("Registration failed - no user returned.");
       }
       
-      router.replace("/feed");
+      if (!authData.session) {
+        setVerificationSent(true);
+      } else {
+        router.replace("/feed");
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOAuth = async (provider: 'google' | 'github') => {
+    try {
+      getOrCreateDeviceId();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/feed`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
@@ -206,7 +229,7 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
             <button 
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] transition-colors" 
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] transition-colors bg-transparent border-none p-0 cursor-pointer" 
               type="button"
               onClick={() => setShowPassword(!showPassword)}
             >
@@ -221,9 +244,16 @@ export default function RegisterPage() {
           )}
         </div>
 
+        {verificationSent && (
+          <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm flex items-center gap-2 font-medium border border-green-200">
+            <span className="material-symbols-outlined text-[18px]">mark_email_read</span>
+            Registration successful! Please check your email to verify your identity before signing in.
+          </div>
+        )}
+
         <div className="pt-2">
           <button 
-            disabled={loading}
+            disabled={loading || verificationSent}
             type="submit"
             className="btn-primary w-full flex justify-center items-center gap-2"
           >
@@ -235,6 +265,34 @@ export default function RegisterPage() {
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </>
             )}
+          </button>
+        </div>
+
+        <div className="relative py-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-[var(--color-outline-variant)]/40"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-3 bg-white text-[var(--color-on-surface-variant)] text-xs font-semibold uppercase tracking-wider">Or continue with</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleOAuth('google')}
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-[var(--color-outline-variant)]/60 bg-white hover:bg-gray-50 text-[var(--color-on-surface)] font-medium transition-colors shadow-sm cursor-pointer"
+          >
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
+            Google
+          </button>
+          <button
+            type="button"
+            onClick={() => handleOAuth('github')}
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-[var(--color-outline-variant)]/60 bg-[#24292F] hover:bg-[#1b1f24] text-white font-medium transition-colors shadow-sm cursor-pointer"
+          >
+            <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" className="w-5 h-5 invert" />
+            GitHub
           </button>
         </div>
       </form>

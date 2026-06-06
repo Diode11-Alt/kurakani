@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import DOMPurify from 'dompurify';
+import { sanitizeHtml } from '../lib/sanitize';
 import { supabase } from '../lib/supabase';
 import { Heart, MessageSquare, Share2, Bookmark, MoreHorizontal, Trash2, ShieldCheck, Check, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -16,22 +16,22 @@ interface PostCardProps {
 
 export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
+  const [likesCount, setLikesCount] = useState(() => post.likes ? post.likes[0]?.count || 0 : 0);
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
-  const [commentsCount, setCommentsCount] = useState(0);
+  const [commentsCount, setCommentsCount] = useState(() => post.comments ? post.comments[0]?.count || 0 : 0);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [sharesCount, setSharesCount] = useState(0);
+  const [sharesCount, setSharesCount] = useState(() => post.post_shares ? post.post_shares[0]?.count || 0 : 0);
 
   const author = post.users || post.author;
 
   useEffect(() => {
-    // Fetch like status and counts
-    const fetchCounts = async () => {
+    // Fetch user-specific status (liked, saved) since counts are now passed in
+    const fetchUserStatus = async () => {
       // Check if current user liked this post
       const { data: likeData } = await supabase
         .from('likes')
@@ -41,20 +41,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         .maybeSingle();
       if (likeData) setLiked(true);
 
-      // Fetch total likes count
-      const { count: lCount } = await supabase
-        .from('likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', post.id);
-      setLikesCount(lCount || 0);
-
-      // Fetch total comments count
-      const { count: cCount } = await supabase
-        .from('comments')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', post.id);
-      setCommentsCount(cCount || 0);
-
       // Check if saved
       const { data: savedData } = await supabase
         .from('saved_posts')
@@ -63,15 +49,8 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         .eq('post_id', post.id)
         .maybeSingle();
       if (savedData) setSaved(true);
-
-      // Shares count
-      const { count: sCount } = await supabase
-        .from('post_shares')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', post.id);
-      setSharesCount(sCount || 0);
     };
-    fetchCounts();
+    fetchUserStatus();
   }, [post.id, currentUserId]);
 
   const toggleLike = async () => {
@@ -168,7 +147,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
     }
     // Track the share
     await supabase.from('post_shares').insert({ user_id: currentUserId, post_id: post.id });
-    setSharesCount(c => c + 1);
+    setSharesCount((c: number) => c + 1);
   };
 
   const toggleSave = async () => {
@@ -254,7 +233,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       {post.content && (
         <div 
           className="px-4 py-2 text-sm text-[var(--color-on-surface)] leading-relaxed whitespace-pre-wrap"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content, { ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a'], ALLOWED_ATTRS: { 'a': ['href', 'target', 'rel'] } }) }}
         />
       )}
 
@@ -350,7 +329,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
                             const { error } = await supabase.from('comments').delete().eq('id', c.id);
                             if (!error) {
                               setComments(prev => prev.filter(comment => comment.id !== c.id));
-                              setCommentsCount(count => Math.max(0, count - 1));
+                              setCommentsCount((count: number) => Math.max(0, count - 1));
                             } else {
                               toast.error('Failed to delete comment');
                             }
@@ -364,7 +343,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
                     </div>
                     <div 
                       className="text-xs text-[var(--color-on-surface-variant)] mt-1 whitespace-pre-wrap"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.content) }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(c.content, { ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a'], ALLOWED_ATTRS: { 'a': ['href', 'target', 'rel'] } }) }}
                     />
                   </div>
                 </div>

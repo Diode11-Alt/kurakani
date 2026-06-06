@@ -6,6 +6,7 @@ import { CreatePost } from '../../../components/CreatePost';
 import { PostCard } from '../../../components/PostCard';
 import { StoriesTray } from '../../../components/StoriesTray';
 import { Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -34,27 +35,32 @@ export default function FeedPage() {
   async function fetchPosts(providedSession?: any) {
     const activeSession = providedSession || session;
     setLoading(true);
-    if (activeSession) {
-      const { data: followsData } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', activeSession.user.id);
-      
-      const followedIds = followsData ? followsData.map(f => f.following_id) : [];
-      followedIds.push(activeSession.user.id);
+    try {
+      if (activeSession) {
+        const { data: followsData } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', activeSession.user.id);
+        
+        const followedIds = followsData ? followsData.map(f => f.following_id) : [];
+        followedIds.push(activeSession.user.id);
 
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*, users:author_id(id, username, display_name, avatar_url)')
-        .in('author_id', followedIds)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*, users:author_id(id, username, display_name, avatar_url), likes(count), comments(count), post_shares(count)')
+          .in('author_id', followedIds)
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      if (!error && data) {
-        setPosts(data);
+        if (error) throw error;
+        if (data) setPosts(data);
       }
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+      toast.error('Could not load feed. Please refresh.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (!session) return null;

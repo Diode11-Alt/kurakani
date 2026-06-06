@@ -6,7 +6,7 @@ services:
     container_name: signal_postgres
     environment:
       POSTGRES_USER: signal_user
-      POSTGRES_PASSWORD: signal_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-signal_pass}
       POSTGRES_DB: signal_clone
     ports:
       - "5432:5432"
@@ -22,13 +22,13 @@ services:
   redis:
     image: redis:7-alpine
     container_name: signal_redis
-    command: redis-server --requirepass redis_dev_password --appendonly yes
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_dev_password} --appendonly yes
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "redis_dev_password", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_dev_password}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,8 +39,8 @@ services:
     container_name: signal_minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
     ports:
       - "9000:9000"   # API
       - "9001:9001"   # Web console (http://localhost:9001)
@@ -60,7 +60,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 minioadmin minioadmin123;
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER:-minioadmin} $${MINIO_ROOT_PASSWORD:-minioadmin123};
       mc mb local/signal-attachments --ignore-existing;
       mc anonymous set none local/signal-attachments;
       echo 'MinIO bucket created';
