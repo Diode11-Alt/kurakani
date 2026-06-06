@@ -74,12 +74,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           // Verify server has the keys even if local store is initialized
           const { data: existingKey } = await supabase
             .from('identity_keys')
-            .select('device_id')
+            .select('device_id, identity_key')
             .eq('user_id', authSession.user.id)
             .maybeSingle();
 
-          if (!existingKey) {
-            console.log("E2EE: Local keys exist but not on server — re-uploading...");
+          if (!existingKey || !existingKey.identity_key) {
+            console.log("E2EE: Local keys missing or broken on server — re-uploading...");
             const payload = await generateSignalRegistrationPayload(store);
             await uploadSignalKeys(authSession.user.id, deviceId, payload);
             console.log("E2EE: Keys re-uploaded.");

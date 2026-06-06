@@ -321,15 +321,28 @@ export default function ChatThreadPage() {
           let attachmentData = null;
 
           if (msg.ciphertext && signalStore) {
-            try {
-              // Use device ID 1 — matches the hardcoded sender device ID used during encryption
-              const rawDecrypted = await decryptMessage(signalStore, msg.sender_id, 1, msg.ciphertext, msg.ciphertext_type);
-              const parsed = JSON.parse(rawDecrypted);
-              decryptedText = parsed.text;
-              attachmentData = parsed.attachment;
-            } catch (e) {
-              console.warn("Realtime decryption failed for msg", msg.id, e);
-              decryptedText = msg.content || "";
+            if (msg.sender_id === currentUserId) {
+              try {
+                const localMsg = await db.local_messages.get(msg.id);
+                if (localMsg) {
+                  decryptedText = localMsg.plaintext;
+                } else {
+                  decryptedText = "";
+                }
+              } catch (e) {
+                decryptedText = "";
+              }
+            } else {
+              try {
+                // Use device ID 1 — matches the hardcoded sender device ID used during encryption
+                const rawDecrypted = await decryptMessage(signalStore, msg.sender_id, 1, msg.ciphertext, msg.ciphertext_type);
+                const parsed = JSON.parse(rawDecrypted);
+                decryptedText = parsed.text;
+                attachmentData = parsed.attachment;
+              } catch (e) {
+                console.warn("Realtime decryption failed for msg", msg.id, e);
+                decryptedText = msg.content || "";
+              }
             }
           }
 
@@ -511,20 +524,33 @@ export default function ChatThreadPage() {
         let attachmentData = null;
 
         if (m.ciphertext && signalStore) {
-          try {
-            // Use device ID 1 — matches the hardcoded sender device ID used during encryption
-            const rawDecrypted = await decryptMessage(signalStore, m.sender_id, 1, m.ciphertext, m.ciphertext_type);
-            const parsed = JSON.parse(rawDecrypted);
-            decryptedText = parsed.text;
-            attachmentData = parsed.attachment;
-          } catch (e) {
-            console.warn("Decryption failed for message", m.id, "— error:", e);
-            // Use plaintext fallback if ciphertext was never stored (plain message)
-            // For truly encrypted messages that fail, show a softer UI hint
-            if (m.content) {
-              decryptedText = m.content;  // plaintext fallback exists
-            } else {
-              decryptedText = "";  // show nothing, not a scary string — media messages will show their attachment
+          if (m.sender_id === currentUserId) {
+            try {
+              const localMsg = await db.local_messages.get(m.id);
+              if (localMsg) {
+                decryptedText = localMsg.plaintext;
+              } else {
+                decryptedText = "";
+              }
+            } catch (e) {
+              decryptedText = "";
+            }
+          } else {
+            try {
+              // Use device ID 1 — matches the hardcoded sender device ID used during encryption
+              const rawDecrypted = await decryptMessage(signalStore, m.sender_id, 1, m.ciphertext, m.ciphertext_type);
+              const parsed = JSON.parse(rawDecrypted);
+              decryptedText = parsed.text;
+              attachmentData = parsed.attachment;
+            } catch (e) {
+              console.warn("Decryption failed for message", m.id, "— error:", e);
+              // Use plaintext fallback if ciphertext was never stored (plain message)
+              // For truly encrypted messages that fail, show a softer UI hint
+              if (m.content) {
+                decryptedText = m.content;  // plaintext fallback exists
+              } else {
+                decryptedText = "";  // show nothing, not a scary string — media messages will show their attachment
+              }
             }
           }
         }
@@ -792,6 +818,21 @@ export default function ChatThreadPage() {
         .single();
 
       if (error) throw new Error(error.message);
+
+      try {
+        await db.local_messages.put({
+          id: data.id,
+          conversationId: conversationId,
+          senderId: currentUserId as string,
+          plaintext: rawContent,
+          mediaUrl: finalMediaUrl || null,
+          contentType: (finalMediaUrl ? "attachment" : "text") as any,
+          status: "sent",
+          sentAt: new Date(data.sent_at)
+        });
+      } catch (e) {
+        console.warn("Could not save to local_messages", e);
+      }
 
       setMessages((prev) =>
         prev.map((m) =>
