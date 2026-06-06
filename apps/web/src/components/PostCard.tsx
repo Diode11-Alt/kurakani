@@ -73,7 +73,8 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       if (error) {
         setLiked(false);
         setLikesCount((c: number) => Math.max(0, c - 1));
-        console.error('Like error:', error); toast.error('Failed to like post');
+        console.error('Like error:', error.message || error); 
+        toast.error(`Failed to like post: ${error.message || 'Unknown error'}`);
       }
     }
   };
@@ -110,7 +111,8 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       setCommentsCount((c: number) => c + 1);
       setCommentText('');
     } else {
-      console.error('Comment error:', error); toast.error('Failed to post comment');
+      console.error('Comment error:', error?.message || error); 
+      toast.error(`Failed to post comment: ${error?.message || 'Unknown error'}`);
     }
   };
 

@@ -1320,7 +1320,7 @@ export default function ChatThreadPage() {
             </div>
           ) : previewUrl ? (
             <div className="flex-grow flex items-center gap-3 bg-[var(--color-surface-container)] rounded-full px-4 py-2 select-none border border-[var(--color-outline-variant)]">
-              <audio src={previewUrl} controls className="h-8 flex-grow" />
+              <audio src={previewUrl} controls className="h-10 flex-grow" />
               <button
                 type="button"
                 onClick={discardRecording}

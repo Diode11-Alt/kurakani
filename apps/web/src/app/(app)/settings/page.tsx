@@ -110,9 +110,9 @@ export default function SettingsPage() {
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save settings", err);
-      toast.error("Failed to save changes. Please try again.");
+      toast.error(err.message || "Failed to save changes. Please try again.");
     } finally {
       setLoading(false);
     }
