@@ -21,7 +21,7 @@ export async function getProfile() {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, username, display_name, bio, avatar_url, created_at')
+    .select('id, email, username, display_name, bio, avatar_url, created_at, cover_url, is_verified, pronouns, website, location, work, education, profile_views')
     .eq('id', user.id)
     .single();
 
@@ -34,6 +34,14 @@ export async function getProfile() {
     avatarUrl: data.avatar_url,
     email: data.email,
     createdAt: data.created_at,
+    coverUrl: data.cover_url,
+    isVerified: data.is_verified,
+    pronouns: data.pronouns,
+    website: data.website,
+    location: data.location,
+    work: data.work,
+    education: data.education,
+    profileViews: data.profile_views,
   };
 }
 
@@ -41,6 +49,12 @@ export async function updateProfile(updates: {
   displayName?: string; 
   bio?: string; 
   username?: string;
+  coverUrl?: string;
+  pronouns?: string;
+  website?: string;
+  location?: string;
+  work?: string;
+  education?: string;
 }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -54,6 +68,9 @@ export async function updateProfile(updates: {
   if (updates.displayName && updates.displayName.length > 50) {
     throw new Error('Display name must be 50 characters or less');
   }
+  if (updates.website && !updates.website.startsWith('http')) {
+    throw new Error('Website must start with http or https');
+  }
 
   const { error } = await supabase
     .from('users')
@@ -61,6 +78,12 @@ export async function updateProfile(updates: {
       ...(updates.displayName !== undefined && { display_name: updates.displayName }),
       ...(updates.bio !== undefined && { bio: updates.bio }),
       ...(updates.username !== undefined && { username: updates.username }),
+      ...(updates.coverUrl !== undefined && { cover_url: updates.coverUrl }),
+      ...(updates.pronouns !== undefined && { pronouns: updates.pronouns }),
+      ...(updates.website !== undefined && { website: updates.website }),
+      ...(updates.location !== undefined && { location: updates.location }),
+      ...(updates.work !== undefined && { work: updates.work }),
+      ...(updates.education !== undefined && { education: updates.education }),
     })
     .eq('id', user.id);
 
@@ -135,7 +158,7 @@ export async function getPrivacySettings() {
 
   const { data, error } = await supabase
     .from('user_settings')
-    .select('last_seen, read_receipts, profile_photo_visibility')
+    .select('last_seen, read_receipts, profile_photo_visibility, message_privacy, post_privacy, tag_privacy, connections_visibility, off_platform_activity')
     .eq('user_id', user.id)
     .single();
 
@@ -145,6 +168,11 @@ export async function getPrivacySettings() {
     lastSeen: data?.last_seen || 'everyone',
     readReceipts: data?.read_receipts ?? true,
     profilePhotoVisibility: data?.profile_photo_visibility || 'everyone',
+    messagePrivacy: data?.message_privacy || 'everyone',
+    postPrivacy: data?.post_privacy || 'everyone',
+    tagPrivacy: data?.tag_privacy || 'everyone',
+    connectionsVisibility: data?.connections_visibility || 'everyone',
+    offPlatformActivity: data?.off_platform_activity ?? false,
   };
 }
 
@@ -152,6 +180,11 @@ export async function updatePrivacySettings(updates: {
   lastSeen?: string;
   readReceipts?: boolean;
   profilePhotoVisibility?: string;
+  messagePrivacy?: string;
+  postPrivacy?: string;
+  tagPrivacy?: string;
+  connectionsVisibility?: string;
+  offPlatformActivity?: boolean;
 }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -163,6 +196,11 @@ export async function updatePrivacySettings(updates: {
       ...(updates.lastSeen !== undefined && { last_seen: updates.lastSeen }),
       ...(updates.readReceipts !== undefined && { read_receipts: updates.readReceipts }),
       ...(updates.profilePhotoVisibility !== undefined && { profile_photo_visibility: updates.profilePhotoVisibility }),
+      ...(updates.messagePrivacy !== undefined && { message_privacy: updates.messagePrivacy }),
+      ...(updates.postPrivacy !== undefined && { post_privacy: updates.postPrivacy }),
+      ...(updates.tagPrivacy !== undefined && { tag_privacy: updates.tagPrivacy }),
+      ...(updates.connectionsVisibility !== undefined && { connections_visibility: updates.connectionsVisibility }),
+      ...(updates.offPlatformActivity !== undefined && { off_platform_activity: updates.offPlatformActivity }),
       updated_at: new Date().toISOString(),
     });
 

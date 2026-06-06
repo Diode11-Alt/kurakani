@@ -322,14 +322,14 @@ export default function ChatThreadPage() {
 
           if (msg.ciphertext && signalStore) {
             try {
-              const { deviceId } = useAuthStore.getState();
-              const rawDecrypted = await decryptMessage(signalStore, msg.sender_id, deviceId || 1, msg.ciphertext, msg.ciphertext_type);
+              // Use device ID 1 — matches the hardcoded sender device ID used during encryption
+              const rawDecrypted = await decryptMessage(signalStore, msg.sender_id, 1, msg.ciphertext, msg.ciphertext_type);
               const parsed = JSON.parse(rawDecrypted);
               decryptedText = parsed.text;
               attachmentData = parsed.attachment;
             } catch (e) {
-              console.error("Decryption failed for msg", msg.id, e);
-              decryptedText = "[Encrypted message - Decryption failed]";
+              console.warn("Realtime decryption failed for msg", msg.id, e);
+              decryptedText = msg.content || "";
             }
           }
 
@@ -512,16 +512,19 @@ export default function ChatThreadPage() {
 
         if (m.ciphertext && signalStore) {
           try {
-            const { deviceId } = useAuthStore.getState();
-            const rawDecrypted = await decryptMessage(signalStore, m.sender_id, deviceId || 1, m.ciphertext, m.ciphertext_type);
+            // Use device ID 1 — matches the hardcoded sender device ID used during encryption
+            const rawDecrypted = await decryptMessage(signalStore, m.sender_id, 1, m.ciphertext, m.ciphertext_type);
             const parsed = JSON.parse(rawDecrypted);
             decryptedText = parsed.text;
             attachmentData = parsed.attachment;
           } catch (e) {
-            // Decryption failed. If we have plaintext fallback (m.content), use it.
-            // Otherwise show a generic message instead of crashing.
-            if (!m.content) {
-              decryptedText = "[Encrypted message]";
+            console.warn("Decryption failed for message", m.id, "— error:", e);
+            // Use plaintext fallback if ciphertext was never stored (plain message)
+            // For truly encrypted messages that fail, show a softer UI hint
+            if (m.content) {
+              decryptedText = m.content;  // plaintext fallback exists
+            } else {
+              decryptedText = "";  // show nothing, not a scary string — media messages will show their attachment
             }
           }
         }

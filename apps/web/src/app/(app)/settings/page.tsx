@@ -21,6 +21,11 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [username, setUsername] = useState('');
+  const [pronouns, setPronouns] = useState('');
+  const [website, setWebsite] = useState('');
+  const [location, setLocation] = useState('');
+  const [work, setWork] = useState('');
+  const [education, setEducation] = useState('');
 
   // Privacy state
   const [isPublic, setIsPublic] = useState(true);
@@ -28,6 +33,11 @@ export default function SettingsPage() {
   const [lastSeen, setLastSeen] = useState('everyone');
   const [readReceipts, setReadReceipts] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState('everyone');
+  const [messagePrivacy, setMessagePrivacy] = useState('everyone');
+  const [postPrivacy, setPostPrivacy] = useState('everyone');
+  const [tagPrivacy, setTagPrivacy] = useState('everyone');
+  const [connectionsVisibility, setConnectionsVisibility] = useState('everyone');
+  const [offPlatformActivity, setOffPlatformActivity] = useState(false);
 
   // Notification state
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -50,6 +60,11 @@ export default function SettingsPage() {
         setDisplayName(profileRes.displayName || '');
         setBio(profileRes.bio || '');
         setUsername(profileRes.username || '');
+        setPronouns((profileRes as any).pronouns || '');
+        setWebsite((profileRes as any).website || '');
+        setLocation((profileRes as any).location || '');
+        setWork((profileRes as any).work || '');
+        setEducation((profileRes as any).education || '');
         setIsPublic((profileRes as any).isPublic ?? true);
         setRequireConnectionRequests((profileRes as any).requireConnectionRequests ?? false);
       }
@@ -57,6 +72,11 @@ export default function SettingsPage() {
         setLastSeen(privacyRes.lastSeen || 'everyone');
         setReadReceipts(privacyRes.readReceipts ?? true);
         setProfilePhoto(privacyRes.profilePhotoVisibility || 'everyone');
+        setMessagePrivacy((privacyRes as any).messagePrivacy || 'everyone');
+        setPostPrivacy((privacyRes as any).postPrivacy || 'everyone');
+        setTagPrivacy((privacyRes as any).tagPrivacy || 'everyone');
+        setConnectionsVisibility((privacyRes as any).connectionsVisibility || 'everyone');
+        setOffPlatformActivity((privacyRes as any).offPlatformActivity ?? false);
       }
       if (notifRes) {
         setPushEnabled(notifRes.pushNotifications ?? true);
@@ -71,10 +91,19 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       if (section === 'profile') {
-        await updateProfile({ displayName, bio, username });
+        await updateProfile({ displayName, bio, username, pronouns, website, location, work, education } as any);
       } else if (section === 'privacy') {
         await updateProfile({ isPublic, requireConnectionRequests } as any);
-        await updatePrivacySettings({ lastSeen, readReceipts, profilePhotoVisibility: profilePhoto });
+        await updatePrivacySettings({ 
+          lastSeen, 
+          readReceipts, 
+          profilePhotoVisibility: profilePhoto,
+          messagePrivacy,
+          postPrivacy,
+          tagPrivacy,
+          connectionsVisibility,
+          offPlatformActivity
+        } as any);
       } else if (section === 'notifications') {
         await updateNotificationSettings({ pushNotifications: pushEnabled, notificationPreview: previewEnabled });
       }
@@ -176,6 +205,31 @@ export default function SettingsPage() {
                     className="input-field resize-none" rows={3} placeholder="Tell others about yourself..." maxLength={500} />
                   <p className="text-xs text-[var(--color-guff-text-muted)] mt-1">{bio.length}/500</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Pronouns</label>
+                  <input type="text" value={pronouns} onChange={e => setPronouns(e.target.value)}
+                    className="input-field" placeholder="they/them" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Website</label>
+                  <input type="url" value={website} onChange={e => setWebsite(e.target.value)}
+                    className="input-field" placeholder="https://example.com" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Location</label>
+                  <input type="text" value={location} onChange={e => setLocation(e.target.value)}
+                    className="input-field" placeholder="City, Country" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Work</label>
+                  <input type="text" value={work} onChange={e => setWork(e.target.value)}
+                    className="input-field" placeholder="Company / Job Title" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Education</label>
+                  <input type="text" value={education} onChange={e => setEducation(e.target.value)}
+                    className="input-field" placeholder="University / School" />
+                </div>
               </div>
 
               <button onClick={() => saveSettings('profile')} disabled={loading}
@@ -237,6 +291,46 @@ export default function SettingsPage() {
                   </select>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium mb-2">Message Privacy</label>
+                  <select value={messagePrivacy} onChange={e => setMessagePrivacy(e.target.value)}
+                    className="input-field">
+                    <option value="everyone">Everyone</option>
+                    <option value="contacts">My contacts</option>
+                    <option value="nobody">Nobody</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Post Privacy</label>
+                  <select value={postPrivacy} onChange={e => setPostPrivacy(e.target.value)}
+                    className="input-field">
+                    <option value="everyone">Everyone</option>
+                    <option value="contacts">My contacts</option>
+                    <option value="only_me">Only Me</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Tag Privacy</label>
+                  <select value={tagPrivacy} onChange={e => setTagPrivacy(e.target.value)}
+                    className="input-field">
+                    <option value="everyone">Everyone</option>
+                    <option value="contacts">My contacts</option>
+                    <option value="nobody">Nobody</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Connections Visibility</label>
+                  <select value={connectionsVisibility} onChange={e => setConnectionsVisibility(e.target.value)}
+                    className="input-field">
+                    <option value="everyone">Everyone</option>
+                    <option value="contacts">My contacts</option>
+                    <option value="nobody">Nobody</option>
+                  </select>
+                </div>
+
                 <div className="flex items-center justify-between py-2">
                   <div>
                     <p className="text-sm font-medium">Read Receipts</p>
@@ -245,6 +339,17 @@ export default function SettingsPage() {
                   <button onClick={() => setReadReceipts(!readReceipts)}
                     className={`w-11 h-6 rounded-full transition-all relative ${readReceipts ? 'bg-brand' : 'bg-[#4A3D33]'}`}>
                     <div className={`w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all ${readReceipts ? 'left-5.5' : 'left-0.5'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-sm font-medium">Off-Platform Activity Tracker</p>
+                    <p className="text-xs text-[var(--color-guff-text-muted)]">Allow tracking link clicks for recommendations</p>
+                  </div>
+                  <button onClick={() => setOffPlatformActivity(!offPlatformActivity)}
+                    className={`w-11 h-6 rounded-full transition-all relative ${offPlatformActivity ? 'bg-brand' : 'bg-[#4A3D33]'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all ${offPlatformActivity ? 'left-5.5' : 'left-0.5'}`} />
                   </button>
                 </div>
               </div>

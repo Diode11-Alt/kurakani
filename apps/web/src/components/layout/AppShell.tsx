@@ -49,17 +49,41 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     // E2EE Key Initialization
     const initE2EE = async () => {
-      const { deviceId } = useAuthStore.getState();
-      if (!deviceId || !authSession?.user?.id) return;
+      if (!authSession?.user?.id) return;
+
+      // Ensure deviceId exists — generate if missing
+      let { deviceId } = useAuthStore.getState();
+      if (!deviceId) {
+        const arr = new Uint32Array(1);
+        crypto.getRandomValues(arr);
+        deviceId = (arr[0] % 2147483646) + 1;
+        useAuthStore.getState().setDeviceId(deviceId);
+      }
 
       try {
         const store = new WebSignalStore();
         const isInit = await store.isInitialized();
+
+        // Also verify server has our keys — re-upload if missing
         if (!isInit) {
-          console.log("E2EE: Generating local keys...");
+          console.log("E2EE: Generating and uploading local keys...");
           const payload = await generateSignalRegistrationPayload(store);
           await uploadSignalKeys(authSession.user.id, deviceId, payload);
-          console.log("E2EE: Keys generated and uploaded.");
+          console.log("E2EE: Keys uploaded successfully.");
+        } else {
+          // Verify server has the keys even if local store is initialized
+          const { data: existingKey } = await supabase
+            .from('identity_keys')
+            .select('device_id')
+            .eq('user_id', authSession.user.id)
+            .maybeSingle();
+
+          if (!existingKey) {
+            console.log("E2EE: Local keys exist but not on server — re-uploading...");
+            const payload = await generateSignalRegistrationPayload(store);
+            await uploadSignalKeys(authSession.user.id, deviceId, payload);
+            console.log("E2EE: Keys re-uploaded.");
+          }
         }
       } catch (err) {
         console.error("E2EE Init Error:", err);
