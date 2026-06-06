@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<void>) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [previewBlob, setPreviewBlob] = useState<{blob: Blob, ext: string} | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
@@ -34,7 +36,12 @@ export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<
         }
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         if (audioBlob.size > 0) {
-          await onUpload(audioBlob, ext);
+          if (mediaRecorderRef.current?.ondataavailable === null) {
+            // Cancelled
+          } else {
+            setPreviewBlob({blob: audioBlob, ext});
+            setPreviewUrl(URL.createObjectURL(audioBlob));
+          }
         }
         stream.getTracks().forEach(track => track.stop());
       };
@@ -42,6 +49,11 @@ export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingDuration(0);
+      setPreviewBlob(null);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
       recordingTimerRef.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
       }, 1000);
@@ -69,6 +81,21 @@ export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<
     }
   }, [isRecording]);
 
+  const discardRecording = useCallback(() => {
+    setPreviewBlob(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  }, [previewUrl]);
+
+  const sendRecording = useCallback(async () => {
+    if (previewBlob) {
+      await onUpload(previewBlob.blob, previewBlob.ext);
+      discardRecording();
+    }
+  }, [previewBlob, onUpload, discardRecording]);
+
   const formatDuration = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -82,5 +109,8 @@ export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<
     stopRecording,
     cancelRecording,
     formatDuration,
+    previewUrl,
+    sendRecording,
+    discardRecording
   };
 }

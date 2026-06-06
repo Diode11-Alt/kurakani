@@ -129,6 +129,9 @@ export default function ChatThreadPage() {
     stopRecording,
     cancelRecording,
     formatDuration,
+    previewUrl,
+    sendRecording,
+    discardRecording
   } = useAudioRecorder(handleVoiceNoteUpload);
 
   const handleReaction = async (messageId: string, emoji: string) => {
@@ -1310,6 +1313,24 @@ export default function ChatThreadPage() {
               <button
                 type="button"
                 onClick={stopRecording}
+                className="p-2.5 rounded-full bg-blue-500 hover:bg-blue-500/80 text-white shadow transition-colors flex items-center justify-center cursor-pointer"
+              >
+                <Square className="w-4 h-4 fill-current" />
+              </button>
+            </div>
+          ) : previewUrl ? (
+            <div className="flex-grow flex items-center gap-3 bg-[var(--color-surface-container)] rounded-full px-4 py-2 select-none border border-[var(--color-outline-variant)]">
+              <audio src={previewUrl} controls className="h-8 flex-grow" />
+              <button
+                type="button"
+                onClick={discardRecording}
+                className="p-2 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors ml-auto flex items-center justify-center cursor-pointer"
+              >
+                <Trash2 className="w-4.5 h-4.5" />
+              </button>
+              <button
+                type="button"
+                onClick={sendRecording}
                 className="p-2.5 rounded-full bg-green-500 hover:bg-green-500/80 text-white shadow transition-colors flex items-center justify-center cursor-pointer"
               >
                 <Send className="w-4 h-4" />
@@ -1385,7 +1406,7 @@ export default function ChatThreadPage() {
                 </div>
               </div>
 
-              {!inputText.trim() && !uploading && !selectedFile ? (
+              {!inputText.trim() && !uploading && !selectedFile && !previewUrl ? (
                 <button
                   type="button"
                   onClick={startRecording}
