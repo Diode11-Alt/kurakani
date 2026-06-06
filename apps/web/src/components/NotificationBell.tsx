@@ -134,11 +134,11 @@ export function NotificationBell({ userId }: { userId: string }) {
       </button>
 
       {isOpen && (
-        <div className="absolute left-10 lg:left-full bottom-0 ml-2 w-80 bg-[var(--color-guff-surface)] border border-[var(--color-guff-border)] rounded-2xl shadow-xl overflow-hidden z-50 transform origin-bottom-left flex flex-col max-h-[400px]">
-          <div className="p-3 border-b border-[var(--color-guff-border)] flex items-center justify-between bg-[var(--color-guff-surface-container-low)]">
-            <h3 className="font-bold text-[var(--color-guff-text)]">Notifications</h3>
+        <div className="fixed top-0 bottom-0 left-[72px] lg:left-[240px] w-[350px] bg-[var(--color-guff-surface)] border-r border-[var(--color-guff-border)] shadow-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-left-4 duration-200">
+          <div className="p-4 border-b border-[var(--color-guff-border)] flex items-center justify-between bg-[var(--color-guff-surface-container-low)]">
+            <h2 className="font-extrabold text-xl tracking-tight text-[var(--color-guff-text)]">Notifications</h2>
             {unreadCount > 0 && (
-              <button onClick={markAllAsRead} className="text-xs text-[var(--color-guff-primary)] hover:underline font-medium cursor-pointer">
+              <button onClick={markAllAsRead} className="text-sm text-[var(--color-guff-primary)] hover:underline font-bold cursor-pointer">
                 Mark all read
               </button>
             )}
@@ -146,7 +146,8 @@ export function NotificationBell({ userId }: { userId: string }) {
           
           <div className="flex-1 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-6 text-center text-[var(--color-guff-text-muted)] text-sm">
+              <div className="p-8 text-center text-[var(--color-guff-text-muted)] text-sm flex flex-col items-center gap-3">
+                <Bell className="w-8 h-8 opacity-20" />
                 No notifications yet.
               </div>
             ) : (
@@ -155,32 +156,32 @@ export function NotificationBell({ userId }: { userId: string }) {
                   <button 
                     key={notif.id}
                     onClick={() => handleNotificationClick(notif)}
-                    className={`p-3 border-b border-[var(--color-guff-border)]/50 flex items-start gap-3 hover:bg-[var(--color-guff-surface-container-low)] transition-colors text-left w-full cursor-pointer ${!notif.is_read ? 'bg-blue-50/30' : ''}`}
+                    className={`p-4 border-b border-[var(--color-guff-border)]/50 flex items-start gap-4 hover:bg-[var(--color-guff-surface-container-low)] transition-colors text-left w-full cursor-pointer ${!notif.is_read ? 'bg-blue-50/30' : ''}`}
                   >
                     <div className="relative flex-shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-guff-surface-container)] overflow-hidden">
+                      <div className="w-12 h-12 rounded-full bg-[var(--color-guff-surface-container)] overflow-hidden">
                         {notif.actor?.avatar_url ? (
                           <img src={notif.actor.avatar_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center font-bold text-gray-500">
+                          <div className="w-full h-full flex items-center justify-center font-bold text-gray-500 text-lg">
                             {notif.actor?.username?.[0]?.toUpperCase()}
                           </div>
                         )}
                       </div>
-                      <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+                      <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-sm">
                         {getIcon(notif.type)}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[var(--color-guff-text)] leading-tight">
+                      <div className="text-[var(--color-guff-text)] leading-snug">
                         {getMessage(notif)}
                       </div>
-                      <div className="text-[11px] text-[var(--color-guff-text-muted)] mt-1">
+                      <div className="text-xs text-[var(--color-guff-text-muted)] mt-1.5 font-medium">
                         {new Date(notif.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                       </div>
                     </div>
                     {!notif.is_read && (
-                      <div className="w-2 h-2 rounded-full bg-[var(--color-guff-primary)] flex-shrink-0 mt-2" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-guff-primary)] flex-shrink-0 mt-2" />
                     )}
                   </button>
                 ))}
