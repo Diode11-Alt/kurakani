@@ -61,7 +61,7 @@ export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<
       console.error('Error starting audio recording:', err);
       toast.error('Could not access microphone');
     }
-  }, [onUpload]);
+  }, [previewUrl]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {

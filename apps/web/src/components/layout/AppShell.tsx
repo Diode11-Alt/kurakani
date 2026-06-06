@@ -20,6 +20,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -43,7 +44,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
     
     registerPushToken();
-  }, [authSession, mounted, router]);
+  }, [authSession, mounted, router, authLoading]);
 
   // Get Supabase session for incoming call listener and Presence
   useEffect(() => {
@@ -109,7 +110,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('guff-start-call', handleStartCall);
     return () => window.removeEventListener('guff-start-call', handleStartCall);
-  }, []);
+  }, [setActiveCall]);
 
   // Listen for incoming calls and mark messages as delivered via Supabase Broadcast & Realtime
   useEffect(() => {
@@ -147,7 +148,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => {
       supabase.removeChannel(incomingChannel);
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, setActiveCall]);
 
   // Prevent SSR flash of unauthenticated content
   if (!mounted || authLoading || !authSession) {

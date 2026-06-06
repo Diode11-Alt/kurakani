@@ -493,10 +493,9 @@ export default function ChatThreadPage() {
     });
 
     return () => {
-      // BUG-013 Fix: Ensure channel is unsubscribed before removal to prevent memory leak
-      channel.unsubscribe().then(() => {
-        supabase.removeChannel(channel);
-      });
+      // BUG-013 Fix: Safely and synchronously remove the channel.
+      // removeChannel() handles the internal unsubscribe automatically.
+      supabase.removeChannel(channel);
     };
   }, [conversationId, currentUserId]);
 

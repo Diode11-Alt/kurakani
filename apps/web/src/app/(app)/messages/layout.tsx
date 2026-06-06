@@ -183,23 +183,22 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       });
 
       await db.transaction('rw', db.local_conversations, async () => {
-        for (const conv of enriched) {
-          await db.local_conversations.put({
-            id: conv.id,
-            type: conv.type || 'direct',
-            name: conv.name || null,
-            avatarUrl: conv.avatarUrl || null,
-            updatedAt: new Date(conv.last_message_at),
-            unreadCount: conv.unreadCount,
-            otherUser: {
-              id: (conv.otherUser as any).id || 'unknown',
-              username: (conv.otherUser as any).username || 'Unknown',
-              displayName: (conv.otherUser as any).display_name || null,
-              avatarUrl: (conv.otherUser as any).avatar_url || null,
-            },
-            lastMessage: conv.lastMessage
-          });
-        }
+        const records = enriched.map(conv => ({
+          id: conv.id,
+          type: conv.type || 'direct',
+          name: conv.name || null,
+          avatarUrl: conv.avatarUrl || null,
+          updatedAt: new Date(conv.last_message_at),
+          unreadCount: conv.unreadCount,
+          otherUser: {
+            id: (conv.otherUser as any).id || 'unknown',
+            username: (conv.otherUser as any).username || 'Unknown',
+            displayName: (conv.otherUser as any).display_name || null,
+            avatarUrl: (conv.otherUser as any).avatar_url || null,
+          },
+          lastMessage: conv.lastMessage
+        }));
+        await db.local_conversations.bulkPut(records);
       });
     } catch (err) {
       console.error('Error loading conversations:', err);
@@ -212,6 +211,8 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       return;
     }
 
+    const abortController = new AbortController();
+
     const delayDebounceFn = setTimeout(async () => {
       setSearching(true);
       try {
@@ -220,7 +221,8 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
           .select('id, username, display_name, avatar_url')
           .ilike('username', `%${searchQuery.trim()}%`)
           .neq('id', userId)
-          .limit(10);
+          .limit(10)
+          .abortSignal(abortController.signal);
         
         if (error) throw error;
         
@@ -232,14 +234,20 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         }));
         
         setSearchResults(mappedData);
-      } catch (err) {
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
         console.error('Error searching profiles:', err);
       } finally {
-        setSearching(false);
+        if (!abortController.signal.aborted) {
+          setSearching(false);
+        }
       }
     }, 300);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => {
+      clearTimeout(delayDebounceFn);
+      abortController.abort();
+    };
   }, [searchQuery, userId]);
 
   const startConversation = async (otherUserId: string) => {

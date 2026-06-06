@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export function NotificationSidebar({ userId, isOpen, onClose }: { userId: string, isOpen: boolean, onClose: () => void }) {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -132,9 +133,9 @@ export function NotificationSidebar({ userId, isOpen, onClose }: { userId: strin
                   className={`p-4 border-b border-[var(--color-outline-variant)]/30 flex items-start gap-4 hover:bg-[var(--color-surface-container)] transition-colors text-left w-full cursor-pointer ${!notif.is_read ? 'bg-[var(--color-primary)]/5' : ''}`}
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-[var(--color-primary-container)] overflow-hidden flex items-center justify-center text-white font-bold text-lg">
+                    <div className="w-12 h-12 rounded-full bg-[var(--color-primary-container)] overflow-hidden flex items-center justify-center text-white font-bold text-lg relative">
                       {notif.actor?.avatar_url ? (
-                        <img src={notif.actor.avatar_url} alt="" className="w-full h-full object-cover" />
+                        <Image src={notif.actor.avatar_url} alt="" fill sizes="48px" className="object-cover" />
                       ) : (
                         notif.actor?.username?.[0]?.toUpperCase() || '?'
                       )}
