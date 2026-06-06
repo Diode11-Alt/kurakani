@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Image as ImageIcon, FileText, Mic, Link2, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { decryptMessage } from "@signal/crypto";
 import { useAuthStore } from "@/store/authStore";
 import SecureMediaRenderer from "./SecureMediaRenderer";
 
@@ -11,14 +10,12 @@ interface ChatInfoSidebarProps {
   conversationId: string;
   otherUser: any;
   onClose: () => void;
-  signalStore: any;
 }
 
 export default function ChatInfoSidebar({
   conversationId,
   otherUser,
   onClose,
-  signalStore,
 }: ChatInfoSidebarProps) {
   const [activeTab, setActiveTab] = useState<"Media" | "Docs" | "Voice" | "Links">("Media");
   const [attachments, setAttachments] = useState<any[]>([]);
@@ -41,27 +38,8 @@ export default function ChatInfoSidebar({
         const processed = await Promise.all(
           data.map(async (m) => {
             let plaintext = m.content || "";
-            let attachmentData = null;
 
-            if (m.ciphertext && signalStore) {
-              try {
-                const { deviceId } = useAuthStore.getState();
-                const rawDecrypted = await decryptMessage(
-                  signalStore,
-                  m.sender_id,
-                  deviceId || 1,
-                  m.ciphertext,
-                  m.ciphertext_type
-                );
-                const parsed = JSON.parse(rawDecrypted);
-                plaintext = parsed.text || "";
-                attachmentData = parsed.attachment;
-              } catch (e) {
-                // Ignore decryption failure to avoid console spam
-              }
-            }
-
-            const s3Key = m.media_url || attachmentData?.s3Key;
+            const s3Key = m.media_url || null;
             
             // Categorize
             let category: "Media" | "Docs" | "Voice" | "Links" | "Unknown" = "Unknown";
@@ -86,8 +64,6 @@ export default function ChatInfoSidebar({
             return {
               id: m.id,
               s3Key,
-              attachmentKey: attachmentData?.keyBase64,
-              attachmentIv: attachmentData?.ivBase64,
               plaintext,
               category,
               sentAt: new Date(m.sent_at),
@@ -104,7 +80,7 @@ export default function ChatInfoSidebar({
     };
 
     fetchAttachments();
-  }, [conversationId, signalStore]);
+  }, [conversationId]);
 
   const tabs = [
     { id: "Media", icon: ImageIcon, label: "Media" },
@@ -184,16 +160,16 @@ export default function ChatInfoSidebar({
                     <div className="w-full h-full scale-[1.02] hover:scale-100 transition-transform">
                       <SecureMediaRenderer
                         mediaUrl={item.s3Key}
-                        attachmentKey={item.attachmentKey}
-                        attachmentIv={item.attachmentIv}
+                        attachmentKey={null}
+                        attachmentIv={null}
                         plaintext={item.plaintext}
                       />
                     </div>
                   ) : activeTab === "Voice" ? (
                      <SecureMediaRenderer
                         mediaUrl={item.s3Key}
-                        attachmentKey={item.attachmentKey}
-                        attachmentIv={item.attachmentIv}
+                        attachmentKey={null}
+                        attachmentIv={null}
                         plaintext="Voice Note 🎤"
                       />
                   ) : activeTab === "Docs" ? (

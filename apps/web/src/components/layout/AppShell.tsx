@@ -9,9 +9,6 @@ import { MobileHeader } from "./MobileHeader";
 import { VideoCall } from "../../components/VideoCall";
 import { supabase } from "../../lib/supabase";
 
-import { WebSignalStore } from "../../lib/crypto/WebSignalStore";
-import { generateSignalRegistrationPayload } from "../../lib/crypto/registration";
-import { uploadSignalKeys } from "../../lib/api";
 import { useUIStore } from "../../store/uiStore";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -46,51 +43,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
     
     registerPushToken();
-
-    // E2EE Key Initialization
-    const initE2EE = async () => {
-      if (!authSession?.user?.id) return;
-
-      // Ensure deviceId exists — generate if missing
-      let { deviceId } = useAuthStore.getState();
-      if (!deviceId) {
-        const arr = new Uint32Array(1);
-        crypto.getRandomValues(arr);
-        deviceId = (arr[0] % 2147483646) + 1;
-        useAuthStore.getState().setDeviceId(deviceId);
-      }
-
-      try {
-        const store = new WebSignalStore();
-        const isInit = await store.isInitialized();
-
-        // Also verify server has our keys — re-upload if missing
-        if (!isInit) {
-          console.log("E2EE: Generating and uploading local keys...");
-          const payload = await generateSignalRegistrationPayload(store);
-          await uploadSignalKeys(authSession.user.id, deviceId, payload);
-          console.log("E2EE: Keys uploaded successfully.");
-        } else {
-          // Verify server has the keys even if local store is initialized
-          const { data: existingKey } = await supabase
-            .from('identity_keys')
-            .select('device_id, identity_key')
-            .eq('user_id', authSession.user.id)
-            .maybeSingle();
-
-          if (!existingKey || !existingKey.identity_key) {
-            console.log("E2EE: Local keys missing or broken on server — re-uploading...");
-            const payload = await generateSignalRegistrationPayload(store);
-            await uploadSignalKeys(authSession.user.id, deviceId, payload);
-            console.log("E2EE: Keys re-uploaded.");
-          }
-        }
-      } catch (err) {
-        console.error("E2EE Init Error:", err);
-      }
-    };
-
-    initE2EE();
   }, [authSession, mounted, router]);
 
   // Get Supabase session for incoming call listener and Presence

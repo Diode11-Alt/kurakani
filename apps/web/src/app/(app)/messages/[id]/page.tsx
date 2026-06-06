@@ -33,9 +33,6 @@ import {
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 import { useUIStore } from "@/store/uiStore";
-import { WebSignalStore } from "@/lib/crypto/WebSignalStore";
-import { fetchKeyBundle } from "@/lib/api";
-import { establishSessionAsInitiator, encryptMessage, decryptMessage } from "@signal/crypto";
 import toast from "react-hot-toast";
 import { db } from "@/lib/db";
 import data from "@emoji-mart/data";
@@ -68,7 +65,6 @@ export default function ChatThreadPage() {
   const { onlineUsers } = useUIStore();
 
   const [otherUser, setOtherUser] = useState<any>(null);
-  const [signalStore] = useState(() => typeof window !== "undefined" ? new WebSignalStore() : null);
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState("");
@@ -317,44 +313,15 @@ export default function ChatThreadPage() {
         async (payload) => {
           const msg = payload.new;
 
-          let decryptedText = msg.content;
-          let attachmentData = null;
-
-          if (msg.ciphertext && signalStore) {
-            if (msg.sender_id === currentUserId) {
-              try {
-                const localMsg = await db.local_messages.get(msg.id);
-                if (localMsg) {
-                  decryptedText = localMsg.plaintext;
-                } else {
-                  decryptedText = "";
-                }
-              } catch (e) {
-                decryptedText = "";
-              }
-            } else {
-              try {
-                // Use device ID 1 — matches the hardcoded sender device ID used during encryption
-                const rawDecrypted = await decryptMessage(signalStore, msg.sender_id, 1, msg.ciphertext, msg.ciphertext_type);
-                const parsed = JSON.parse(rawDecrypted);
-                decryptedText = parsed.text;
-                attachmentData = parsed.attachment;
-              } catch (e) {
-                console.warn("Realtime decryption failed for msg", msg.id, e);
-                decryptedText = msg.content || "";
-              }
-            }
-          }
-
           const newMsg = {
             id: msg.id,
             conversationId: msg.conversation_id,
             senderId: msg.sender_id,
-            plaintext: sanitizeMessage(decryptedText || "[Empty message]"),
-            mediaUrl: msg.media_url || attachmentData?.s3Key || null,
-            attachmentKey: attachmentData?.keyBase64 || null,
-            attachmentIv: attachmentData?.ivBase64 || null,
-            contentType: msg.content_type === "call_log" ? "call_log" : (msg.media_url || attachmentData ? "attachment" : "text"),
+            plaintext: sanitizeMessage(msg.content || "[Empty message]"),
+            mediaUrl: msg.media_url || null,
+            attachmentKey: null,
+            attachmentIv: null,
+            contentType: msg.content_type === "call_log" ? "call_log" : (msg.media_url ? "attachment" : "text"),
             status: "sent",
             sentAt: new Date(msg.sent_at),
             deliveredAt: msg.delivered_at ? new Date(msg.delivered_at) : null,
@@ -520,50 +487,15 @@ export default function ChatThreadPage() {
           (r) => r.message_id === m.id,
         );
 
-        let decryptedText = m.content;
-        let attachmentData = null;
-
-        if (m.ciphertext && signalStore) {
-          if (m.sender_id === currentUserId) {
-            try {
-              const localMsg = await db.local_messages.get(m.id);
-              if (localMsg) {
-                decryptedText = localMsg.plaintext;
-              } else {
-                decryptedText = "";
-              }
-            } catch (e) {
-              decryptedText = "";
-            }
-          } else {
-            try {
-              // Use device ID 1 — matches the hardcoded sender device ID used during encryption
-              const rawDecrypted = await decryptMessage(signalStore, m.sender_id, 1, m.ciphertext, m.ciphertext_type);
-              const parsed = JSON.parse(rawDecrypted);
-              decryptedText = parsed.text;
-              attachmentData = parsed.attachment;
-            } catch (e) {
-              console.warn("Decryption failed for message", m.id, "— error:", e);
-              // Use plaintext fallback if ciphertext was never stored (plain message)
-              // For truly encrypted messages that fail, show a softer UI hint
-              if (m.content) {
-                decryptedText = m.content;  // plaintext fallback exists
-              } else {
-                decryptedText = "";  // show nothing, not a scary string — media messages will show their attachment
-              }
-            }
-          }
-        }
-
         return {
           id: m.id,
           conversationId: m.conversation_id,
           senderId: m.sender_id,
-          plaintext: sanitizeMessage(decryptedText || (m.media_url || attachmentData ? "" : "[Empty message]")),
-          mediaUrl: m.media_url || attachmentData?.s3Key || null,
-          attachmentKey: attachmentData?.keyBase64 || null,
-          attachmentIv: attachmentData?.ivBase64 || null,
-          contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url || attachmentData ? "attachment" : "text")) as
+          plaintext: sanitizeMessage(m.content || (m.media_url ? "" : "[Empty message]")),
+          mediaUrl: m.media_url || null,
+          attachmentKey: null,
+          attachmentIv: null,
+          contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url ? "attachment" : "text")) as
             | "text"
             | "media"
             | "attachment"
@@ -749,36 +681,6 @@ export default function ChatThreadPage() {
     }
     if (fileRef.current) fileRef.current.value = "";
 
-    let ciphertext: string | null = null;
-    let ciphertextType: number | null = null;
-
-    // Re-enabled E2EE
-    if (signalStore && otherUser?.id && currentUserId) {
-      try {
-        const dId = deviceId || 1;
-        const sessionRecord = await signalStore.loadSession(`${otherUser.id}.1`);
-        if (!sessionRecord) {
-           const { fetchKeyBundle } = await import('@/lib/api');
-           const bundle = await fetchKeyBundle(otherUser.id);
-           await establishSessionAsInitiator(signalStore, otherUser.id, 1, bundle);
-        }
-
-        const payloadObj = {
-          text: rawContent,
-          attachment: attachmentData
-        };
-        const payloadStr = JSON.stringify(payloadObj);
-        
-        const encrypted = await encryptMessage(signalStore, otherUser.id, 1, payloadStr);
-        ciphertext = encrypted.body;
-        ciphertextType = encrypted.type;
-      } catch (err) {
-        console.error("E2EE Encryption failed:", err);
-        toast.error("Message encryption failed. Message not sent.");
-        return; // BUG-004 Fix: Halt send instead of falling back to plaintext
-      }
-    }
-
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {
       id: tempId,
@@ -786,8 +688,8 @@ export default function ChatThreadPage() {
       senderId: currentUserId as string,
       plaintext: sanitizeMessage(rawContent),
       mediaUrl: finalMediaUrl || null,
-      attachmentKey: attachmentData?.keyBase64 || null,
-      attachmentIv: attachmentData?.ivBase64 || null,
+      attachmentKey: null,
+      attachmentIv: null,
       contentType: (finalMediaUrl ? "attachment" : "text") as
         | "text"
         | "media"
@@ -807,10 +709,10 @@ export default function ChatThreadPage() {
         .insert({
           conversation_id: conversationId,
           sender_id: currentUserId,
-          content: ciphertext ? null : rawContent,
-          media_url: ciphertext ? null : (finalMediaUrl || null),
-          ciphertext: ciphertext,
-          ciphertext_type: ciphertextType,
+          content: rawContent,
+          media_url: finalMediaUrl || null,
+          ciphertext: null,
+          ciphertext_type: null,
           content_type: finalMediaUrl ? "attachment" : "text",
           reply_to_message_id: optimisticMsg.replyToMessageId,
         })
@@ -818,21 +720,6 @@ export default function ChatThreadPage() {
         .single();
 
       if (error) throw new Error(error.message);
-
-      try {
-        await db.local_messages.put({
-          id: data.id,
-          conversationId: conversationId,
-          senderId: currentUserId as string,
-          plaintext: rawContent,
-          mediaUrl: finalMediaUrl || null,
-          contentType: (finalMediaUrl ? "attachment" : "text") as any,
-          status: "sent",
-          sentAt: new Date(data.sent_at)
-        });
-      } catch (e) {
-        console.warn("Could not save to local_messages", e);
-      }
 
       setMessages((prev) =>
         prev.map((m) =>
@@ -1606,7 +1493,6 @@ export default function ChatThreadPage() {
           conversationId={conversationId}
           otherUser={otherUser}
           onClose={() => setIsInfoPaneOpen(false)}
-          signalStore={signalStore}
         />
       )}
     </div>
