@@ -41,7 +41,7 @@
 - [ ] `messages` table: `id`, `recipient_id`, `ciphertext`, `sealed_sender`, `timestamp`, `delivered_at`
 - [ ] `conversations` table with `type` field
 - [ ] `conversation_members` table
-- [ ] `attachments` table with `minio_key`, NOT with plaintext content
+- [ ] `attachments` table with `media_url` and encrypted blobs
 - [ ] `call_records` table
 - [ ] `devices` table with `push_token`
 
@@ -52,47 +52,26 @@
 
 ---
 
-## ⚙️ Backend Server (`apps/server`)
+## ⚙️ Supabase Backend
 
 ### Authentication
-- [ ] `POST /api/auth/register` endpoint exists
-  - [ ] Validates input with zod
-  - [ ] Hashes phone number (not stored plaintext)
-  - [ ] Returns `{ accessToken, refreshToken, userId }`
-- [ ] `POST /api/auth/login` endpoint exists
-- [ ] `POST /api/auth/refresh` endpoint exists
-- [ ] `authMiddleware.ts` exists and calls `jwt.verify()`
-- [ ] JWT secret comes from `process.env.JWT_SECRET`
+- [ ] Use Supabase Auth for login/register
+- [ ] Row Level Security (RLS) protects user data
 
 ### Key Distribution
-- [ ] `POST /api/keys/register` endpoint exists (upload key bundle after registration)
-- [ ] `GET /api/keys/:userId` endpoint exists (fetch recipient key bundle)
+- [ ] Keys stored in `identity_keys`, `signed_pre_keys`, and `one_time_pre_keys` tables
 - [ ] One-time pre-key is marked as `used` after being fetched (prevents reuse)
 
 ### Messaging
-- [ ] `POST /api/messages` endpoint exists
+- [ ] Messages inserted directly via Supabase client
 - [ ] Ciphertext stored as-is (no server-side decryption attempt)
-- [ ] WebSocket push on message receive
-- [ ] `GET /api/conversations` endpoint exists
-- [ ] `GET /api/conversations/:id/messages` endpoint exists (returns ciphertext blobs)
-
-### WebSocket (`src/signaling/`)
-- [ ] WebSocket server initialized on server start
-- [ ] Client authentication on WebSocket connect (JWT in query param or header)
-- [ ] `message:new` event handler exists
-- [ ] Connection tracking (userId → socket mapping)
-- [ ] Heartbeat/ping-pong to detect dead connections
+- [ ] Supabase Realtime channel for message receive
+- [ ] Conversations queried via Supabase
 
 ### TURN Server
-- [ ] `GET /api/turn` endpoint exists
+- [ ] `GET /api/turn` Next.js API route exists
 - [ ] Returns HMAC time-limited credentials (not static credentials)
 - [ ] Uses `process.env.TURN_SECRET` for HMAC
-
-### Security Middleware
-- [ ] `helmet()` applied
-- [ ] `express-rate-limit` applied globally
-- [ ] CORS configured with `allowedOrigins` from env
-- [ ] Request body size limit set (e.g., `express.json({ limit: '10mb' })`)
 
 ---
 

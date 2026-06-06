@@ -1,10 +1,11 @@
 import { create } from 'zustand';
+import { User } from '../types';
 
 export interface ActiveCallState {
   conversationId: string;
   callType: 'video' | 'audio';
-  otherUser: any;
-  incomingOfferPayload?: any;
+  otherUser: User | { username: string; [key: string]: unknown };
+  incomingOfferPayload?: Record<string, unknown>;
 }
 
 interface UIState {

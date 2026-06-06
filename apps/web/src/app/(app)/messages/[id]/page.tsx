@@ -45,6 +45,8 @@ import ChatInfoSidebar from "@/components/chat/ChatInfoSidebar";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { sanitizeMessage } from "@/lib/sanitize";
+// E2EE imports — disabled until WebSignalStore session establishment is wired up
+// import { encryptMessage, decryptMessage, base64ToArrayBuffer } from "@signal/crypto";
 
 const formatMessageDate = (date: Date) => {
   if (isToday(date)) return "Today";
@@ -383,14 +385,19 @@ export default function ChatThreadPage() {
         async (payload) => {
           const msg = payload.new;
 
+          let initialPlaintext = msg.content || "[Empty message]";
+          if (!msg.content && msg.media_url) {
+            initialPlaintext = "";
+          }
+
           const newMsg = {
             id: msg.id,
             conversationId: msg.conversation_id,
             senderId: msg.sender_id,
-            plaintext: sanitizeMessage(msg.content || "[Empty message]"),
+            plaintext: sanitizeMessage(initialPlaintext),
             mediaUrl: msg.media_url || null,
-            attachmentKey: null,
-            attachmentIv: null,
+            attachmentKey: msg.attachment_key || null,
+            attachmentIv: msg.attachment_iv || null,
             contentType: msg.content_type === "call_log" ? "call_log" : (msg.media_url ? "attachment" : "text"),
             status: "sent",
             sentAt: new Date(msg.sent_at),
@@ -399,6 +406,21 @@ export default function ChatThreadPage() {
             replyToMessageId: msg.reply_to_message_id || null,
             reactions: msg.message_reactions || [],
           };
+          
+          if (msg.ciphertext && msg.sender_id !== currentUserId) {
+            // Decrypt async and update state
+            (async () => {
+              try {
+                // TODO: Wire up real WebSignalStore and deviceId for decryption.
+                // const decrypted = await decryptMessage(store, msg.sender_id, 1, msg.ciphertext, msg.ciphertext_type === "prekey" ? 3 : 1);
+                // setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, plaintext: sanitizeMessage(decrypted) } : m));
+                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, plaintext: "[Encrypted Message]" } : m));
+              } catch (e) {
+                console.error("Failed to decrypt incoming realtime message", e);
+                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, plaintext: "[Encrypted Message]" } : m));
+              }
+            })();
+          }
 
           setMessages((prev) => {
             // Prevent duplicates
@@ -556,14 +578,28 @@ export default function ChatThreadPage() {
           (r) => r.message_id === m.id,
         );
 
+        let plaintext = m.content || "[Empty message]";
+        if (m.ciphertext && otherUser?.id) {
+          try {
+            // TODO: Wire up real WebSignalStore and deviceId for decryption.
+            // plaintext = await decryptMessage(store, m.sender_id, 1, m.ciphertext, m.ciphertext_type === "prekey" ? 3 : 1);
+            plaintext = "[Encrypted Message]";
+          } catch (e) {
+            console.error("Failed to decrypt message from", m.sender_id, e);
+            plaintext = "[Encrypted Message]";
+          }
+        } else if (!m.content && m.media_url) {
+          plaintext = "";
+        }
+
         return {
           id: m.id,
           conversationId: m.conversation_id,
           senderId: m.sender_id,
-          plaintext: sanitizeMessage(m.content || (m.media_url ? "" : "[Empty message]")),
+          plaintext: sanitizeMessage(plaintext),
           mediaUrl: m.media_url || null,
-          attachmentKey: null,
-          attachmentIv: null,
+          attachmentKey: m.attachment_key || null,
+          attachmentIv: m.attachment_iv || null,
           contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url ? "attachment" : "text")) as
             | "text"
             | "media"
@@ -625,16 +661,33 @@ export default function ChatThreadPage() {
 
       const mData = messagesData.reverse();
 
-      const newMessages = mData.map((m) => {
+      const newMessages = await Promise.all(mData.map(async (m) => {
         const messageReactions = allReactions.filter(
           (r) => r.message_id === m.id,
         );
+
+        let plaintext = m.content || "[Empty message]";
+        if (m.ciphertext && otherUser?.id) {
+          try {
+            // TODO: Wire up real WebSignalStore and deviceId for decryption.
+            // plaintext = await decryptMessage(store, m.sender_id, 1, m.ciphertext, m.ciphertext_type === "prekey" ? 3 : 1);
+            plaintext = "[Encrypted Message]";
+          } catch (e) {
+            console.error("Failed to decrypt message from", m.sender_id, e);
+            plaintext = "[Encrypted Message]";
+          }
+        } else if (!m.content && m.media_url) {
+          plaintext = "";
+        }
+
         return {
           id: m.id,
           conversationId: m.conversation_id,
           senderId: m.sender_id,
-          plaintext: sanitizeMessage(m.content || "[Empty message]"),
+          plaintext: sanitizeMessage(plaintext),
           mediaUrl: m.media_url || null,
+          attachmentKey: m.attachment_key || null,
+          attachmentIv: m.attachment_iv || null,
           contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url ? "attachment" : "text")) as
             | "text"
             | "media"
@@ -647,7 +700,7 @@ export default function ChatThreadPage() {
           replyToMessageId: m.reply_to_message_id || null,
           reactions: messageReactions || [],
         };
-      });
+      }));
 
       setMessages((prev) => {
         // filter out duplicates just in case
@@ -773,15 +826,19 @@ export default function ChatThreadPage() {
     setReplyingToMessage(null);
 
     try {
+      // E2EE is temporarily disabled until WebSignalStore sessions are established.
+      // When enabled, encryptMessage() will populate ciphertext/ciphertext_type and
+      // content will be omitted (server only stores ciphertext).
+
       const { data, error } = await supabase
         .from("messages")
         .insert({
           conversation_id: conversationId,
           sender_id: currentUserId,
-          content: rawContent,
+          content: rawContent || null,
           media_url: finalMediaUrl || null,
-          ciphertext: null,
-          ciphertext_type: null,
+          attachment_key: attachmentData?.keyBase64 || null,
+          attachment_iv: attachmentData?.ivBase64 || null,
           content_type: finalMediaUrl ? "attachment" : "text",
           reply_to_message_id: optimisticMsg.replyToMessageId,
         })

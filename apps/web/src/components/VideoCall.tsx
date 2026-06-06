@@ -441,12 +441,6 @@ export function VideoCall({
       console.warn("Failed to fetch custom TURN credentials", e);
     }
 
-    // Add free openrelay TURN server first to save paid quota
-    servers.push(
-      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-    );
-
     // Removed hardcoded paid Metered.ca TURN servers for security.
     // Ensure you use the /api/turn route.
 

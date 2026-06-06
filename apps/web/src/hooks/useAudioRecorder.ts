@@ -8,7 +8,7 @@ export function useAudioRecorder(onUpload: (blob: Blob, ext: string) => Promise<
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const recordingTimerRef = useRef<any>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     return () => {

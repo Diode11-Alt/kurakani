@@ -1,17 +1,14 @@
-// @ts-nocheck
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { openDB, IDBPDatabase } from 'idb';
-import {
-  SignalProtocolStore,
-  IdentityKeyPair,
-  PreKeyRecordType,
-  SignedPreKeyRecordType,
-  SessionRecordType,
-  Direction
-} from '@privacyresearch/libsignal-protocol-typescript';
+import { StorageType } from '@privacyresearch/libsignal-protocol-typescript';
 
-export class WebSignalStore implements SignalProtocolStore {
+type IdentityKeyPair = any;
+type PreKeyRecordType = any;
+type SignedPreKeyRecordType = any;
+type SessionRecordType = any;
+type Direction = any;
+
+export class WebSignalStore implements StorageType {
   private dbName = 'signal_store';
   private dbVersion = 1;
   private _dbPromise: Promise<IDBPDatabase> | null = null;
@@ -48,12 +45,12 @@ export class WebSignalStore implements SignalProtocolStore {
       if (!keyPair.pubKey || !keyPair.privKey) throw new Error("Malformed state");
       
       return keyPair as IdentityKeyPair;
-    } catch (e) {
+    } catch {
       console.error("Cryptographic state corrupted. Resetting session context cleanly.");
       try {
         const db = await this.dbPromise;
         await db.delete('identityKey', 'keyPair');
-      } catch (err) {
+      } catch {
         // Ignore errors during reset
       }
       return undefined;
@@ -76,7 +73,7 @@ export class WebSignalStore implements SignalProtocolStore {
   }
 
   // --- Trusted Identity (TOFU) ---
-  async isTrustedIdentity(identifier: string, identityKey: ArrayBuffer, direction: Direction): Promise<boolean> {
+  async isTrustedIdentity(identifier: string, identityKey: ArrayBuffer, _direction: Direction): Promise<boolean> {
     const db = await this.dbPromise;
     const trusted = await db.get('identityKeys', identifier);
     if (!trusted) return true; // Trust on first use

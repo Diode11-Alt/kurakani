@@ -8,6 +8,7 @@ import { BottomNavBar } from "./BottomNavBar";
 import { MobileHeader } from "./MobileHeader";
 import { VideoCall } from "../../components/VideoCall";
 import { supabase } from "../../lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 import { useUIStore } from "../../store/uiStore";
 
@@ -17,7 +18,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { session: authSession, isLoading: authLoading } = useAuthStore();
   const { activeCall, setActiveCall } = useUIStore();
   const [mounted, setMounted] = useState(false);
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

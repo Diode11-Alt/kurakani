@@ -21,7 +21,6 @@
 ```
 /
 ├── apps/
-│   ├── server/          ← Node.js/Express backend
 │   ├── web/             ← Next.js 16 frontend
 │   └── mobile/          ← React Native app
 ├── packages/
@@ -39,14 +38,9 @@
 The agent must ALWAYS ensure these exist in `.env` before running anything:
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/signal_clone
-
-# JWT
-JWT_SECRET=<random 64-char hex string>
-JWT_REFRESH_SECRET=<different random 64-char hex string>
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # TURN Server (Coturn)
 TURN_SERVER_URL=turn:localhost:3478
@@ -54,25 +48,10 @@ TURN_USERNAME=turnuser
 TURN_PASSWORD=<random string>
 TURN_SECRET=<random string>
 
-# MinIO (S3-compatible storage)
-MINIO_ENDPOINT=localhost
-MINIO_PORT=9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
-MINIO_BUCKET_NAME=signal-attachments
-MINIO_USE_SSL=false
-
-# Redis (for sessions/pub-sub)
-REDIS_URL=redis://localhost:6379
-
 # App
 NODE_ENV=development
-PORT=3001
+PORT=3000
 ALLOWED_ORIGINS=http://localhost:3000,https://localhost:3000
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=1000
 
 # Push Notifications (optional)
 FCM_SERVER_KEY=

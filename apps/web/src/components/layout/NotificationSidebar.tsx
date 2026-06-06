@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Notification } from '@/types';
 
 export function NotificationSidebar({ userId, isOpen, onClose }: { userId: string, isOpen: boolean, onClose: () => void }) {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export function NotificationSidebar({ userId, isOpen, onClose }: { userId: strin
         schema: 'public',
         table: 'notifications',
         filter: `user_id=eq.${userId}`
-      }, (payload) => {
+      }, () => {
         fetchNotifications();
       })
       .subscribe();
@@ -58,7 +59,7 @@ export function NotificationSidebar({ userId, isOpen, onClose }: { userId: strin
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 
-  const handleNotificationClick = async (notif: any) => {
+  const handleNotificationClick = async (notif: Notification) => {
     if (!notif.is_read) {
       await supabase.from('notifications').update({ is_read: true }).eq('id', notif.id);
     }
@@ -67,7 +68,7 @@ export function NotificationSidebar({ userId, isOpen, onClose }: { userId: strin
     if (notif.type === 'like' || notif.type === 'comment') {
       router.push(`/profile/${userId}`); 
     } else {
-      router.push(`/profile/${notif.actor_id}`);
+      router.push(`/profile/${notif.actor?.id}`);
     }
   };
 
@@ -81,7 +82,7 @@ export function NotificationSidebar({ userId, isOpen, onClose }: { userId: strin
     }
   };
 
-  const getMessage = (notif: any) => {
+  const getMessage = (notif: Notification) => {
     const name = notif.actor?.display_name || notif.actor?.username || 'Someone';
     switch (notif.type) {
       case 'like': return <span className="text-sm"><span className="font-bold">{name}</span> liked your post.</span>;

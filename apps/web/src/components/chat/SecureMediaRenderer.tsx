@@ -17,15 +17,12 @@ export default function SecureMediaRenderer({
   attachmentKey?: string | null;
   attachmentIv?: string | null;
 }) {
-  const [url, setUrl] = useState<string | null>(null);
+  const isExternal = mediaUrl?.startsWith("http") || mediaUrl?.startsWith("blob:");
+  const [url, setUrl] = useState<string | null>(isExternal ? mediaUrl! : null);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    if (!mediaUrl) return;
-    if (mediaUrl.startsWith("http") || mediaUrl.startsWith("blob:")) {
-      setUrl(mediaUrl);
-      return;
-    }
+    if (!mediaUrl || isExternal) return;
     
     let isMounted = true;
     supabase.storage.from('attachments').createSignedUrl(mediaUrl, 3600).then(async ({ data }) => {
@@ -63,7 +60,7 @@ export default function SecureMediaRenderer({
           else if (ext === 'wav') mime = 'audio/wav';
           else if (ext === 'weba') mime = 'audio/webm';
           else if (ext === 'm4a') mime = 'audio/mp4';
-          const blob = new Blob([decryptedData as unknown as BlobPart], { type: mime });
+          const blob = new Blob([decryptedData as any], { type: mime });
           const objectUrl = URL.createObjectURL(blob);
           if (isMounted) setUrl(objectUrl);
         } catch (err) {
@@ -75,7 +72,7 @@ export default function SecureMediaRenderer({
     });
 
     return () => { isMounted = false; };
-  }, [mediaUrl, attachmentKey, attachmentIv, plaintext]);
+  }, [mediaUrl, attachmentKey, attachmentIv, plaintext, isExternal]);
 
   if (!url) {
     return (

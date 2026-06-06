@@ -1,5 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 
+import { User, Message } from '../types';
+
 export interface LocalConversation {
   id: string;
   type: 'direct' | 'group';
@@ -7,8 +9,8 @@ export interface LocalConversation {
   avatarUrl: string | null;
   updatedAt: Date;
   unreadCount: number;
-  otherUser?: any;
-  lastMessage?: any;
+  otherUser?: Partial<User> | null;
+  lastMessage?: Partial<Message> | null;
 }
 
 export interface LocalMessage {

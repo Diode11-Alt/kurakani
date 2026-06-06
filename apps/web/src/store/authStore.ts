@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import { get, set as setIDB, del } from 'idb-keyval';
 
 interface AuthState {
   session: Session | null;
@@ -14,39 +15,43 @@ interface AuthState {
   clearAuth: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((setStore) => ({
   session: null,
   userId: null,
-  deviceId: typeof window !== 'undefined' && localStorage.getItem('deviceId') ? parseInt(localStorage.getItem('deviceId')!, 10) : null,
+  deviceId: null,
   user: null,
   isLoading: true, // Start true to prevent flash-redirect to /login
   
   setSession: (session) => {
-    set({ session, userId: session?.user?.id || null, isLoading: false });
+    setStore({ session, userId: session?.user?.id || null, isLoading: false });
   },
   
   setDeviceId: (deviceId) => {
     if (typeof window !== 'undefined') {
-      if (deviceId) localStorage.setItem('deviceId', deviceId.toString());
-      else localStorage.removeItem('deviceId');
+      if (deviceId) setIDB('deviceId', deviceId).catch(console.error);
+      else del('deviceId').catch(console.error);
     }
-    set({ deviceId });
+    setStore({ deviceId });
   },
   
-  setUser: (user) => set({ user }),
+  setUser: (user) => setStore({ user }),
   
   clearAuth: async () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('deviceId');
+      del('deviceId').catch(console.error);
     }
     // Single auth system: Supabase only
     await supabase.auth.signOut();
-    set({ session: null, userId: null, deviceId: null, user: null, isLoading: false });
+    setStore({ session: null, userId: null, deviceId: null, user: null, isLoading: false });
   }
 }));
 
 // Initialize listener
 if (typeof window !== 'undefined') {
+  get('deviceId').then((id) => {
+    if (id) useAuthStore.getState().setDeviceId(id as number);
+  }).catch(console.error);
+
   supabase.auth.getSession().then(({ data: { session } }) => {
     useAuthStore.getState().setSession(session);
   }).catch((error) => {

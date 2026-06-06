@@ -3,12 +3,20 @@
 import React, { useState, useEffect } from "react";
 import { X, Image as ImageIcon, FileText, Mic, Link2, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { useAuthStore } from "@/store/authStore";
+import { User, Message } from "@/types";
 import SecureMediaRenderer from "./SecureMediaRenderer";
+
+interface AttachmentItem {
+  id: string;
+  s3Key: string;
+  plaintext: string;
+  category: "Media" | "Docs" | "Voice" | "Links";
+  sentAt: Date;
+}
 
 interface ChatInfoSidebarProps {
   conversationId: string;
-  otherUser: any;
+  otherUser: User;
   onClose: () => void;
 }
 
@@ -18,7 +26,7 @@ export default function ChatInfoSidebar({
   onClose,
 }: ChatInfoSidebarProps) {
   const [activeTab, setActiveTab] = useState<"Media" | "Docs" | "Voice" | "Links">("Media");
-  const [attachments, setAttachments] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,7 +45,7 @@ export default function ChatInfoSidebar({
 
         const processed = await Promise.all(
           data.map(async (m) => {
-            let plaintext = m.content || "";
+            const plaintext = m.content || "";
 
             const s3Key = m.media_url || null;
             
@@ -71,7 +79,7 @@ export default function ChatInfoSidebar({
           })
         );
 
-        setAttachments(processed.filter(a => a.category !== "Unknown"));
+        setAttachments(processed.filter(a => a.category !== "Unknown") as AttachmentItem[]);
       } catch (err) {
         console.error("Error fetching attachments for info pane", err);
       } finally {
@@ -108,14 +116,14 @@ export default function ChatInfoSidebar({
         {/* Profile Info */}
         <div className="p-6 flex flex-col items-center border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)]">
           <div className="w-24 h-24 squircle bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold mb-4 shadow-lg overflow-hidden">
-            {otherUser?.avatarUrl ? (
-              <img src={otherUser.avatarUrl} alt="" className="w-full h-full object-cover" />
+            {(otherUser as any)?.avatarUrl ? (
+              <img src={(otherUser as any).avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
-              otherUser?.displayName?.[0]?.toUpperCase() || otherUser?.username?.[0]?.toUpperCase() || "?"
+              (otherUser as any)?.displayName?.[0]?.toUpperCase() || otherUser?.username?.[0]?.toUpperCase() || "?"
             )}
           </div>
           <h3 className="font-bold text-xl text-[var(--color-on-surface)] mb-1">
-            {otherUser?.displayName || otherUser?.username}
+            {(otherUser as any)?.displayName || otherUser?.username}
           </h3>
           <p className="text-sm text-[var(--color-on-surface-variant)]">@{otherUser?.username}</p>
         </div>
@@ -128,7 +136,7 @@ export default function ChatInfoSidebar({
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as "Media" | "Docs" | "Voice" | "Links")}
                 className={`flex-1 flex flex-col items-center py-3 gap-1 relative text-xs font-semibold transition-colors cursor-pointer
                   ${isActive ? "text-[var(--color-primary)]" : "text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]"}`}
               >

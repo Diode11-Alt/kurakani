@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import imageCompression from 'browser-image-compression';
 import { supabase } from '@/lib/supabase';
+import { encryptAttachment } from '@signal/crypto';
 
 export function useFileUpload(currentUserId: string | null) {
   const [uploading, setUploading] = useState(false);
@@ -12,20 +13,18 @@ export function useFileUpload(currentUserId: string | null) {
     const ext = extRaw.split(';')[0];
     const s3Key = `${currentUserId}-${Date.now()}.${ext}`;
     
-    // Encrypt file using crypto module if possible
-    // Note: Since text E2EE is enabled, we'll implement symmetric encryption for attachments here
-    const keyBytes = crypto.getRandomValues(new Uint8Array(32));
-    const ivBytes = crypto.getRandomValues(new Uint8Array(12));
+    // Encrypt file using @signal/crypto
+    const arrayBuffer = await file.arrayBuffer();
+    const fileBytes = new Uint8Array(arrayBuffer);
+    const { encryptedData, key, iv } = encryptAttachment(fileBytes);
     
     // Convert key and IV to Base64 for returning
-    const keyBase64 = Buffer.from(keyBytes).toString('base64');
-    const ivBase64 = Buffer.from(ivBytes).toString('base64');
+    const keyBase64 = Buffer.from(key).toString('base64');
+    const ivBase64 = Buffer.from(iv).toString('base64');
     
-    // For now, since full signal attachment streaming is complex, 
-    // we'll simulate the upload with the encryption keys returned.
-    // In a real implementation, you'd encrypt the Blob here using AES-GCM before uploading.
+    const encryptedBlob = new Blob([encryptedData as any], { type: 'application/octet-stream' });
     
-    const { error } = await supabase.storage.from('attachments').upload(s3Key, file, { contentType });
+    const { error } = await supabase.storage.from('attachments').upload(s3Key, encryptedBlob, { contentType: 'application/octet-stream' });
     if (error) throw error;
     
     return { 
@@ -46,7 +45,7 @@ export function useFileUpload(currentUserId: string | null) {
       
       const allowedTypes = [
         'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg',
+        'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/aac', 'audio/x-m4a',
         'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'text/plain'
       ];

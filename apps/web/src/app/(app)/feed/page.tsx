@@ -8,11 +8,13 @@ import { StoriesTray } from '../../../components/StoriesTray';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { Post, Session, User } from '../../../types';
+
 export default function FeedPage() {
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<User | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -35,7 +37,7 @@ export default function FeedPage() {
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
 
-  async function fetchPosts(providedSession?: any) {
+  async function fetchPosts(providedSession?: Session | null) {
     const activeSession = providedSession || session;
     setLoading(true);
     try {

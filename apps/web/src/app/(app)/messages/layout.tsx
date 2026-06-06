@@ -402,7 +402,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               const hasUnread = c.unreadCount && c.unreadCount > 0;
 
               const timeDisplay = c.lastMessage
-                ? formatDistanceToNowStrict(new Date(c.lastMessage.sentAt), { addSuffix: false })
+                ? formatDistanceToNowStrict(new Date((c.lastMessage as any).sentAt), { addSuffix: false })
                     .replace(' seconds', 's')
                     .replace(' second', 's')
                     .replace(' minutes', 'm')
@@ -424,13 +424,13 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 >
                   <div className="relative flex-shrink-0">
                     <div className="w-12 h-12 squircle bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
-                      {c.otherUser?.avatarUrl ? (
-                        <img src={c.otherUser.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      {(c.otherUser as any)?.avatarUrl ? (
+                        <img src={(c.otherUser as any).avatarUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
                         c.otherUser?.username?.[0]?.toUpperCase() || '?'
                       )}
                     </div>
-                    {onlineUsers[c.otherUser?.id] && (
+                    {onlineUsers[(c.otherUser as any)?.id] && (
                       <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[var(--color-surface)] rounded-full z-10 shadow-sm"></div>
                     )}
                   </div>
@@ -440,7 +440,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                       <span className={`text-sm truncate max-w-[150px]
                         ${hasUnread ? 'font-bold text-[var(--color-on-surface)]' : 'font-semibold text-[var(--color-on-surface)]'}`}
                       >
-                        {c.otherUser?.displayName || c.otherUser?.username || 'Unknown User'}
+                        {(c.otherUser as any)?.displayName || c.otherUser?.username || 'Unknown User'}
                       </span>
                       <span className={`text-[10px] flex-shrink-0 ${hasUnread ? 'text-[var(--color-primary)] font-bold' : 'text-[var(--color-on-surface-variant)]'}`}>
                         {timeDisplay}
@@ -451,7 +451,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                       ${hasUnread ? 'font-bold text-[var(--color-on-surface)]' : 'text-[var(--color-on-surface-variant)]'}`}
                     >
                       {c.lastMessage
-                        ? `${c.lastMessage.senderId === userId ? 'You: ' : ''}${c.lastMessage.content}`
+                        ? `${(c.lastMessage as any).senderId === userId ? 'You: ' : ''}${(c.lastMessage as any).content}`
                         : 'No messages yet'}
                     </p>
                   </div>
