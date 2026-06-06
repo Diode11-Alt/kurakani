@@ -52,6 +52,72 @@ const formatMessageDate = (date: Date) => {
   return format(date, "EEEE, MMMM d, yyyy");
 };
 
+// Lazy-loading reply preview for paginated messages
+function ReplyPreview({
+  replyToMessageId,
+  messages,
+  currentUserId,
+  otherUsername,
+  isSelf,
+  replyCacheRef,
+  conversationId,
+}: {
+  replyToMessageId: string;
+  messages: any[];
+  currentUserId: string | null;
+  otherUsername?: string;
+  isSelf: boolean;
+  replyCacheRef: React.MutableRefObject<Map<string, { senderId: string; plaintext: string } | null>>;
+  conversationId: string;
+}) {
+  const [cachedReply, setCachedReply] = useState<{ senderId: string; plaintext: string } | null | undefined>(undefined);
+
+  // Check loaded messages first
+  const localMsg = messages.find((msg) => msg.id === replyToMessageId);
+
+  useEffect(() => {
+    if (localMsg) return; // Already in the current message window
+
+    // Check the cache
+    if (replyCacheRef.current.has(replyToMessageId)) {
+      setCachedReply(replyCacheRef.current.get(replyToMessageId) ?? null);
+      return;
+    }
+
+    // Fetch from DB
+    let cancelled = false;
+    supabase
+      .from("messages")
+      .select("sender_id, content")
+      .eq("id", replyToMessageId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const result = data ? { senderId: data.sender_id, plaintext: data.content || "[Empty message]" } : null;
+        replyCacheRef.current.set(replyToMessageId, result);
+        setCachedReply(result);
+      });
+
+    return () => { cancelled = true; };
+  }, [replyToMessageId, localMsg]);
+
+  const replyData = localMsg
+    ? { senderId: localMsg.senderId, plaintext: localMsg.plaintext }
+    : cachedReply;
+
+  const senderLabel = replyData?.senderId === currentUserId ? "You" : (otherUsername || "User");
+  const previewText = replyData?.plaintext || "Replied to a message";
+
+  return (
+    <div
+      className={`mb-2 pl-3 py-1 border-l-4 rounded bg-black/5 text-xs ${isSelf ? "border-white/50 text-white/90" : "border-[var(--color-primary)] text-[var(--color-on-surface-variant)]"}`}
+    >
+      <div className="font-bold mb-0.5">{senderLabel}</div>
+      <div className="truncate opacity-80">{previewText}</div>
+    </div>
+  );
+}
+
 export default function ChatThreadPage() {
   const params = useParams();
   const conversationId = params.id as string;
@@ -100,6 +166,7 @@ export default function ChatThreadPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<any>(null);
+  const replyCacheRef = useRef<Map<string, { senderId: string; plaintext: string } | null>>(new Map());
 
   const {
     uploading,
@@ -1129,20 +1196,15 @@ export default function ChatThreadPage() {
                   >
                     {/* Quoted Message */}
                     {m.replyToMessageId && (
-                      <div
-                        className={`mb-2 pl-3 py-1 border-l-4 rounded bg-black/5 text-xs ${isSelf ? "border-white/50 text-white/90" : "border-[var(--color-primary)] text-[var(--color-on-surface-variant)]"}`}
-                      >
-                        <div className="font-bold mb-0.5">
-                          {messages.find((msg) => msg.id === m.replyToMessageId)
-                            ?.senderId === currentUserId
-                            ? "You"
-                            : otherUser?.username || "User"}
-                        </div>
-                        <div className="truncate opacity-80">
-                          {messages.find((msg) => msg.id === m.replyToMessageId)
-                            ?.plaintext || "Replied to a message"}
-                        </div>
-                      </div>
+                      <ReplyPreview
+                        replyToMessageId={m.replyToMessageId}
+                        messages={messages}
+                        currentUserId={currentUserId}
+                        otherUsername={otherUser?.username}
+                        isSelf={isSelf}
+                        replyCacheRef={replyCacheRef}
+                        conversationId={conversationId}
+                      />
                     )}
 
                     {/* Media attachment */}
@@ -1439,10 +1501,18 @@ export default function ChatThreadPage() {
             }}
           />
           <div
+            ref={(el) => {
+              if (!el) return;
+              const rect = el.getBoundingClientRect();
+              const maxTop = window.innerHeight - rect.height - 8;
+              const maxLeft = window.innerWidth - rect.width - 8;
+              if (rect.top > maxTop) el.style.top = `${Math.max(8, maxTop)}px`;
+              if (rect.left > maxLeft) el.style.left = `${Math.max(8, maxLeft)}px`;
+            }}
             className="fixed z-[101] w-48 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)] shadow-xl rounded-xl py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
             style={{
-              top: `${Math.min(contextMenu.y, typeof window !== "undefined" ? window.innerHeight - 300 : contextMenu.y)}px`,
-              left: `${Math.min(contextMenu.x, typeof window !== "undefined" ? window.innerWidth - 200 : contextMenu.x)}px`,
+              top: `${contextMenu.y}px`,
+              left: `${contextMenu.x}px`,
             }}
           >
             <button

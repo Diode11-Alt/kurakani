@@ -32,6 +32,9 @@ export default function FeedPage() {
     init();
   }, []);
 
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
+
   async function fetchPosts(providedSession?: any) {
     const activeSession = providedSession || session;
     setLoading(true);
@@ -53,7 +56,29 @@ export default function FeedPage() {
           .limit(50);
 
         if (error) throw error;
-        if (data) setPosts(data);
+        if (data) {
+          setPosts(data);
+
+          // Batch-fetch user-specific like/save status in 2 queries (not 2 per card)
+          const postIds = data.map(p => p.id);
+          if (postIds.length > 0) {
+            const [likesRes, savesRes] = await Promise.all([
+              supabase
+                .from('likes')
+                .select('post_id')
+                .eq('user_id', activeSession.user.id)
+                .in('post_id', postIds),
+              supabase
+                .from('saved_posts')
+                .select('post_id')
+                .eq('user_id', activeSession.user.id)
+                .in('post_id', postIds),
+            ]);
+
+            setLikedPostIds(new Set((likesRes.data || []).map(l => l.post_id)));
+            setSavedPostIds(new Set((savesRes.data || []).map(s => s.post_id)));
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to fetch posts:', err);
@@ -62,6 +87,7 @@ export default function FeedPage() {
       setLoading(false);
     }
   };
+
 
   if (!session) return null;
 
@@ -123,6 +149,8 @@ export default function FeedPage() {
               key={post.id}
               post={post}
               currentUserId={session.user.id}
+              isLiked={likedPostIds.has(post.id)}
+              isSaved={savedPostIds.has(post.id)}
               onDelete={fetchPosts}
             />
           ))}

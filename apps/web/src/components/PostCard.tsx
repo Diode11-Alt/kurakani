@@ -10,12 +10,14 @@ import toast from 'react-hot-toast';
 interface PostCardProps {
   post: any;
   currentUserId: string;
+  isLiked?: boolean;
+  isSaved?: boolean;
   onDelete?: () => void;
   onComment?: () => void;
 }
 
-export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
-  const [liked, setLiked] = useState(false);
+export function PostCard({ post, currentUserId, isLiked: isLikedProp, isSaved: isSavedProp, onDelete }: PostCardProps) {
+  const [liked, setLiked] = useState(isLikedProp ?? false);
   const [likesCount, setLikesCount] = useState(() => post.likes ? post.likes[0]?.count || 0 : 0);
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -24,34 +26,38 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const [commentsCount, setCommentsCount] = useState(() => post.comments ? post.comments[0]?.count || 0 : 0);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(isSavedProp ?? false);
   const [sharesCount, setSharesCount] = useState(() => post.post_shares ? post.post_shares[0]?.count || 0 : 0);
 
   const author = post.users || post.author;
 
   useEffect(() => {
-    // Fetch user-specific status (liked, saved) since counts are now passed in
-    const fetchUserStatus = async () => {
-      // Check if current user liked this post
-      const { data: likeData } = await supabase
-        .from('likes')
-        .select('user_id')
-        .eq('user_id', currentUserId)
-        .eq('post_id', post.id)
-        .maybeSingle();
-      if (likeData) setLiked(true);
+    // Skip fetch if parent already provided status (batch-optimized)
+    if (isLikedProp !== undefined && isSavedProp !== undefined) return;
 
-      // Check if saved
-      const { data: savedData } = await supabase
-        .from('saved_posts')
-        .select('id')
-        .eq('user_id', currentUserId)
-        .eq('post_id', post.id)
-        .maybeSingle();
-      if (savedData) setSaved(true);
+    const fetchUserStatus = async () => {
+      if (isLikedProp === undefined) {
+        const { data: likeData } = await supabase
+          .from('likes')
+          .select('user_id')
+          .eq('user_id', currentUserId)
+          .eq('post_id', post.id)
+          .maybeSingle();
+        if (likeData) setLiked(true);
+      }
+
+      if (isSavedProp === undefined) {
+        const { data: savedData } = await supabase
+          .from('saved_posts')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .eq('post_id', post.id)
+          .maybeSingle();
+        if (savedData) setSaved(true);
+      }
     };
     fetchUserStatus();
-  }, [post.id, currentUserId]);
+  }, [post.id, currentUserId, isLikedProp, isSavedProp]);
 
   const toggleLike = async () => {
     setIsLiking(true);
