@@ -10,7 +10,9 @@ import { concat } from './hkdf';
  * The server routes the blob without knowing who sent it.
  */
 
-// TODO: Integrate sealed sender envelope creation into the message send flow if sender anonymity is required.
+// Note: Sealed sender envelope creation can be integrated into the message send flow here
+// if sender anonymity is ever required. Currently, the sender_id is relied upon by the backend
+// to enforce read receipts and authorization.
 export function createSealedSenderEnvelope(
   senderCertificate: Uint8Array, // Sender's identity info (userId + identityKey)
   ciphertext: Uint8Array,

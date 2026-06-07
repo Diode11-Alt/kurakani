@@ -45,7 +45,7 @@ export default function ChatInfoSidebar({
 
         const processed = await Promise.all(
           data.map(async (m) => {
-            const plaintext = m.content || "";
+            const plaintext = m.ciphertext_plaintext_legacy || "";
 
             const s3Key = m.media_url || null;
             

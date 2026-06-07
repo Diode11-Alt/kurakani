@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import imageCompression from 'browser-image-compression';
 import { supabase } from '@/lib/supabase';
-import { encryptAttachment } from '@signal/crypto';
+
 
 export function useFileUpload(currentUserId: string | null) {
   const [uploading, setUploading] = useState(false);
@@ -13,24 +13,19 @@ export function useFileUpload(currentUserId: string | null) {
     const ext = extRaw.split(';')[0];
     const s3Key = `${currentUserId}-${Date.now()}.${ext}`;
     
-    // Encrypt file using @signal/crypto
     const arrayBuffer = await file.arrayBuffer();
     const fileBytes = new Uint8Array(arrayBuffer);
-    const { encryptedData, key, iv } = encryptAttachment(fileBytes);
     
-    // Convert key and IV to Base64 for returning
-    const keyBase64 = Buffer.from(key).toString('base64');
-    const ivBase64 = Buffer.from(iv).toString('base64');
+    // Convert to blob
+    const blob = new Blob([fileBytes], { type: contentType });
     
-    const encryptedBlob = new Blob([encryptedData as any], { type: 'application/octet-stream' });
-    
-    const { error } = await supabase.storage.from('attachments').upload(s3Key, encryptedBlob, { contentType: 'application/octet-stream' });
+    const { error } = await supabase.storage.from('attachments').upload(s3Key, blob, { contentType });
     if (error) throw error;
     
     return { 
       s3Key, 
-      keyBase64, 
-      ivBase64 
+      keyBase64: "", 
+      ivBase64: "" 
     };
   }, [currentUserId]);
 

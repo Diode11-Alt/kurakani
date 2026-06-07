@@ -45,8 +45,8 @@ import ChatInfoSidebar from "@/components/chat/ChatInfoSidebar";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { sanitizeMessage } from "@/lib/sanitize";
-// E2EE imports — disabled until WebSignalStore session establishment is wired up
-// import { encryptMessage, decryptMessage, base64ToArrayBuffer } from "@signal/crypto";
+
+
 
 const formatMessageDate = (date: Date) => {
   if (isToday(date)) return "Today";
@@ -90,12 +90,12 @@ function ReplyPreview({
     let cancelled = false;
     supabase
       .from("messages")
-      .select("sender_id, content")
+      .select("sender_id, ciphertext_plaintext_legacy")
       .eq("id", replyToMessageId)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
-        const result = data ? { senderId: data.sender_id, plaintext: data.content || "[Empty message]" } : null;
+        const result = data ? { senderId: data.sender_id, plaintext: data.ciphertext_plaintext_legacy || "[Empty message]" } : null;
         replyCacheRef.current.set(replyToMessageId, result);
         setCachedReply(result);
       });
@@ -133,6 +133,7 @@ export default function ChatThreadPage() {
   const { onlineUsers } = useUIStore();
 
   const [otherUser, setOtherUser] = useState<any>(null);
+
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState("");
@@ -385,8 +386,8 @@ export default function ChatThreadPage() {
         async (payload) => {
           const msg = payload.new;
 
-          let initialPlaintext = msg.content || "[Empty message]";
-          if (!msg.content && msg.media_url) {
+          let initialPlaintext = msg.ciphertext_plaintext_legacy || "[Empty message]";
+          if (!msg.ciphertext_plaintext_legacy && msg.media_url) {
             initialPlaintext = "";
           }
 
@@ -407,20 +408,7 @@ export default function ChatThreadPage() {
             reactions: msg.message_reactions || [],
           };
           
-          if (msg.ciphertext && msg.sender_id !== currentUserId) {
-            // Decrypt async and update state
-            (async () => {
-              try {
-                // TODO: Wire up real WebSignalStore and deviceId for decryption.
-                // const decrypted = await decryptMessage(store, msg.sender_id, 1, msg.ciphertext, msg.ciphertext_type === "prekey" ? 3 : 1);
-                // setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, plaintext: sanitizeMessage(decrypted) } : m));
-                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, plaintext: "[Encrypted Message]" } : m));
-              } catch (e) {
-                console.error("Failed to decrypt incoming realtime message", e);
-                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, plaintext: "[Encrypted Message]" } : m));
-              }
-            })();
-          }
+
 
           setMessages((prev) => {
             // Prevent duplicates
@@ -578,17 +566,8 @@ export default function ChatThreadPage() {
           (r) => r.message_id === m.id,
         );
 
-        let plaintext = m.content || "[Empty message]";
-        if (m.ciphertext && otherUser?.id) {
-          try {
-            // TODO: Wire up real WebSignalStore and deviceId for decryption.
-            // plaintext = await decryptMessage(store, m.sender_id, 1, m.ciphertext, m.ciphertext_type === "prekey" ? 3 : 1);
-            plaintext = "[Encrypted Message]";
-          } catch (e) {
-            console.error("Failed to decrypt message from", m.sender_id, e);
-            plaintext = "[Encrypted Message]";
-          }
-        } else if (!m.content && m.media_url) {
+        let plaintext = m.ciphertext_plaintext_legacy || "[Empty message]";
+        if (!m.ciphertext_plaintext_legacy && m.media_url) {
           plaintext = "";
         }
 
@@ -666,17 +645,8 @@ export default function ChatThreadPage() {
           (r) => r.message_id === m.id,
         );
 
-        let plaintext = m.content || "[Empty message]";
-        if (m.ciphertext && otherUser?.id) {
-          try {
-            // TODO: Wire up real WebSignalStore and deviceId for decryption.
-            // plaintext = await decryptMessage(store, m.sender_id, 1, m.ciphertext, m.ciphertext_type === "prekey" ? 3 : 1);
-            plaintext = "[Encrypted Message]";
-          } catch (e) {
-            console.error("Failed to decrypt message from", m.sender_id, e);
-            plaintext = "[Encrypted Message]";
-          }
-        } else if (!m.content && m.media_url) {
+        let plaintext = m.ciphertext_plaintext_legacy || "[Empty message]";
+        if (!m.ciphertext_plaintext_legacy && m.media_url) {
           plaintext = "";
         }
 
@@ -826,16 +796,18 @@ export default function ChatThreadPage() {
     setReplyingToMessage(null);
 
     try {
-      // E2EE is temporarily disabled until WebSignalStore sessions are established.
-      // When enabled, encryptMessage() will populate ciphertext/ciphertext_type and
-      // content will be omitted (server only stores ciphertext).
+      let ciphertext = null;
+      let ciphertextType = null;
+      let contentToStore = rawContent || null;
 
       const { data, error } = await supabase
         .from("messages")
         .insert({
           conversation_id: conversationId,
           sender_id: currentUserId,
-          content: rawContent || null,
+          ciphertext: ciphertext,
+          ciphertext_type: ciphertextType,
+          ciphertext_plaintext_legacy: contentToStore,
           media_url: finalMediaUrl || null,
           attachment_key: attachmentData?.keyBase64 || null,
           attachment_iv: attachmentData?.ivBase64 || null,
@@ -878,7 +850,7 @@ export default function ChatThreadPage() {
         .from("messages")
         .select("*")
         .eq("conversation_id", conversationId)
-        .ilike("content", `%${query.trim().replace(/[%_\\]/g, '')}%`)
+        .ilike("ciphertext_plaintext_legacy", `%${query.trim().replace(/[%_\\]/g, '')}%`)
         .order("sent_at", { ascending: false })
         .limit(50);
 
@@ -888,7 +860,7 @@ export default function ChatThreadPage() {
         setSearchResults(
           data.map((m) => ({
             id: m.id,
-            content: m.content,
+            content: m.ciphertext_plaintext_legacy,
             senderId: m.sender_id,
             createdAt: new Date(m.sent_at),
             status: "sent",
@@ -1136,7 +1108,7 @@ export default function ChatThreadPage() {
                   ${isSelf ? "bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-variant)] text-[var(--color-on-primary)] rounded-tr-sm"
                            : "bg-[var(--color-surface-container)] text-[var(--color-on-surface)] rounded-tl-sm border border-[var(--color-outline-variant)]"}
                 `}>
-                  {m.content}
+                  {m.ciphertext_plaintext_legacy}
                 </div>
               </div>
             );
@@ -1208,7 +1180,7 @@ export default function ChatThreadPage() {
                   </div>
                 )}
 
-                {m.contentType === 'call_log' ? (
+                {m.ciphertext_plaintext_legacyType === 'call_log' ? (
                   <div className="flex justify-center my-4">
                     <div className="flex items-center gap-2 text-xs font-bold text-[var(--color-on-surface-variant)] bg-[var(--color-surface-container-low)] px-4 py-2 rounded-2xl border border-[var(--color-outline-variant)] shadow-sm">
                       <Phone className="w-3.5 h-3.5" />

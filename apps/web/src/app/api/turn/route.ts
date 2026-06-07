@@ -15,9 +15,10 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const turnSecret = process.env.TURN_SECRET || 'your_super_secret_turn_key_here'; // Fallback for local dev
-
+  const turnSecret = process.env.TURN_SECRET;
+  
   if (!turnSecret) {
+    console.error('TURN_SECRET is not configured in the environment');
     return NextResponse.json({ error: 'TURN_SECRET is not configured' }, { status: 500 });
   }
 

@@ -28,47 +28,7 @@ export default function SecureMediaRenderer({
     supabase.storage.from('attachments').createSignedUrl(mediaUrl, 3600).then(async ({ data }) => {
       if (!isMounted || !data?.signedUrl) return;
 
-      if (attachmentKey && attachmentIv) {
-        try {
-          const res = await fetch(data.signedUrl);
-          const arrayBuffer = await res.arrayBuffer();
-          const encryptedBytes = new Uint8Array(arrayBuffer);
-          
-          const { decryptAttachment, base64ToArrayBuffer } = await import("@signal/crypto");
-          const keyBuffer = base64ToArrayBuffer(attachmentKey);
-          const ivBuffer = base64ToArrayBuffer(attachmentIv);
-          
-          const decryptedData = decryptAttachment(encryptedBytes, new Uint8Array(keyBuffer), new Uint8Array(ivBuffer));
-          
-          if (!decryptedData) {
-            throw new Error("MAC verification failed - decryptedData is null");
-          }
-          
-          const ext = mediaUrl.split('.').pop()?.split('?')[0]?.toLowerCase();
-          let mime = 'application/octet-stream';
-          if (ext === 'jpg' || ext === 'jpeg') mime = 'image/jpeg';
-          else if (ext === 'png') mime = 'image/png';
-          else if (ext === 'gif') mime = 'image/gif';
-          else if (ext === 'webp') mime = 'image/webp';
-          else if (ext === 'svg') mime = 'image/svg+xml';
-          else if (ext === 'mp4' && plaintext === "Voice Note 🎤") mime = 'audio/mp4';
-          else if (ext === 'mp4') mime = 'video/mp4';
-          else if (ext === 'webm' && plaintext === "Voice Note 🎤") mime = 'audio/webm';
-          else if (ext === 'webm') mime = 'video/webm';
-          else if (ext === 'mov' || ext === 'quicktime') mime = 'video/quicktime';
-          else if (ext === 'mp3') mime = 'audio/mpeg';
-          else if (ext === 'wav') mime = 'audio/wav';
-          else if (ext === 'weba') mime = 'audio/webm';
-          else if (ext === 'm4a') mime = 'audio/mp4';
-          const blob = new Blob([decryptedData as any], { type: mime });
-          const objectUrl = URL.createObjectURL(blob);
-          if (isMounted) setUrl(objectUrl);
-        } catch (err) {
-          console.error("Attachment decryption failed", err);
-        }
-      } else {
         if (isMounted) setUrl(data.signedUrl);
-      }
     });
 
     return () => { isMounted = false; };
