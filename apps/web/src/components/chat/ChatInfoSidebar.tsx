@@ -116,15 +116,15 @@ export default function ChatInfoSidebar({
         {/* Profile Info */}
         <div className="p-6 flex flex-col items-center border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)]">
           <div className="w-24 h-24 squircle bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold mb-4 shadow-lg overflow-hidden">
-            {(otherUser as any)?.avatarUrl ? (
-              <img src={(otherUser as any).avatarUrl} alt="" className="w-full h-full object-cover" />
+            {(otherUser as Record<string, unknown>)?.avatarUrl ? (
+              <img src={(otherUser as Record<string, unknown>).avatarUrl as string} alt="" className="w-full h-full object-cover" />
             ) : (
-              (otherUser as any)?.displayName?.[0]?.toUpperCase() || otherUser?.username?.[0]?.toUpperCase() || "?"
+              (otherUser as Record<string, unknown>)?.displayName?.[0] ? ((otherUser as Record<string, unknown>).displayName as string)[0]?.toUpperCase() : (otherUser?.username?.[0]?.toUpperCase() || "?")
             )}
           </div>
-          <h3 className="font-bold text-xl text-[var(--color-on-surface)] mb-1">
-            {(otherUser as any)?.displayName || otherUser?.username}
-          </h3>
+          <h2 className="text-xl font-bold mb-1">
+            {(otherUser as Record<string, unknown>)?.displayName || otherUser?.username}
+          </h2>
           <p className="text-sm text-[var(--color-on-surface-variant)]">@{otherUser?.username}</p>
         </div>
 

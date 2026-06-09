@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { KeyHelper } from '@privacyresearch/libsignal-protocol-typescript';
 import { arrayBufferToBase64 } from '@signal/crypto';
 import { WebSignalStore } from './WebSignalStore';

@@ -4,7 +4,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { colors } from '../theme/colors';
 import { API_BASE } from '../lib/api';
 
-export default function AccountScreen({ navigation }: any) {
+export default function AccountScreen({ navigation }: { navigation: Record<string, unknown> }) {
   async function handleLogout() {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },

@@ -10,7 +10,7 @@ import {
 
 export class MobileSignalStore implements SignalProtocolStore {
   // Helper to convert objects with ArrayBuffers to base64 JSON for storage
-  private async setItem(key: string, value: any): Promise<void> {
+  private async setItem(key: string, value: unknown): Promise<void> {
     const jsonValue = JSON.stringify(value, (k, v) => {
       if (v instanceof ArrayBuffer) {
         return { type: 'Buffer', data: Array.from(new Uint8Array(v)) };

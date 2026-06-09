@@ -3,7 +3,15 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { colors } from '../theme/colors';
 
 interface Props {
-  navigation: any;
+  navigation: { navigate: (screen: string) => void };
+}
+
+interface SettingsItem {
+  label: string;
+  subtitle: string;
+  screen: string | null;
+  icon: string;
+  danger?: boolean;
 }
 
 export default function SettingsScreen({ navigation }: Props) {
@@ -15,14 +23,14 @@ export default function SettingsScreen({ navigation }: Props) {
         { label: 'Privacy', subtitle: 'Last seen, read receipts', screen: 'PrivacySettings', icon: '🛡️' },
         { label: 'Notifications', subtitle: 'Push, sound, preview', screen: 'NotificationSettings', icon: '🔔' },
         { label: 'Account', subtitle: 'Change number, delete account', screen: 'Account', icon: '⚙️' },
-      ],
+      ] as SettingsItem[],
     },
     {
       title: 'Security',
       items: [
         { label: 'Linked Devices', subtitle: 'Manage connected devices', screen: null, icon: '📱' },
         { label: 'App Lock', subtitle: 'PIN or biometric', screen: null, icon: '🔒' },
-      ],
+      ] as SettingsItem[],
     },
   ];
 
@@ -35,7 +43,7 @@ export default function SettingsScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>{section.title}</Text>
 
           <View style={styles.card}>
-            {section.items.map((item: any, ii) => (
+            {section.items.map((item: SettingsItem, ii) => (
               <TouchableOpacity
                 key={ii}
                 style={[styles.row, ii < section.items.length - 1 && styles.rowBorder]}

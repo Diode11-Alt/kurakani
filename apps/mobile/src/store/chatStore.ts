@@ -5,7 +5,7 @@ export interface Conversation {
   isGroup: boolean;
   name: string | null;
   lastMessageAt: string;
-  members: any[];
+  members: Record<string, unknown>[];
 }
 
 interface ChatState {

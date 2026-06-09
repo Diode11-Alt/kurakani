@@ -3,7 +3,7 @@ import { generateSignalRegistrationPayload } from './packages/crypto/src/keys';
 
 async function test() {
   const store = new WebSignalStore();
-  const payload = await generateSignalRegistrationPayload(1 as any);
+  const payload = await generateSignalRegistrationPayload(store);
   console.log(payload.registrationId);
 }
 test();

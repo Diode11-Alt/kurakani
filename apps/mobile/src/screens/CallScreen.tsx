@@ -6,7 +6,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { Mic, MicOff, Video, VideoOff, PhoneOff, SwitchCamera } from 'lucide-react-native';
 
 const getIceServers = () => {
-  let servers: any[] = [
+  let servers: Record<string, unknown>[] = [
     { urls: 'stun:stun.l.google.com:19302' }
   ];
 
@@ -31,16 +31,16 @@ export default function CallScreen() {
   const { socket } = useSocket();
   const navigation = useNavigation();
   const route = useRoute();
-  const { id: peerId, name: peerName, isIncoming, offerPayload } = route.params as any;
+  const { id: peerId, name: peerName, isIncoming, offerPayload } = route.params as Record<string, unknown>;
   
-  const [localStream, setLocalStream] = useState<any>(null);
-  const [remoteStream, setRemoteStream] = useState<any>(null);
+  const [localStream, setLocalStream] = useState<unknown>(null);
+  const [remoteStream, setRemoteStream] = useState<unknown>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   
   const pc = useRef<RTCPeerConnection | null>(null);
-  const candidateQueueRef = useRef<any[]>([]);
-  const localCandidatesQueueRef = useRef<any[]>([]); // Buffer for caller's outgoing candidates
+  const candidateQueueRef = useRef<unknown[]>([]);
+  const localCandidatesQueueRef = useRef<unknown[]>([]); // Buffer for caller's outgoing candidates
 
   useEffect(() => {
     const setupWebrtc = async () => {
@@ -63,13 +63,13 @@ export default function CallScreen() {
 
       stream.getTracks().forEach(t => peer.addTrack(t, stream));
 
-      peer.ontrack = (event: any) => {
+      peer.ontrack = (event: Record<string, unknown>) => {
         if (event.streams && event.streams[0]) {
           setRemoteStream(event.streams[0]);
         }
       };
 
-      peer.onicecandidate = (event: any) => {
+      peer.onicecandidate = (event: Record<string, unknown>) => {
         if (event.candidate && socket) {
           // FIX: Void Broadcast race condition
           // If we are the caller and callee hasn't answered yet, buffer candidates
@@ -118,7 +118,7 @@ export default function CallScreen() {
 
     // Socket Listeners
     if (socket) {
-      socket.on('webrtc-answer', async (payload: any) => {
+      socket.on('webrtc-answer', async (payload: Record<string, unknown>) => {
         if (pc.current && pc.current.signalingState !== 'stable') {
           await pc.current.setRemoteDescription(new RTCSessionDescription(payload.answer));
           // Process queued remote candidates
@@ -140,7 +140,7 @@ export default function CallScreen() {
         }
       });
 
-      socket.on('ice-candidate', async (payload: any) => {
+      socket.on('ice-candidate', async (payload: Record<string, unknown>) => {
         if (pc.current && payload.candidate) {
           if (pc.current.remoteDescription) {
             await pc.current.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(console.error);
@@ -160,7 +160,7 @@ export default function CallScreen() {
       socket?.off('ice-candidate');
       socket?.off('call-end');
       if (pc.current) pc.current.close();
-      if (localStream) localStream.getTracks().forEach((t: any) => t.stop());
+      if (localStream) localStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     };
   }, []);
 
@@ -169,29 +169,29 @@ export default function CallScreen() {
       socket.emit('call-end', { targetUserId: peerId });
     }
     if (pc.current) pc.current.close();
-    if (localStream) localStream.getTracks().forEach((t: any) => t.stop());
+    if (localStream) localStream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     navigation.goBack();
   };
 
   const toggleMute = () => {
     if (localStream) {
-      localStream.getAudioTracks().forEach((t: any) => t.enabled = !t.enabled);
+      localStream.getAudioTracks().forEach((t: MediaStreamTrack) => t.enabled = !t.enabled);
       setIsMuted(!isMuted);
     }
   };
 
   const toggleVideo = () => {
     if (localStream) {
-      localStream.getVideoTracks().forEach((t: any) => t.enabled = !t.enabled);
+      localStream.getVideoTracks().forEach((t: MediaStreamTrack) => t.enabled = !t.enabled);
       setIsVideoEnabled(!isVideoEnabled);
     }
   };
 
   const toggleCamera = () => {
     if (localStream) {
-      localStream.getVideoTracks().forEach((track: any) => {
-        if (typeof track._switchCamera === 'function') {
-          track._switchCamera();
+      localStream.getVideoTracks().forEach((track: MediaStreamTrack) => {
+        if (typeof (track as Record<string, unknown>)._switchCamera === 'function') {
+          (track as Record<string, unknown>)._switchCamera();
         }
       });
     }

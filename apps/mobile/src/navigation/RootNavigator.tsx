@@ -41,13 +41,13 @@ import { useNavigation } from '@react-navigation/native';
 
 const IncomingCallOverlay = () => {
   const { socket } = useSocket();
-  const navigation = useNavigation<any>();
-  const [incomingCall, setIncomingCall] = React.useState<any>(null);
+  const navigation = useNavigation<Record<string, unknown>>();
+  const [incomingCall, setIncomingCall] = React.useState<Record<string, unknown> | null>(null);
 
   React.useEffect(() => {
     if (!socket) return;
     
-    const handleOffer = (payload: any) => {
+    const handleOffer = (payload: Record<string, unknown>) => {
       setIncomingCall(payload);
     };
 

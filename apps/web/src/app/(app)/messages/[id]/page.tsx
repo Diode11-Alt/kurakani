@@ -65,7 +65,7 @@ function ReplyPreview({
   conversationId,
 }: {
   replyToMessageId: string;
-  messages: any[];
+  messages: Record<string, unknown>[];
   currentUserId: string | null;
   otherUsername?: string;
   isSelf: boolean;
@@ -132,9 +132,9 @@ export default function ChatThreadPage() {
   } = useAuthStore();
   const { onlineUsers } = useUIStore();
 
-  const [otherUser, setOtherUser] = useState<any>(null);
+  const [otherUser, setOtherUser] = useState<Record<string, unknown> | null>(null);
 
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -143,14 +143,14 @@ export default function ChatThreadPage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
-  const [conversation, setConversation] = useState<any>(null);
+  const [conversation, setConversation] = useState<Record<string, unknown> | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
-  const [replyingToMessage, setReplyingToMessage] = useState<any>(null);
+  const [replyingToMessage, setReplyingToMessage] = useState<Record<string, unknown> | null>(null);
 
   // Search state
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<Record<string, unknown>[]>([]);
   const [isSearchingDb, setIsSearchingDb] = useState(false);
   const [isInfoPaneOpen, setIsInfoPaneOpen] = useState(false);
 
@@ -168,7 +168,7 @@ export default function ChatThreadPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<any>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const replyCacheRef = useRef<Map<string, { senderId: string; plaintext: string } | null>>(new Map());
 
   const {
@@ -182,7 +182,7 @@ export default function ChatThreadPage() {
       const mimeType = blob.type || "audio/webm";
       const downloadUrl = await uploadToS3(blob, mimeType);
       await handleSendMessage(
-        { preventDefault: () => {} } as any,
+        { preventDefault: () => {} } as unknown as React.FormEvent,
         downloadUrl,
         "Voice Note 🎤",
       );
@@ -209,7 +209,7 @@ export default function ChatThreadPage() {
     try {
       const msg = messages.find((m) => m.id === messageId);
       const existing = msg?.reactions?.find(
-        (r: any) => r.user_id === currentUserId && r.emoji === emoji,
+        (r: Record<string, unknown>) => r.user_id === currentUserId && r.emoji === emoji,
       );
 
       // Optimistic update
@@ -219,7 +219,7 @@ export default function ChatThreadPage() {
           let newReactions = [...(m.reactions || [])];
           if (existing) {
             newReactions = newReactions.filter(
-              (r: any) => r.id !== existing.id,
+              (r: Record<string, unknown>) => r.id !== existing.id,
             );
           } else {
             newReactions.push({
@@ -288,7 +288,7 @@ export default function ChatThreadPage() {
           return;
         }
 
-        const members = convData.conversation_members.map((m: any) => m.users);
+        const members = convData.conversation_members.map((m: Record<string, unknown>) => m.users);
         const conv = { ...convData, members };
 
         if (conv.type === "group") {
@@ -300,7 +300,7 @@ export default function ChatThreadPage() {
         }
 
         setConversation(conv);
-        const rawOther = conv.members.find((m: any) => m.id !== currentUserId);
+        const rawOther = conv.members.find((m: Record<string, unknown>) => m.id !== currentUserId);
         const other = rawOther ? {
           ...rawOther,
           displayName: rawOther.display_name,
@@ -464,7 +464,7 @@ export default function ChatThreadPage() {
                     ...m,
                     reactions: [
                       ...(m.reactions || []).filter(
-                        (r: any) =>
+                        (r: Record<string, unknown>) =>
                           !(
                             r.user_id === reaction.user_id &&
                             r.emoji === reaction.emoji
@@ -487,7 +487,7 @@ export default function ChatThreadPage() {
             prev.map((m) => ({
               ...m,
               reactions: (m.reactions || []).filter(
-                (r: any) => r.id !== reactionId,
+                (r: Record<string, unknown>) => r.id !== reactionId,
               ),
             })),
           );
@@ -547,7 +547,7 @@ export default function ChatThreadPage() {
 
       if (error) throw error;
 
-      let allReactions: any[] = [];
+      let allReactions: Record<string, unknown>[] = [];
       if (messagesData && messagesData.length > 0) {
         const messageIds = messagesData.map((m) => m.id);
         const { data: reactionsData } = await supabase
@@ -626,7 +626,7 @@ export default function ChatThreadPage() {
 
       if (error) throw error;
 
-      let allReactions: any[] = [];
+      let allReactions: Record<string, unknown>[] = [];
       if (messagesData && messagesData.length > 0) {
         const messageIds = messagesData.map((m) => m.id);
         const { data: reactionsData } = await supabase
@@ -748,7 +748,7 @@ export default function ChatThreadPage() {
     
     if (selectedFile && !finalMediaUrl) {
       try {
-        const uploadResult = await uploadFileHook(selectedFile) as any;
+        const uploadResult = await uploadFileHook(selectedFile) as Record<string, unknown>;
         finalMediaUrl = uploadResult.s3Key;
         attachmentData = uploadResult;
       } catch (err) {
@@ -1257,7 +1257,7 @@ export default function ChatThreadPage() {
                       className={`flex flex-wrap gap-1 mt-1 ${isSelf ? "justify-end" : "justify-start"}`}
                     >
                       {Object.entries(
-                        m.reactions.reduce((acc: any, r: any) => {
+                        m.reactions.reduce((acc: Record<string, unknown>, r: Record<string, unknown>) => {
                           acc[r.emoji] = (acc[r.emoji] || 0) + 1;
                           return acc;
                         }, {}),
@@ -1267,7 +1267,7 @@ export default function ChatThreadPage() {
                           onClick={() => handleReaction(m.id, emoji)}
                           className={`px-1.5 py-0.5 rounded-full border text-xs flex items-center gap-1 hover:brightness-95 cursor-pointer ${
                             m.reactions.some(
-                              (r: any) =>
+                              (r: Record<string, unknown>) =>
                                 r.emoji === emoji &&
                                 r.user_id === currentUserId,
                             )
@@ -1483,7 +1483,7 @@ export default function ChatThreadPage() {
                     <div className="absolute bottom-10 right-0 z-50 shadow-xl rounded-lg">
                       <Picker
                         data={data}
-                        onEmojiSelect={(emoji: any) => {
+                        onEmojiSelect={(emoji: Record<string, unknown>) => {
                           setInputText((prev) => prev + emoji.native);
                           setShowEmojiPicker(false);
                         }}

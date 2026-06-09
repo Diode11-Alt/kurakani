@@ -6,7 +6,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { colors } from '../theme/colors';
 import { API_BASE } from '../lib/api';
 
-export default function ProfileSettingsScreen({ navigation }: any) {
+export default function ProfileSettingsScreen({ navigation }: { navigation: Record<string, unknown> }) {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');

@@ -1,6 +1,6 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
 
-export const saveMessage = async (msg: any) => {
+export const saveMessage = async (msg: Record<string, unknown>) => {
   if (!msg.id) msg.id = Date.now().toString(); // Ensure ID exists
   const key = `msg_${msg.conversationId}_${msg.id}`;
   await EncryptedStorage.setItem(key, JSON.stringify(msg));

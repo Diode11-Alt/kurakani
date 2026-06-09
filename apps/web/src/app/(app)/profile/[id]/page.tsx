@@ -28,8 +28,8 @@ export default function ProfilePage() {
   const profileId = params.id as string;
   const { userId: currentUserId } = useAuthStore();
 
-  const [profile, setProfile] = useState<any>(null);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [posts, setPosts] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
@@ -219,12 +219,12 @@ export default function ProfilePage() {
       });
 
       // Update local state
-      setProfile((prev: any) => ({
+      setProfile((prev: Record<string, unknown> | null) => (prev ? {
         ...prev,
         displayName: editDisplayName.trim(),
-        username: editUsername.trim() || prev.username,
+        username: editUsername.trim() || prev.username as string,
         bio: editBio.trim(),
-      }));
+      } : null));
 
       setShowSettings(false);
     } catch (err) {

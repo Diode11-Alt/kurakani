@@ -1,12 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { openDB, IDBPDatabase } from 'idb';
 import { StorageType } from '@privacyresearch/libsignal-protocol-typescript';
 
-type IdentityKeyPair = any;
-type PreKeyRecordType = any;
-type SignedPreKeyRecordType = any;
-type SessionRecordType = any;
-type Direction = any;
+type IdentityKeyPair = { pubKey: ArrayBuffer; privKey: ArrayBuffer };
+type PreKeyRecordType = unknown;
+type SignedPreKeyRecordType = unknown;
+type SessionRecordType = unknown;
+type Direction = number;
 
 export class WebSignalStore implements StorageType {
   private dbName = 'signal_store';

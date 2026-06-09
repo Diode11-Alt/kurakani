@@ -60,23 +60,23 @@ export default function SettingsPage() {
         setDisplayName(profileRes.displayName || '');
         setBio(profileRes.bio || '');
         setUsername(profileRes.username || '');
-        setPronouns((profileRes as any).pronouns || '');
-        setWebsite((profileRes as any).website || '');
-        setLocation((profileRes as any).location || '');
-        setWork((profileRes as any).work || '');
-        setEducation((profileRes as any).education || '');
-        setIsPublic((profileRes as any).isPublic ?? true);
-        setRequireConnectionRequests((profileRes as any).requireConnectionRequests ?? false);
+        setPronouns((profileRes as Record<string, unknown>).pronouns as string || '');
+        setWebsite((profileRes as Record<string, unknown>).website as string || '');
+        setLocation((profileRes as Record<string, unknown>).location as string || '');
+        setWork((profileRes as Record<string, unknown>).work as string || '');
+        setEducation((profileRes as Record<string, unknown>).education as string || '');
+        setIsPublic((profileRes as Record<string, unknown>).isPublic as boolean ?? true);
+        setRequireConnectionRequests((profileRes as Record<string, unknown>).requireConnectionRequests as boolean ?? false);
       }
       if (privacyRes) {
         setLastSeen(privacyRes.lastSeen || 'everyone');
         setReadReceipts(privacyRes.readReceipts ?? true);
         setProfilePhoto(privacyRes.profilePhotoVisibility || 'everyone');
-        setMessagePrivacy((privacyRes as any).messagePrivacy || 'everyone');
-        setPostPrivacy((privacyRes as any).postPrivacy || 'everyone');
-        setTagPrivacy((privacyRes as any).tagPrivacy || 'everyone');
-        setConnectionsVisibility((privacyRes as any).connectionsVisibility || 'everyone');
-        setOffPlatformActivity((privacyRes as any).offPlatformActivity ?? false);
+        setMessagePrivacy((privacyRes as Record<string, unknown>).messagePrivacy as string || 'everyone');
+        setPostPrivacy((privacyRes as Record<string, unknown>).postPrivacy as string || 'everyone');
+        setTagPrivacy((privacyRes as Record<string, unknown>).tagPrivacy as string || 'everyone');
+        setConnectionsVisibility((privacyRes as Record<string, unknown>).connectionsVisibility as string || 'everyone');
+        setOffPlatformActivity((privacyRes as Record<string, unknown>).offPlatformActivity as boolean ?? false);
       }
       if (notifRes) {
         setPushEnabled(notifRes.pushNotifications ?? true);
@@ -91,9 +91,9 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       if (section === 'profile') {
-        await updateProfile({ displayName, bio, username, pronouns, website, location, work, education } as any);
+        await updateProfile({ displayName, bio, username, pronouns, website, location, work, education } as unknown as Parameters<typeof updateProfile>[0]);
       } else if (section === 'privacy') {
-        await updateProfile({ isPublic, requireConnectionRequests } as any);
+        await updateProfile({ isPublic, requireConnectionRequests } as unknown as Parameters<typeof updateProfile>[0]);
         await updatePrivacySettings({ 
           lastSeen, 
           readReceipts, 
@@ -103,14 +103,14 @@ export default function SettingsPage() {
           tagPrivacy,
           connectionsVisibility,
           offPlatformActivity
-        } as any);
+        } as unknown as Parameters<typeof updateProfile>[0]);
       } else if (section === 'notifications') {
         await updateNotificationSettings({ pushNotifications: pushEnabled, notificationPreview: previewEnabled });
       }
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to save settings", err);
       toast.error(err.message || "Failed to save changes. Please try again.");
     } finally {

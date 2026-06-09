@@ -26,7 +26,7 @@ export default function PrivacySettingsScreen() {
     } catch {}
   }
 
-  async function updateSetting(key: string, value: any) {
+  async function updateSetting(key: string, value: unknown) {
     try {
       const token = await EncryptedStorage.getItem('accessToken');
       await fetch(`${API_BASE}/settings/privacy`, {
@@ -39,7 +39,7 @@ export default function PrivacySettingsScreen() {
     }
   }
 
-  const OptionRow = ({ label, options, value, settingKey }: any) => (
+  const OptionRow = ({ label, options, value, settingKey }: Record<string, unknown>) => (
     <View style={styles.optionGroup}>
       <Text style={styles.optionLabel}>{label}</Text>
       <View style={styles.optionButtons}>

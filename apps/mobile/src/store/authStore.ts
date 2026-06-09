@@ -13,7 +13,7 @@ interface AuthState {
   setUserId: (id: string | null) => void;
   setDeviceId: (id: number | null) => void;
   setKeysGenerated: (status: boolean) => void;
-  setUser: (user: any) => void;
+  setUser: (user: Record<string, unknown> | null) => void;
   clearAuth: () => void;
   init: () => Promise<void>;
 }

@@ -15,10 +15,10 @@ import { useAuthStore } from "../../../store/authStore";
 
 export default function ExplorePage() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(false);
   const [connections, setConnections] = useState<Record<string, { status: string, isSender: boolean }>>({});
-  const [defaultExperts, setDefaultExperts] = useState<any[]>([]);
+  const [defaultExperts, setDefaultExperts] = useState<Record<string, unknown>[]>([]);
   
   const router = useRouter();
   const { userId } = useAuthStore();

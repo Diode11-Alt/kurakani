@@ -10,10 +10,10 @@ import { useNavigation } from '@react-navigation/native';
 
 export default function NotificationsScreen() {
   const { session } = useAuthStore();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<Record<string, unknown>>();
 
   const fetchNotifications = async () => {
     if (!session?.user?.id) return;
@@ -50,7 +50,7 @@ export default function NotificationsScreen() {
     fetchNotifications();
   };
 
-  const handleNotificationPress = (notif: any) => {
+  const handleNotificationPress = (notif: Record<string, unknown>) => {
     if (notif.type === 'like' || notif.type === 'comment') {
       // Navigate to post or profile
       navigation.navigate('Profile', { userId: session?.user?.id });
@@ -69,7 +69,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const getMessage = (notif: any) => {
+  const getMessage = (notif: Record<string, unknown>) => {
     const name = notif.actor?.display_name || notif.actor?.username || 'Someone';
     switch (notif.type) {
       case 'like': return <Text style={styles.messageText}><Text style={styles.boldText}>{name}</Text> liked your post.</Text>;
@@ -81,7 +81,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = ({ item }: { item: Record<string, unknown> }) => (
     <TouchableOpacity 
       style={[styles.notificationItem, !item.is_read && styles.unreadItem]} 
       onPress={() => handleNotificationPress(item)}

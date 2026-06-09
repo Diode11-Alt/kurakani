@@ -10,7 +10,7 @@ import { useAuthStore } from '../store/authStore';
 
 export const BottomNavBar = () => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<Record<string, unknown>>();
   const route = useRoute();
   const { session } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -52,7 +52,7 @@ export const BottomNavBar = () => {
     { name: 'Profile', icon: User, label: 'Profile' },
   ];
 
-  const renderTab = (tab: any) => {
+  const renderTab = (tab: Record<string, unknown>) => {
     const isActive = route.name === tab.name || (route.name === 'Chat' && tab.name === 'Messages');
     const Icon = tab.icon;
     

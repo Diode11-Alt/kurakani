@@ -275,7 +275,7 @@ export async function fetchKeyBundle(userId: string) {
   if (spkErr) throw new Error(spkErr.message);
   if (!spk) throw new Error("User's signed pre-keys are missing.");
 
-  const { data: otpk } = await supabase.rpc('fetch_otpk', { target_user_id: userId }).maybeSingle() as any;
+  const { data: otpk } = await supabase.rpc('fetch_otpk', { target_user_id: userId }).maybeSingle() as unknown as { key_id: number; public_key: string };
 
   return {
     identityKey: ik.identity_key,

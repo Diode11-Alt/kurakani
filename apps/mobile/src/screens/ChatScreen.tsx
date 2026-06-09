@@ -21,7 +21,7 @@ export default function ChatScreen() {
   const route = useRoute<ChatScreenRouteProp>();
   const navigation = useNavigation();
   const { id: activeContact, name } = route.params;
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Record<string, unknown>[]>([]);
   const [input, setInput] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [expiresIn, setExpiresIn] = useState<number>(0); // 0 = off, else seconds
@@ -49,7 +49,7 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!socket) return;
 
-    const handleMessage = async (data: any) => {
+    const handleMessage = async (data: Record<string, unknown>) => {
       let payload;
       try {
         payload = JSON.parse(data);
@@ -64,7 +64,7 @@ export default function ChatScreen() {
         const plaintext = decryptMessage(sharedSecret, payload.ciphertext);
         if (!plaintext) throw new Error("Decryption failed");
 
-        let messageObj: any = { type: 'text', content: plaintext };
+        let messageObj: Record<string, unknown> = { type: 'text', content: plaintext };
         try {
           messageObj = JSON.parse(plaintext);
         } catch (e) { }
@@ -110,19 +110,19 @@ export default function ChatScreen() {
       }
     };
 
-    const handleRead = (data: any) => {
+    const handleRead = (data: Record<string, unknown>) => {
       if (data.conversationId === activeContact) {
         setMessages(prev => prev.map(m => m.id === data.messageId ? { ...m, readAt: data.readAt } : m));
       }
     };
 
-    const handleTypingStart = (data: any) => {
+    const handleTypingStart = (data: Record<string, unknown>) => {
       if (data.fromUserId === activeContact) {
         setIsTyping(true);
       }
     };
 
-    const handleTypingStop = (data: any) => {
+    const handleTypingStop = (data: Record<string, unknown>) => {
       if (data.fromUserId === activeContact) {
         setIsTyping(false);
       }
@@ -145,7 +145,7 @@ export default function ChatScreen() {
 
   const loadMessages = async () => {
     const msgs = await getMessages(activeContact);
-    setMessages(msgs.sort((a: any, b: any) => b.timestamp - a.timestamp));
+    setMessages(msgs.sort((a: Record<string, unknown>, b: Record<string, unknown>) => (b.timestamp as number) - (a.timestamp as number)));
     
     // Attempt initial fetch from API
     try {
@@ -182,7 +182,7 @@ export default function ChatScreen() {
           }
         } catch(e) {}
         
-        let messageObj: any = { type: 'text', content: plaintext };
+        let messageObj: Record<string, unknown> = { type: 'text', content: plaintext };
         try { messageObj = JSON.parse(plaintext); } catch (e) { }
         
         const newMsg = {
@@ -200,7 +200,7 @@ export default function ChatScreen() {
       }
       
       if (newMsgs.length > 0) {
-        setMessages(prev => [...prev, ...newMsgs].sort((a: any, b: any) => b.timestamp - a.timestamp));
+        setMessages(prev => [...prev, ...newMsgs].sort((a: Record<string, unknown>, b: Record<string, unknown>) => (b.timestamp as number) - (a.timestamp as number)));
       }
       setNextCursor(data.nextCursor);
     } catch (err) {
@@ -338,7 +338,7 @@ export default function ChatScreen() {
     }
   };
 
-  const renderItem = useCallback(({ item, index }: { item: any, index: number }) => {
+  const renderItem = useCallback(({ item, index }: { item: Record<string, unknown>, index: number }) => {
     // Inverted list means index 0 is at the bottom, so previous visually is index+1
     const isFirstInGroup = index === messages.length - 1 || messages[index + 1]?.sent !== item.sent;
 

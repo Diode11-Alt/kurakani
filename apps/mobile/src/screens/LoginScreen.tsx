@@ -37,7 +37,7 @@ export default function LoginScreen({ navigation }: Props) {
     setError('');
 
     try {
-      let body: any = { phone, username };
+      let body: Record<string, unknown> = { phone, username };
 
       if (mode === 'register') {
         const registrationId = KeyHelper.generateRegistrationId();
@@ -103,7 +103,7 @@ export default function LoginScreen({ navigation }: Props) {
       
       connect();
       navigation.replace('Home');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message);
     } finally {
       setLoading(false);

@@ -23,10 +23,10 @@ import {
 interface VideoCallProps {
   conversationId: string;
   currentUserId: string;
-  currentUserProfile: any;
-  otherUser: any;
+  currentUserProfile: Record<string, unknown>;
+  otherUser: Record<string, unknown>;
   initialCallType?: 'video' | 'audio';
-  incomingOfferPayload?: any; // If triggered by incoming call
+  incomingOfferPayload?: Record<string, unknown>; // If triggered by incoming call
   onClose: () => void;
 }
 
@@ -67,15 +67,15 @@ export function VideoCall({
 
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-  const signalChannelRef = useRef<any>(null);
-  const candidateQueueRef = useRef<any[]>([]);
-  const localCandidatesQueueRef = useRef<any[]>([]);
+  const signalChannelRef = useRef<unknown>(null);
+  const candidateQueueRef = useRef<RTCIceCandidateInit[]>([]);
+  const localCandidatesQueueRef = useRef<RTCIceCandidateInit[]>([]);
   const isChannelSubscribedRef = useRef<boolean>(false);
 
   // Synth Audio Ref
   const ringtoneRef = useRef<{
     ctx: AudioContext | null;
-    intervalId: any;
+    intervalId: number | null;
   } | null>(null);
 
   const localVideoRef = useCallback((el: HTMLVideoElement | null) => {
@@ -108,7 +108,7 @@ export function VideoCall({
   // Synthesize Ringtone loop (Web Audio API)
   const startRingback = () => {
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioContextClass) return;
 
       let ctx = ringtoneRef.current?.ctx;
@@ -165,7 +165,7 @@ export function VideoCall({
 
   const startRingtone = () => {
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioContextClass) return;
 
       let ctx = ringtoneRef.current?.ctx;
@@ -409,7 +409,7 @@ export function VideoCall({
   };
 
   const getIceServers = async () => {
-    let servers: any[] = [
+    let servers: RTCIceServer[] = [
       { urls: 'stun:stun.l.google.com:19302' }
     ];
 
@@ -591,7 +591,7 @@ export function VideoCall({
 
   // 4. Timer duration increment effect
   useEffect(() => {
-    let intervalId: any = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
     if (callState === 'connected') {
       setDuration(0);
       intervalId = setInterval(() => {
