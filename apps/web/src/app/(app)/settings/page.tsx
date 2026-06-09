@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { 
+import {
   User, Shield, Bell, Smartphone, Trash2, LogOut,
-  ChevronRight, Eye, EyeOff, Check, X, Loader2, Save
+  ChevronRight, Check, Loader2, Save, Camera, Image as ImageIcon, X
 } from 'lucide-react';
-import { getProfile, updateProfile, getPrivacySettings, updatePrivacySettings, getNotificationSettings, updateNotificationSettings, logout, deleteAccount } from '../../../lib/api';
+import {
+  getProfile, updateProfile, uploadAvatar, uploadCover,
+  getPrivacySettings, updatePrivacySettings,
+  getNotificationSettings, updateNotificationSettings,
+  logout, deleteAccount
+} from '../../../lib/api';
 import { useAuthStore } from '../../../store/authStore';
 
 export default function SettingsPage() {
@@ -26,6 +31,18 @@ export default function SettingsPage() {
   const [location, setLocation] = useState('');
   const [work, setWork] = useState('');
   const [education, setEducation] = useState('');
+
+  // Avatar / Cover
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState('');
+  const [currentCoverUrl, setCurrentCoverUrl] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Privacy state
   const [isPublic, setIsPublic] = useState(true);
@@ -60,23 +77,25 @@ export default function SettingsPage() {
         setDisplayName(profileRes.displayName || '');
         setBio(profileRes.bio || '');
         setUsername(profileRes.username || '');
-        setPronouns((profileRes as Record<string, unknown>).pronouns as string || '');
-        setWebsite((profileRes as Record<string, unknown>).website as string || '');
-        setLocation((profileRes as Record<string, unknown>).location as string || '');
-        setWork((profileRes as Record<string, unknown>).work as string || '');
-        setEducation((profileRes as Record<string, unknown>).education as string || '');
-        setIsPublic((profileRes as Record<string, unknown>).isPublic as boolean ?? true);
-        setRequireConnectionRequests((profileRes as Record<string, unknown>).requireConnectionRequests as boolean ?? false);
+        setPronouns((profileRes as any).pronouns || '');
+        setWebsite((profileRes as any).website || '');
+        setLocation((profileRes as any).location || '');
+        setWork((profileRes as any).work || '');
+        setEducation((profileRes as any).education || '');
+        setIsPublic((profileRes as any).isPublic ?? true);
+        setRequireConnectionRequests((profileRes as any).requireConnectionRequests ?? false);
+        setCurrentAvatarUrl(profileRes.avatarUrl || '');
+        setCurrentCoverUrl((profileRes as any).coverUrl || '');
       }
       if (privacyRes) {
         setLastSeen(privacyRes.lastSeen || 'everyone');
         setReadReceipts(privacyRes.readReceipts ?? true);
         setProfilePhoto(privacyRes.profilePhotoVisibility || 'everyone');
-        setMessagePrivacy((privacyRes as Record<string, unknown>).messagePrivacy as string || 'everyone');
-        setPostPrivacy((privacyRes as Record<string, unknown>).postPrivacy as string || 'everyone');
-        setTagPrivacy((privacyRes as Record<string, unknown>).tagPrivacy as string || 'everyone');
-        setConnectionsVisibility((privacyRes as Record<string, unknown>).connectionsVisibility as string || 'everyone');
-        setOffPlatformActivity((privacyRes as Record<string, unknown>).offPlatformActivity as boolean ?? false);
+        setMessagePrivacy((privacyRes as any).messagePrivacy || 'everyone');
+        setPostPrivacy((privacyRes as any).postPrivacy || 'everyone');
+        setTagPrivacy((privacyRes as any).tagPrivacy || 'everyone');
+        setConnectionsVisibility((privacyRes as any).connectionsVisibility || 'everyone');
+        setOffPlatformActivity((privacyRes as any).offPlatformActivity ?? false);
       }
       if (notifRes) {
         setPushEnabled(notifRes.pushNotifications ?? true);
@@ -84,6 +103,54 @@ export default function SettingsPage() {
       }
     } catch (err) {
       console.error("Failed to load settings", err);
+    }
+  }
+
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  }
+
+  function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  }
+
+  async function handleUploadAvatar() {
+    if (!avatarFile) return;
+    setUploadingAvatar(true);
+    try {
+      const url = await uploadAvatar(avatarFile);
+      await updateProfile({ avatarUrl: url });
+      setCurrentAvatarUrl(url);
+      setAvatarPreview(null);
+      setAvatarFile(null);
+      toast.success('Profile picture updated!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function handleUploadCover() {
+    if (!coverFile) return;
+    setUploadingCover(true);
+    try {
+      const url = await uploadCover(coverFile);
+      await updateProfile({ coverUrl: url });
+      setCurrentCoverUrl(url);
+      setCoverPreview(null);
+      setCoverFile(null);
+      toast.success('Cover image updated!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload cover');
+    } finally {
+      setUploadingCover(false);
     }
   }
 
@@ -186,6 +253,81 @@ export default function SettingsPage() {
               <div>
                 <h2 className="text-lg font-semibold mb-1">Profile</h2>
                 <p className="text-sm text-[var(--color-guff-text-muted)]">Manage your public profile information</p>
+              </div>
+
+              {/* Cover photo */}
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-on-surface-variant)] uppercase tracking-wider mb-2">Cover Photo</label>
+                <div className="relative h-32 rounded-xl overflow-hidden bg-gradient-to-br from-[var(--color-surface-container)] to-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/40">
+                  {(coverPreview || currentCoverUrl) && (
+                    <img src={coverPreview || currentCoverUrl} alt="Cover" className="w-full h-full object-cover" />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center gap-2">
+                    <button onClick={() => coverInputRef.current?.click()}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-semibold rounded-lg transition-all">
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      {currentCoverUrl ? 'Change Cover' : 'Add Cover'}
+                    </button>
+                    {coverPreview && (
+                      <button onClick={handleUploadCover} disabled={uploadingCover}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white text-xs font-semibold rounded-lg transition-all disabled:opacity-60">
+                        {uploadingCover ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                        Save
+                      </button>
+                    )}
+                  </div>
+                  {coverPreview && (
+                    <button onClick={() => { setCoverPreview(null); setCoverFile(null); }}
+                      className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                <input ref={coverInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleCoverChange} />
+              </div>
+
+              {/* Avatar */}
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-on-surface-variant)] uppercase tracking-wider mb-2">Profile Picture</label>
+                <div className="flex items-center gap-5">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-20 h-20 rounded-full overflow-hidden bg-[var(--color-primary-container)] flex items-center justify-center border-2 border-[var(--color-outline-variant)]">
+                      {(avatarPreview || currentAvatarUrl) ? (
+                        <img src={avatarPreview || currentAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl font-bold text-[var(--color-primary)]">{username?.[0]?.toUpperCase() || '?'}</span>
+                      )}
+                    </div>
+                    <button onClick={() => avatarInputRef.current?.click()}
+                      className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shadow-md hover:bg-[var(--color-primary)]/90 transition-all">
+                      <Camera className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-medium">{avatarPreview ? 'New photo selected' : 'Upload a photo'}</p>
+                    <p className="text-xs text-[var(--color-on-surface-variant)]">JPG, PNG, GIF, or WEBP · max 5 MB</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => avatarInputRef.current?.click()}
+                        className="px-3 py-1.5 text-xs font-semibold border border-[var(--color-outline-variant)] rounded-lg hover:bg-[var(--color-surface-container)] transition-all">
+                        Choose Photo
+                      </button>
+                      {avatarPreview && (
+                        <>
+                          <button onClick={handleUploadAvatar} disabled={uploadingAvatar}
+                            className="px-3 py-1.5 text-xs font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary)]/90 transition-all disabled:opacity-60 flex items-center gap-1">
+                            {uploadingAvatar ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                            Upload
+                          </button>
+                          <button onClick={() => { setAvatarPreview(null); setAvatarFile(null); }}
+                            className="px-3 py-1.5 text-xs font-semibold text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] rounded-lg transition-all">
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleAvatarChange} />
               </div>
 
               <div className="space-y-4">

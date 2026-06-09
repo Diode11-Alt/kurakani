@@ -21,7 +21,7 @@ export async function getProfile() {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, username, display_name, bio, avatar_url, created_at, cover_url, is_verified, pronouns, website, location, work, education, profile_views')
+    .select('id, email, username, display_name, bio, avatar_url, created_at, cover_url, is_verified, pronouns, website, location, work, education, profile_views, is_public, require_connection_requests')
     .eq('id', user.id)
     .single();
 
@@ -42,19 +42,24 @@ export async function getProfile() {
     work: data.work,
     education: data.education,
     profileViews: data.profile_views,
+    isPublic: data.is_public,
+    requireConnectionRequests: data.require_connection_requests,
   };
 }
 
-export async function updateProfile(updates: { 
-  displayName?: string; 
-  bio?: string; 
+export async function updateProfile(updates: {
+  displayName?: string;
+  bio?: string;
   username?: string;
+  avatarUrl?: string;
   coverUrl?: string;
   pronouns?: string;
   website?: string;
   location?: string;
   work?: string;
   education?: string;
+  isPublic?: boolean;
+  requireConnectionRequests?: boolean;
 }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -78,12 +83,15 @@ export async function updateProfile(updates: {
       ...(updates.displayName !== undefined && { display_name: updates.displayName }),
       ...(updates.bio !== undefined && { bio: updates.bio }),
       ...(updates.username !== undefined && { username: updates.username }),
+      ...(updates.avatarUrl !== undefined && { avatar_url: updates.avatarUrl }),
       ...(updates.coverUrl !== undefined && { cover_url: updates.coverUrl }),
       ...(updates.pronouns !== undefined && { pronouns: updates.pronouns }),
       ...(updates.website !== undefined && { website: updates.website }),
       ...(updates.location !== undefined && { location: updates.location }),
       ...(updates.work !== undefined && { work: updates.work }),
       ...(updates.education !== undefined && { education: updates.education }),
+      ...(updates.isPublic !== undefined && { is_public: updates.isPublic }),
+      ...(updates.requireConnectionRequests !== undefined && { require_connection_requests: updates.requireConnectionRequests }),
     })
     .eq('id', user.id);
 
@@ -91,10 +99,64 @@ export async function updateProfile(updates: {
   return { success: true };
 }
 
+/**
+ * Upload an avatar file to the avatars storage bucket and return the public URL.
+ */
+export async function uploadAvatar(file: File): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  if (!allowed.includes(ext)) throw new Error('Only JPG, PNG, GIF, and WEBP images are allowed');
+  if (file.size > 5 * 1024 * 1024) throw new Error('Avatar must be under 5 MB');
+
+  const path = `${user.id}/avatar.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) throw new Error(uploadError.message);
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(path);
+
+  return `${publicUrl}?t=${Date.now()}`;
+}
+
+/**
+ * Upload a cover/banner image and return its public URL.
+ */
+export async function uploadCover(file: File): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const allowed = ['jpg', 'jpeg', 'png', 'webp'];
+  if (!allowed.includes(ext)) throw new Error('Only JPG, PNG, and WEBP images are allowed');
+  if (file.size > 10 * 1024 * 1024) throw new Error('Cover image must be under 10 MB');
+
+  const path = `${user.id}/cover.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) throw new Error(uploadError.message);
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(path);
+
+  return `${publicUrl}?t=${Date.now()}`;
+}
+
 export async function getUserById(id: string) {
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, display_name, bio, avatar_url, created_at')
+    .select('id, username, display_name, bio, avatar_url, cover_url, created_at, is_public, require_connection_requests, website, location, work, education, pronouns')
     .eq('id', id)
     .single();
 
@@ -105,7 +167,15 @@ export async function getUserById(id: string) {
     displayName: data.display_name,
     bio: data.bio,
     avatarUrl: data.avatar_url,
+    coverUrl: data.cover_url,
     createdAt: data.created_at,
+    isPublic: data.is_public,
+    requireConnectionRequests: data.require_connection_requests,
+    website: data.website,
+    location: data.location,
+    work: data.work,
+    education: data.education,
+    pronouns: data.pronouns,
   };
 }
 

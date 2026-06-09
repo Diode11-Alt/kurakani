@@ -11,12 +11,12 @@ export async function GET(request: Request) {
   }
   const token = authHeader.replace('Bearer ', '');
   const { data: { user } } = await supabase.auth.getUser(token);
-  
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const turnSecret = process.env.TURN_SECRET;
-  
+
   if (!turnSecret) {
     console.error('TURN_SECRET is not configured in the environment');
     return NextResponse.json({ error: 'TURN_SECRET is not configured' }, { status: 500 });
@@ -30,9 +30,7 @@ export async function GET(request: Request) {
   hmac.update(username.toString());
   const password = hmac.digest('base64');
 
-  // TURN_HOST must be the PUBLIC IP or domain of your Coturn server.
-  // This is NOT the same as your web server's hostname.
-  // For remote users (different city/country) this MUST be reachable from the internet.
+
   const turnHost = process.env.TURN_HOST;
 
   if (!turnHost) {

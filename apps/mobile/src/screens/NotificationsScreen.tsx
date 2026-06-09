@@ -13,6 +13,7 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigation = useNavigation<any>();
 
   const fetchNotifications = async () => {
@@ -27,11 +28,7 @@ export default function NotificationsScreen() {
 
       if (data) {
         setNotifications(data);
-        // Mark all as read when opening screen
-        const unreadIds = data.filter(n => !n.is_read).map(n => n.id);
-        if (unreadIds.length > 0) {
-          await supabase.from('notifications').update({ is_read: true }).in('id', unreadIds);
-        }
+        setUnreadCount(data.filter(n => !n.is_read).length);
       }
     } catch (err) {
       console.error(err);
@@ -43,6 +40,23 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     fetchNotifications();
+
+    if (!userId) return;
+    const channel = supabase
+      .channel('public:notifications:mobile')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`
+      }, () => {
+        fetchNotifications();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
   const onRefresh = () => {
@@ -50,7 +64,24 @@ export default function NotificationsScreen() {
     fetchNotifications();
   };
 
-  const handleNotificationPress = (notif: any) => {
+  const markAllAsRead = async () => {
+    if (unreadCount === 0) return;
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', userId)
+      .eq('is_read', false);
+    
+    setUnreadCount(0);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+  };
+
+  const handleNotificationPress = async (notif: any) => {
+    if (!notif.is_read) {
+      await supabase.from('notifications').update({ is_read: true }).eq('id', notif.id);
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+    }
     if (notif.type === 'like' || notif.type === 'comment') {
       // Navigate to post or profile
       navigation.navigate('Profile', { userId: userId });
@@ -115,6 +146,11 @@ export default function NotificationsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Notifications</Text>
+        {unreadCount > 0 && (
+          <TouchableOpacity onPress={markAllAsRead}>
+            <Text style={styles.markAllReadText}>Mark all read</Text>
+          </TouchableOpacity>
+        )}
       </View>
       
       <FlatList
@@ -144,15 +180,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.outlineVariant,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerTitle: {
     fontFamily: typography.fonts.headline,
     fontSize: 24,
     color: colors.onBackground,
+  },
+  markAllReadText: {
+    fontFamily: typography.fonts.labelBold,
+    fontSize: 14,
+    color: colors.primary,
   },
   listContent: {
     paddingBottom: 100,

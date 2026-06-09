@@ -540,7 +540,7 @@ export default function ChatThreadPage() {
       setLoading(true);
       const { data: messagesData, error } = await supabase
         .from("messages")
-        .select("*")
+        .select("id, conversation_id, sender_id, ciphertext_plaintext_legacy, media_url, attachment_key, attachment_iv, content_type, sent_at, delivered_at, read_at, reply_to_message_id")
         .eq("conversation_id", conversationId)
         .order("sent_at", { ascending: false })
         .limit(20);
@@ -549,17 +549,17 @@ export default function ChatThreadPage() {
 
       let allReactions: any[] = [];
       if (messagesData && messagesData.length > 0) {
-        const messageIds = messagesData.map((m) => m.id);
+        const messageIds = messagesData.map((m: any) => m.id);
         const { data: reactionsData } = await supabase
           .from("message_reactions")
-          .select("*")
+          .select("id, message_id, user_id, emoji, created_at")
           .in("message_id", messageIds);
         if (reactionsData) {
           allReactions = reactionsData;
         }
       }
 
-      const mData = messagesData.reverse();
+      const mData = [...messagesData].reverse();
 
       const newMessages = await Promise.all(mData.map(async (m) => {
         const messageReactions = allReactions.filter(
@@ -618,7 +618,7 @@ export default function ChatThreadPage() {
     try {
       const { data: messagesData, error } = await supabase
         .from("messages")
-        .select("*")
+        .select("id, conversation_id, sender_id, ciphertext_plaintext_legacy, media_url, attachment_key, attachment_iv, content_type, sent_at, delivered_at, read_at, reply_to_message_id")
         .eq("conversation_id", conversationId)
         .lt("sent_at", nextCursor)
         .order("sent_at", { ascending: false })
@@ -628,17 +628,17 @@ export default function ChatThreadPage() {
 
       let allReactions: any[] = [];
       if (messagesData && messagesData.length > 0) {
-        const messageIds = messagesData.map((m) => m.id);
+        const messageIds = messagesData.map((m: any) => m.id);
         const { data: reactionsData } = await supabase
           .from("message_reactions")
-          .select("*")
+          .select("id, message_id, user_id, emoji, created_at")
           .in("message_id", messageIds);
         if (reactionsData) {
           allReactions = reactionsData;
         }
       }
 
-      const mData = messagesData.reverse();
+      const mData = [...messagesData].reverse();
 
       const newMessages = await Promise.all(mData.map(async (m) => {
         const messageReactions = allReactions.filter(
@@ -848,7 +848,7 @@ export default function ChatThreadPage() {
     try {
       const { data, error } = await supabase
         .from("messages")
-        .select("*")
+        .select("id, conversation_id, sender_id, ciphertext_plaintext_legacy, media_url, attachment_key, attachment_iv, content_type, sent_at, delivered_at, read_at, reply_to_message_id")
         .eq("conversation_id", conversationId)
         .ilike("ciphertext_plaintext_legacy", `%${query.trim().replace(/[%_\\]/g, '')}%`)
         .order("sent_at", { ascending: false })
@@ -866,8 +866,7 @@ export default function ChatThreadPage() {
             status: "sent",
             deliveredAt: m.delivered_at ? new Date(m.delivered_at) : null,
             readAt: m.read_at ? new Date(m.read_at) : null,
-            type: m.message_type || "text",
-            metadata: m.metadata || {},
+            type: m.content_type || "text",
           }))
         );
       }
