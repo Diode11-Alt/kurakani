@@ -573,36 +573,16 @@ export default function ProfilePage() {
                   </h3>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
-                  {posts.map((post, idx) => (
-                    <div
+                <div className="flex flex-col gap-4 max-w-xl mx-auto w-full">
+                  {posts.map((post) => (
+                    <PostCard
                       key={post.id}
-                      onClick={() => openPostPreview(post, idx)}
-                      className="aspect-square relative group bg-[var(--color-surface)] overflow-hidden cursor-pointer"
-                    >
-                      {post.media_urls?.[0] ? (
-                        <img
-                          src={post.media_urls[0]}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col p-2 text-[8px] sm:text-xs text-[var(--color-on-surface)] break-words overflow-hidden bg-gradient-to-br from-[var(--color-surface-container)] to-[var(--color-surface)]">
-                          {post.content}
-                        </div>
-                      )}
-                      {/* Hover overlay stats */}
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-white text-xs sm:text-sm font-bold cursor-pointer">
-                        <div className="flex items-center gap-1.5">
-                          <Heart className="w-4 h-4 fill-white" />{" "}
-                          {post.likes_count || 0}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <MessageSquare className="w-4 h-4 fill-white" />{" "}
-                          {post.comments_count || 0}
-                        </div>
-                      </div>
-                    </div>
+                      post={post}
+                      currentUserId={currentUserId || ""}
+                      onDelete={() => {
+                        setPosts((prev) => prev.filter((p) => p.id !== post.id));
+                      }}
+                    />
                   ))}
                 </div>
               ))}
