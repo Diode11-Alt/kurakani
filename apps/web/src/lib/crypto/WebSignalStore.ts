@@ -9,7 +9,7 @@ type Direction = number;
 
 export class WebSignalStore implements StorageType {
   private dbName = 'signal_store';
-  private dbVersion = 1;
+  private dbVersion = 2;
   private _dbPromise: Promise<IDBPDatabase> | null = null;
 
   constructor() {}
@@ -27,6 +27,7 @@ export class WebSignalStore implements StorageType {
           if (!db.objectStoreNames.contains('preKeys')) db.createObjectStore('preKeys');
           if (!db.objectStoreNames.contains('signedPreKeys')) db.createObjectStore('signedPreKeys');
           if (!db.objectStoreNames.contains('identityKeys')) db.createObjectStore('identityKeys'); // Stores trusted keys of others
+          if (!db.objectStoreNames.contains('sentMessages')) db.createObjectStore('sentMessages'); // Local cache of sent messages
         }
       });
     }
@@ -181,5 +182,16 @@ export class WebSignalStore implements StorageType {
   async isInitialized(): Promise<boolean> {
     const id = await this.getLocalRegistrationId();
     return id !== undefined;
+  }
+
+  // --- Sent Messages Cache ---
+  async saveSentMessage(messageId: string, payloadStr: string): Promise<void> {
+    const db = await this.dbPromise;
+    await db.put('sentMessages', payloadStr, messageId);
+  }
+
+  async getSentMessage(messageId: string): Promise<string | undefined> {
+    const db = await this.dbPromise;
+    return await db.get('sentMessages', messageId);
   }
 }

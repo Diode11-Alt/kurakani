@@ -45,8 +45,6 @@ export default function ChatInfoSidebar({
 
         const processed = await Promise.all(
           data.map(async (m) => {
-            const plaintext = m.ciphertext_plaintext_legacy || "";
-
             const s3Key = m.media_url || null;
             
             // Categorize
@@ -56,7 +54,6 @@ export default function ChatInfoSidebar({
             if (ext) {
               if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'quicktime', 'webm'].includes(ext)) {
                 category = "Media";
-                if (plaintext === "Voice Note 🎤") category = "Voice";
               } else if (['mp3', 'wav', 'm4a'].includes(ext)) {
                 category = "Voice";
               } else {
@@ -64,15 +61,15 @@ export default function ChatInfoSidebar({
               }
             }
 
-            // Links detection in text
-            if (plaintext && plaintext.match(/https?:\/\/[^\s]+/)) {
+            const localPlaintext = ""; // Links detection removed due to E2EE
+            if (localPlaintext.match(/https?:\/\/[^\s]+/)) {
               if (category === "Unknown") category = "Links";
             }
 
             return {
               id: m.id,
               s3Key,
-              plaintext,
+              plaintext: localPlaintext,
               category,
               sentAt: new Date(m.sent_at),
             };

@@ -185,11 +185,11 @@ export function PostCard({ post, currentUserId, isLiked: isLikedProp, isSaved: i
     : '';
 
   return (
-    <article className="glass-card overflow-hidden rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+    <article className="bg-[var(--color-surface)] border border-[var(--color-outline-variant)] overflow-hidden rounded-xl mb-4 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pb-2">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[var(--color-primary)] flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
             {author?.avatar_url ? (
               <img src={author.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -247,18 +247,18 @@ export function PostCard({ post, currentUserId, isLiked: isLikedProp, isSaved: i
 
       {/* Media Content */}
       {post.media_urls && post.media_urls.length > 0 && (
-        <div className="mt-2 px-4">
-          <div className="rounded-xl overflow-hidden bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)]/50">
+        <div className="mt-2 border-y border-[var(--color-outline-variant)]">
+          <div className="w-full bg-black">
             {post.media_urls.length === 1 ? (
               post.post_type === 'video' ? (
-                <video src={post.media_urls[0]} controls className="w-full max-h-[460px] object-cover" />
+                <video src={post.media_urls[0]} controls className="w-full max-h-[500px] object-contain" />
               ) : (
-                <img src={post.media_urls[0]} alt="" className="w-full max-h-[460px] object-cover" />
+                <img src={post.media_urls[0]} alt="" className="w-full max-h-[500px] object-contain" />
               )
             ) : (
               <div className="grid grid-cols-2 gap-0.5">
                 {post.media_urls.map((url: string, i: number) => (
-                  <img key={i} src={url} alt="" className="w-full h-48 object-cover" />
+                  <img key={i} src={url} alt="" className="w-full h-64 object-cover" />
                 ))}
               </div>
             )}
@@ -267,46 +267,46 @@ export function PostCard({ post, currentUserId, isLiked: isLikedProp, isSaved: i
       )}
 
       {/* Action toolbar */}
-      <div className="flex items-center justify-around px-2 py-2 mt-2 border-t border-[var(--color-outline-variant)]/30 mx-4 select-none">
+      <div className="flex items-center justify-between px-2 py-1 mt-1 border-t border-[var(--color-outline-variant)]/30 select-none">
         <button
           onClick={toggleLike}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
             liked
-              ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10'
-              : 'text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10'
-          } ${isLiking ? 'scale-110 duration-200' : ''}`}
+              ? 'text-[var(--color-primary)]'
+              : 'text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-variant)]'
+          }`}
         >
-          <Heart className={`w-4.5 h-4.5 ${liked ? 'fill-current' : ''}`} />
+          <Heart className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
           <span>{likesCount > 0 ? likesCount : 'Like'}</span>
         </button>
 
         <button
           onClick={handleToggleComments}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all cursor-pointer ${
-            showComments ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' : ''
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-variant)] transition-all cursor-pointer ${
+            showComments ? 'text-[var(--color-primary)]' : ''
           }`}
         >
-          <MessageSquare className="w-4.5 h-4.5" />
+          <MessageSquare className="w-5 h-5" />
           <span>{commentsCount > 0 ? commentsCount : 'Comment'}</span>
         </button>
 
         <button 
           onClick={handleShare}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all cursor-pointer"
+          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-variant)] transition-all cursor-pointer"
         >
-          <Share2 className="w-4.5 h-4.5" />
-          <span>{sharesCount > 0 ? `${sharesCount}` : 'Share'}</span>
+          <Share2 className="w-5 h-5" />
+          <span>{sharesCount > 0 ? sharesCount : 'Share'}</span>
         </button>
 
         <button 
           onClick={toggleSave}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
             saved
-              ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10'
-              : 'text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10'
+              ? 'text-[var(--color-primary)]'
+              : 'text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-variant)]'
           }`}
         >
-          <Bookmark className={`w-4.5 h-4.5 ${saved ? 'fill-current' : ''}`} />
+          <Bookmark className={`w-5 h-5 ${saved ? 'fill-current' : ''}`} />
         </button>
       </div>
 

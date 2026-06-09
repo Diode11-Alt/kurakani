@@ -111,7 +111,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       // 3. Fetch latest messages for each conversation
       const { data: allMessages, error: msgErr } = await supabase
         .from('messages')
-        .select('id, conversation_id, ciphertext_plaintext_legacy, media_url, sent_at, sender_id, read_at')
+        .select('id, conversation_id, media_url, sent_at, sender_id, read_at')
         .in('conversation_id', convIds)
         .order('sent_at', { ascending: false });
         
@@ -160,7 +160,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
             senderId: lastMsg.sender_id,
             sentAt: lastMsg.sent_at,
             readAt: lastMsg.read_at,
-            content: lastMsg.ciphertext_plaintext_legacy || (lastMsg.media_url || lastMsg.ciphertext ? 'Attachment 📎' : 'Empty message')
+            content: lastMsg.media_url ? '[Encrypted Media]' : '[Encrypted Payload]'
           };
         }
 

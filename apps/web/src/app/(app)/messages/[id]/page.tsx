@@ -45,7 +45,9 @@ import ChatInfoSidebar from "@/components/chat/ChatInfoSidebar";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { sanitizeMessage } from "@/lib/sanitize";
-
+import { WebSignalStore } from "@/lib/crypto/WebSignalStore";
+import { encryptMessage, decryptMessage, establishSessionAsInitiator } from "@signal/crypto";
+import { fetchKeyBundle } from "@/lib/api";
 
 
 const formatMessageDate = (date: Date) => {
@@ -90,14 +92,17 @@ function ReplyPreview({
     let cancelled = false;
     supabase
       .from("messages")
-      .select("sender_id, ciphertext_plaintext_legacy")
+      .select("sender_id, media_url")
       .eq("id", replyToMessageId)
-      .maybeSingle()
-      .then(({ data }) => {
+      .single()
+      .then(({ data, error }) => {
         if (cancelled) return;
-        const result = data ? { senderId: data.sender_id, plaintext: data.ciphertext_plaintext_legacy || "[Empty message]" } : null;
-        replyCacheRef.current.set(replyToMessageId, result);
-        setCachedReply(result);
+        if (!error) {
+          if (!replyCacheRef.current) replyCacheRef.current = new Map();
+          const result = data ? { senderId: data.sender_id, plaintext: data.media_url ? "[Encrypted Media]" : "[Encrypted Payload]" } : null;
+          replyCacheRef.current.set(replyToMessageId, result);
+          setCachedReply(result);
+        }
       });
 
     return () => { cancelled = true; };
@@ -156,6 +161,108 @@ export default function ChatThreadPage() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+
+  // Phase 5: Cryptographic Wiring
+  const signalStoreRef = useRef<WebSignalStore | null>(null);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      signalStoreRef.current = new WebSignalStore();
+    }
+  }, []);
+
+  // Phase 5: Cryptographic Wiring - Setup Session
+  useEffect(() => {
+    async function setupSession() {
+      if (!otherUser?.id || !signalStoreRef.current) return;
+      
+      try {
+        const address = `${otherUser.id}.1`; // assuming deviceId 1
+        const existingSession = await signalStoreRef.current.loadSession(address);
+        if (!existingSession) {
+          console.log("No session found for", otherUser.username, "fetching keys...");
+          const keyBundle = await fetchKeyBundle(otherUser.id);
+          await establishSessionAsInitiator(
+            signalStoreRef.current,
+            otherUser.id,
+            1, // deviceId
+            keyBundle
+          );
+          console.log("Session established securely!");
+        }
+      } catch (err) {
+        console.warn("Failed to establish session with other user:", err);
+      }
+    }
+    setupSession();
+  }, [otherUser?.id]);
+
+  const processDecryption = async (m: any) => {
+    let plaintext = "[Encrypted Payload]";
+    let attachmentKey = null;
+    let attachmentIv = null;
+
+    if (m.media_url) {
+      plaintext = "[Encrypted Media]";
+    }
+
+    let ciphertextToDecrypt = m.ciphertext;
+    let ciphertextTypeToDecrypt = m.ciphertext_type;
+    let decryptRemoteAddress = m.sender_id;
+
+    // If we sent the message, fetch it from our local cache
+    if (m.sender_id === currentUserId && signalStoreRef.current) {
+        try {
+            const cached = await signalStoreRef.current.getSentMessage(m.id);
+            if (cached) {
+                const payload = JSON.parse(cached);
+                if (payload.text) plaintext = payload.text;
+                else if (payload.attachment) plaintext = "";
+                
+                if (payload.attachment) {
+                    attachmentKey = payload.attachment.key;
+                    attachmentIv = payload.attachment.iv;
+                }
+                return { plaintext, attachmentKey, attachmentIv };
+            }
+        } catch (e) {
+            console.error("Failed to load cached sent message", e);
+        }
+        // If it's not in cache (e.g. sent from a different device), we can't decrypt it
+        return { plaintext: "[Secure Message Sent]", attachmentKey: null, attachmentIv: null };
+    }
+
+    if (ciphertextToDecrypt && ciphertextTypeToDecrypt !== null && signalStoreRef.current) {
+      try {
+        const decryptedStr = await decryptMessage(
+          signalStoreRef.current,
+          decryptRemoteAddress,
+          1, // fallback deviceId
+          ciphertextToDecrypt,
+          ciphertextTypeToDecrypt as 1 | 3
+        );
+        
+        try {
+          const payload = JSON.parse(decryptedStr);
+          if (payload.text) plaintext = payload.text;
+          else if (payload.attachment) plaintext = ""; // Clear fallback if it's an attachment
+          
+          if (payload.attachment) {
+            attachmentKey = payload.attachment.key;
+            attachmentIv = payload.attachment.iv;
+          }
+        } catch {
+          // If JSON parse fails, maybe it's an old plaintext encrypted directly
+          plaintext = decryptedStr;
+        }
+      } catch (err) {
+        // Use console.warn instead of console.error so Next.js doesn't pop up a red error overlay
+        // for old historical messages that legitimately fail to decrypt due to new keys.
+        console.warn("Decryption skipped for historical message", m.id);
+      }
+    }
+
+    return { plaintext, attachmentKey, attachmentIv };
+  };
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -386,28 +493,24 @@ export default function ChatThreadPage() {
         async (payload) => {
           const msg = payload.new;
 
-          let initialPlaintext = msg.ciphertext_plaintext_legacy || "[Empty message]";
-          if (!msg.ciphertext_plaintext_legacy && msg.media_url) {
-            initialPlaintext = "";
-          }
+          const { plaintext, attachmentKey, attachmentIv } = await processDecryption(msg);
 
           const newMsg = {
             id: msg.id,
             conversationId: msg.conversation_id,
             senderId: msg.sender_id,
-            plaintext: sanitizeMessage(initialPlaintext),
+            plaintext: sanitizeMessage(plaintext),
             mediaUrl: msg.media_url || null,
-            attachmentKey: msg.attachment_key || null,
-            attachmentIv: msg.attachment_iv || null,
+            attachmentKey,
+            attachmentIv,
             contentType: msg.content_type === "call_log" ? "call_log" : (msg.media_url ? "attachment" : "text"),
-            status: "sent",
+            status: "sent" as const,
             sentAt: new Date(msg.sent_at),
             deliveredAt: msg.delivered_at ? new Date(msg.delivered_at) : null,
             readAt: msg.read_at ? new Date(msg.read_at) : null,
             replyToMessageId: msg.reply_to_message_id || null,
             reactions: msg.message_reactions || [],
           };
-          
 
 
           setMessages((prev) => {
@@ -540,7 +643,7 @@ export default function ChatThreadPage() {
       setLoading(true);
       const { data: messagesData, error } = await supabase
         .from("messages")
-        .select("id, conversation_id, sender_id, ciphertext_plaintext_legacy, media_url, attachment_key, attachment_iv, content_type, sent_at, delivered_at, read_at, reply_to_message_id")
+        .select("id, conversation_id, sender_id, media_url, content_type, sent_at, delivered_at, read_at, reply_to_message_id, ciphertext, ciphertext_type")
         .eq("conversation_id", conversationId)
         .order("sent_at", { ascending: false })
         .limit(20);
@@ -566,10 +669,7 @@ export default function ChatThreadPage() {
           (r) => r.message_id === m.id,
         );
 
-        let plaintext = m.ciphertext_plaintext_legacy || "[Empty message]";
-        if (!m.ciphertext_plaintext_legacy && m.media_url) {
-          plaintext = "";
-        }
+        const { plaintext, attachmentKey, attachmentIv } = await processDecryption(m);
 
         return {
           id: m.id,
@@ -577,8 +677,8 @@ export default function ChatThreadPage() {
           senderId: m.sender_id,
           plaintext: sanitizeMessage(plaintext),
           mediaUrl: m.media_url || null,
-          attachmentKey: m.attachment_key || null,
-          attachmentIv: m.attachment_iv || null,
+          attachmentKey,
+          attachmentIv,
           contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url ? "attachment" : "text")) as
             | "text"
             | "media"
@@ -618,7 +718,7 @@ export default function ChatThreadPage() {
     try {
       const { data: messagesData, error } = await supabase
         .from("messages")
-        .select("id, conversation_id, sender_id, ciphertext_plaintext_legacy, media_url, attachment_key, attachment_iv, content_type, sent_at, delivered_at, read_at, reply_to_message_id")
+        .select("id, conversation_id, sender_id, media_url, content_type, sent_at, delivered_at, read_at, reply_to_message_id, ciphertext, ciphertext_type")
         .eq("conversation_id", conversationId)
         .lt("sent_at", nextCursor)
         .order("sent_at", { ascending: false })
@@ -645,10 +745,7 @@ export default function ChatThreadPage() {
           (r) => r.message_id === m.id,
         );
 
-        let plaintext = m.ciphertext_plaintext_legacy || "[Empty message]";
-        if (!m.ciphertext_plaintext_legacy && m.media_url) {
-          plaintext = "";
-        }
+        const { plaintext, attachmentKey, attachmentIv } = await processDecryption(m);
 
         return {
           id: m.id,
@@ -656,8 +753,8 @@ export default function ChatThreadPage() {
           senderId: m.sender_id,
           plaintext: sanitizeMessage(plaintext),
           mediaUrl: m.media_url || null,
-          attachmentKey: m.attachment_key || null,
-          attachmentIv: m.attachment_iv || null,
+          attachmentKey,
+          attachmentIv,
           contentType: (m.content_type === "call_log" ? "call_log" : (m.media_url ? "attachment" : "text")) as
             | "text"
             | "media"
@@ -798,7 +895,37 @@ export default function ChatThreadPage() {
     try {
       let ciphertext = null;
       let ciphertextType = null;
+      let senderCiphertext = null;
+      let senderCiphertextType = null;
       let contentToStore = rawContent || null;
+      
+      const payloadObj = {
+        text: rawContent || "",
+        attachment: finalMediaUrl ? {
+          key: attachmentData?.keyBase64 || "",
+          iv: attachmentData?.ivBase64 || "",
+          url: finalMediaUrl
+        } : null
+      };
+      
+      try {
+        // 1. Encrypt for the recipient
+        if (signalStoreRef.current && otherUser?.id) {
+            const encrypted = await encryptMessage(
+                signalStoreRef.current,
+                otherUser.id, // the true recipient ID
+                1,
+                JSON.stringify(payloadObj)
+            );
+            ciphertext = encrypted.body;
+            ciphertextType = encrypted.type;
+        } else if (!otherUser?.id) {
+            console.warn("No otherUser found, cannot encrypt message");
+        }
+
+      } catch (err) {
+        console.error("Encryption failed", err);
+      }
 
       const { data, error } = await supabase
         .from("messages")
@@ -807,10 +934,9 @@ export default function ChatThreadPage() {
           sender_id: currentUserId,
           ciphertext: ciphertext,
           ciphertext_type: ciphertextType,
-          ciphertext_plaintext_legacy: contentToStore,
+          sender_ciphertext: null,
+          sender_ciphertext_type: null,
           media_url: finalMediaUrl || null,
-          attachment_key: attachmentData?.keyBase64 || null,
-          attachment_iv: attachmentData?.ivBase64 || null,
           content_type: finalMediaUrl ? "attachment" : "text",
           reply_to_message_id: optimisticMsg.replyToMessageId,
         })
@@ -818,6 +944,15 @@ export default function ChatThreadPage() {
         .single();
 
       if (error) throw new Error(error.message);
+
+      // 3. Cache the plaintext locally so we can read our own sent messages without needing to decrypt
+      if (signalStoreRef.current) {
+         try {
+             await signalStoreRef.current.saveSentMessage(data.id, JSON.stringify(payloadObj));
+         } catch (e) {
+             console.error("Failed to save sent message to local cache", e);
+         }
+      }
 
       setMessages((prev) =>
         prev.map((m) =>
@@ -846,30 +981,8 @@ export default function ChatThreadPage() {
     }
     setIsSearchingDb(true);
     try {
-      const { data, error } = await supabase
-        .from("messages")
-        .select("id, conversation_id, sender_id, ciphertext_plaintext_legacy, media_url, attachment_key, attachment_iv, content_type, sent_at, delivered_at, read_at, reply_to_message_id")
-        .eq("conversation_id", conversationId)
-        .ilike("ciphertext_plaintext_legacy", `%${query.trim().replace(/[%_\\]/g, '')}%`)
-        .order("sent_at", { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      if (data) {
-        setSearchResults(
-          data.map((m) => ({
-            id: m.id,
-            content: m.ciphertext_plaintext_legacy,
-            senderId: m.sender_id,
-            createdAt: new Date(m.sent_at),
-            status: "sent",
-            deliveredAt: m.delivered_at ? new Date(m.delivered_at) : null,
-            readAt: m.read_at ? new Date(m.read_at) : null,
-            type: m.content_type || "text",
-          }))
-        );
-      }
+      toast.error("Cloud search disabled for E2EE. Use local search instead.");
+      setSearchResults([]);
     } catch (e) {
       console.error("Search error", e);
       toast.error("Failed to search messages");
@@ -1107,7 +1220,7 @@ export default function ChatThreadPage() {
                   ${isSelf ? "bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-variant)] text-[var(--color-on-primary)] rounded-tr-sm"
                            : "bg-[var(--color-surface-container)] text-[var(--color-on-surface)] rounded-tl-sm border border-[var(--color-outline-variant)]"}
                 `}>
-                  {m.ciphertext_plaintext_legacy}
+                  {m.content}
                 </div>
               </div>
             );
@@ -1179,7 +1292,7 @@ export default function ChatThreadPage() {
                   </div>
                 )}
 
-                {m.ciphertext_plaintext_legacyType === 'call_log' ? (
+                {m.content_type === 'call_log' ? (
                   <div className="flex justify-center my-4">
                     <div className="flex items-center gap-2 text-xs font-bold text-[var(--color-on-surface-variant)] bg-[var(--color-surface-container-low)] px-4 py-2 rounded-2xl border border-[var(--color-outline-variant)] shadow-sm">
                       <Phone className="w-3.5 h-3.5" />

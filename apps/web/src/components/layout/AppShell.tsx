@@ -12,6 +12,10 @@ import { Session } from "@supabase/supabase-js";
 
 import { useUIStore } from "../../store/uiStore";
 
+import { WebSignalStore } from "../../lib/crypto/WebSignalStore";
+import { generateSignalRegistrationPayload } from "../../lib/crypto/registration";
+import { uploadSignalKeys } from "../../lib/api";
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -38,6 +42,34 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const checkAndRegisterSignalKeys = async () => {
+      try {
+        const userId = authSession.user.id;
+        const store = new WebSignalStore();
+        
+        // Check if deviceId is stored locally; if not, assume 1 (simplification for web MVP)
+        const deviceId = 1;
+
+        // Check if we already have local cryptographic keys
+        const localRegId = await store.getLocalRegistrationId();
+        if (localRegId === undefined) {
+          console.log("No local Signal keys found. Generating new keys...");
+          
+          // Generate Identity, Signed PreKey, and One-Time PreKeys
+          const payload = await generateSignalRegistrationPayload(store);
+          
+          // Upload public keys to Supabase
+          await uploadSignalKeys(userId, deviceId, payload);
+          console.log("Signal keys successfully uploaded to server!");
+        } else {
+          console.log("Local Signal keys exist. Registration ID:", localRegId);
+        }
+      } catch (err) {
+        console.error("Failed to register Signal keys:", err);
+      }
+    };
+
+    checkAndRegisterSignalKeys();
 
     // Register Web Push Token (Skipped for now during Supabase migration)
     const registerPushToken = async () => {
