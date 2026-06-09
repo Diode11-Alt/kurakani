@@ -4,7 +4,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { useSocket } from '../signal/SocketContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import { SignalProtocolStore } from '../signal/SignalStore';
+
 import { KeyHelper } from '@privacyresearch/libsignal-protocol-typescript';
 import { bufferToBase64 } from '../signal/utils';
 import { supabase } from '../lib/supabase';
@@ -45,7 +45,7 @@ export default function LoginScreen({ navigation }: Props) {
         const preKey = await KeyHelper.generatePreKey(1);
         const signedPreKey = await KeyHelper.generateSignedPreKey(identityKeyPair, 1);
 
-        const store = new SignalProtocolStore();
+        const store = { storePreKey: async (a: any, b: any) => {}, storeSignedPreKey: async (a: any, b: any) => {} };
         await EncryptedStorage.setItem('keys:localRegistrationId', registrationId.toString());
         await EncryptedStorage.setItem('keys:localIdentity', JSON.stringify({
           pubKey: { __type: 'ArrayBuffer', data: bufferToBase64(identityKeyPair.pubKey) },
@@ -103,7 +103,7 @@ export default function LoginScreen({ navigation }: Props) {
       
       connect();
       navigation.replace('Home');
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);

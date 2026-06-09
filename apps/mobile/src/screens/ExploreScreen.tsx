@@ -87,7 +87,7 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.surfaceBright,
+    backgroundColor: colors.surfaceVariant,
   },
   header: {
     flexDirection: 'row',
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontFamily: typography.fonts.headline,
     fontSize: 22,
-    color: colors.surfaceBright,
+    color: colors.surfaceVariant,
     lineHeight: 28,
   },
   smallCard: {

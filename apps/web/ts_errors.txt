@@ -1,0 +1,130 @@
+src/app/(app)/messages/layout.tsx(238,13): error TS18046: 'err' is of type 'unknown'.
+src/app/(app)/profile/[id]/page.tsx(274,21): error TS2322: Type '{}' is not assignable to type 'string'.
+src/app/(app)/profile/[id]/page.tsx(280,22): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/app/(app)/profile/[id]/page.tsx(322,15): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/(app)/profile/[id]/page.tsx(329,16): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/(app)/profile/[id]/page.tsx(352,19): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/(app)/profile/[id]/page.tsx(358,19): error TS2322: Type '{}' is not assignable to type 'string'.
+src/app/(app)/profile/[id]/page.tsx(364,36): error TS2339: Property 'replace' does not exist on type '{}'.
+src/app/(app)/profile/[id]/page.tsx(515,23): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/(app)/profile/[id]/page.tsx(518,24): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/app/(app)/profile/[id]/page.tsx(520,32): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/app/(app)/profile/[id]/page.tsx(526,27): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/(app)/profile/[id]/page.tsx(533,27): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/(app)/profile/[id]/page.tsx(537,27): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/(app)/profile/[id]/page.tsx(548,63): error TS2339: Property 'length' does not exist on type '{}'.
+src/app/(app)/profile/[id]/page.tsx(551,23): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/(app)/profile/[id]/page.tsx(555,30): error TS18046: 'post.media_urls' is of type 'unknown'.
+src/app/(app)/profile/[id]/page.tsx(562,27): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/(app)/profile/[id]/page.tsx(566,27): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/(app)/profile/[id]/page.tsx(571,67): error TS2339: Property 'length' does not exist on type '{}'.
+src/app/(app)/settings/page.tsx(97,37): error TS2559: Type '{ displayName?: string | undefined; bio?: string | undefined; username?: string | undefined; coverUrl?: string | undefined; pronouns?: string | undefined; website?: string | undefined; location?: string | undefined; work?: string | undefined; education?: string | undefined; }' has no properties in common with type '{ lastSeen?: string | undefined; readReceipts?: boolean | undefined; profilePhotoVisibility?: string | undefined; messagePrivacy?: string | undefined; postPrivacy?: string | undefined; tagPrivacy?: string | undefined; connectionsVisibility?: string | undefined; offPlatformActivity?: boolean | undefined; }'.
+src/app/(app)/settings/page.tsx(115,19): error TS18046: 'err' is of type 'unknown'.
+src/app/(auth)/login/page.tsx(67,16): error TS18046: 'err' is of type 'unknown'.
+src/app/(auth)/login/page.tsx(84,16): error TS18046: 'err' is of type 'unknown'.
+src/app/(auth)/register/page.tsx(93,16): error TS18046: 'err' is of type 'unknown'.
+src/app/(auth)/register/page.tsx(110,16): error TS18046: 'err' is of type 'unknown'.
+src/components/chat/ChatInfoSidebar.tsx(119,15): error TS2352: Conversion of type 'User' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'User'.
+src/components/chat/ChatInfoSidebar.tsx(120,26): error TS2352: Conversion of type 'User' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'User'.
+src/components/chat/ChatInfoSidebar.tsx(122,15): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/components/chat/ChatInfoSidebar.tsx(122,16): error TS2352: Conversion of type 'User' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'User'.
+src/components/chat/ChatInfoSidebar.tsx(122,76): error TS2352: Conversion of type 'User' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'User'.
+src/components/chat/ChatInfoSidebar.tsx(126,13): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/components/chat/ChatInfoSidebar.tsx(126,15): error TS2352: Conversion of type 'User' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'User'.
+src/components/layout/AppShell.tsx(191,11): error TS2322: Type 'User | { [key: string]: unknown; username: string; }' is not assignable to type 'Record<string, unknown>'.
+  Type 'User' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'User'.
+src/components/layout/AppShell.tsx(193,11): error TS2322: Type 'Record<string, unknown> | null' is not assignable to type 'Record<string, unknown> | undefined'.
+  Type 'null' is not assignable to type 'Record<string, unknown> | undefined'.
+src/components/StoriesTray.tsx(77,25): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(timeout: string | number | Timeout | undefined): void', gave the following error.
+    Argument of type 'Timeout | null' is not assignable to parameter of type 'string | number | Timeout | undefined'.
+      Type 'null' is not assignable to type 'string | number | Timeout | undefined'.
+  Overload 2 of 2, '(id: number | undefined): void', gave the following error.
+    Argument of type 'Timeout | null' is not assignable to parameter of type 'number | undefined'.
+      Type 'null' is not assignable to type 'number | undefined'.
+src/components/VideoCall.tsx(39,3): error TS2322: Type 'null' is not assignable to type 'Record<string, unknown>'.
+src/components/VideoCall.tsx(160,36): error TS2322: Type 'Timeout' is not assignable to type 'number'.
+src/components/VideoCall.tsx(212,36): error TS2322: Type 'Timeout' is not assignable to type 'number'.
+src/components/VideoCall.tsx(303,36): error TS2339: Property 'send' does not exist on type '{}'.
+src/components/VideoCall.tsx(331,36): error TS2339: Property 'send' does not exist on type '{}'.
+src/components/VideoCall.tsx(394,38): error TS2339: Property 'send' does not exist on type '{}'.
+src/components/VideoCall.tsx(471,44): error TS2339: Property 'send' does not exist on type '{}'.
+src/components/VideoCall.tsx(552,19): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<"video" | "audio">'.
+src/components/VideoCall.tsx(618,32): error TS2339: Property 'send' does not exist on type '{}'.
+src/components/VideoCall.tsx(632,32): error TS2339: Property 'send' does not exist on type '{}'.
+src/components/VideoCall.tsx(760,63): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'RTCSessionDescriptionInit'.
+src/components/VideoCall.tsx(767,34): error TS2339: Property 'send' does not exist on type '{}'.
+src/components/VideoCall.tsx(790,32): error TS2339: Property 'send' does not exist on type '{}'.
+src/components/VideoCall.tsx(804,32): error TS2339: Property 'send' does not exist on type '{}'.
+src/components/VideoCall.tsx(900,9): error TS2322: Type '{}' is not assignable to type 'string'.
+src/components/VideoCall.tsx(901,9): error TS2322: Type 'unknown' is not assignable to type 'string | undefined'.
+src/components/VideoCall.tsx(928,26): error TS2322: Type '{}' is not assignable to type 'string'.
+src/components/VideoCall.tsx(930,21): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/components/VideoCall.tsx(941,22): error TS2322: Type '{}' is not assignable to type 'string'.
+src/components/VideoCall.tsx(943,17): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/components/VideoCall.tsx(947,69): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/components/VideoCall.tsx(1050,28): error TS2322: Type '{}' is not assignable to type 'string'.
+src/components/VideoCall.tsx(1052,23): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/components/VideoCall.tsx(1055,66): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/components/VideoCall.tsx(1062,64): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/components/VideoCall.tsx(1081,28): error TS2322: Type '{}' is not assignable to type 'string'.
+src/components/VideoCall.tsx(1083,23): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/components/VideoCall.tsx(1129,28): error TS2322: Type '{}' is not assignable to type 'string'.
+src/components/VideoCall.tsx(1131,23): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/components/VideoCall.tsx(1135,21): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/components/VideoCall.tsx(1174,32): error TS2322: Type '{}' is not assignable to type 'string'.
+src/components/VideoCall.tsx(1176,27): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/components/VideoCall.tsx(1180,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/components/VideoCall.tsx(1223,22): error TS2322: Type '{}' is not assignable to type 'string'.
+src/components/VideoCall.tsx(1225,17): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/components/VideoCall.tsx(1230,15): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/components/VideoCall.tsx(1250,22): error TS2322: Type '{}' is not assignable to type 'string'.
+src/components/VideoCall.tsx(1252,17): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+src/components/VideoCall.tsx(1256,63): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/lib/api.ts(278,11): error TS2339: Property 'data' does not exist on type '{ key_id: number; public_key: string; }'.
+src/lib/crypto/WebSignalStore.ts(115,9): error TS2416: Property 'loadPreKey' in type 'WebSignalStore' is not assignable to the same property in base type 'StorageType'.
+  Type '(keyId: string | number) => Promise<unknown>' is not assignable to type '(encodedAddress: string | number) => Promise<KeyPairType<ArrayBuffer> | undefined>'.
+    Type 'Promise<unknown>' is not assignable to type 'Promise<KeyPairType<ArrayBuffer> | undefined>'.
+      Type 'unknown' is not assignable to type 'KeyPairType<ArrayBuffer> | undefined'.
+src/lib/crypto/WebSignalStore.ts(133,9): error TS2416: Property 'loadSignedPreKey' in type 'WebSignalStore' is not assignable to the same property in base type 'StorageType'.
+  Type '(keyId: string | number) => Promise<unknown>' is not assignable to type '(keyId: string | number) => Promise<KeyPairType<ArrayBuffer> | undefined>'.
+    Type 'Promise<unknown>' is not assignable to type 'Promise<KeyPairType<ArrayBuffer> | undefined>'.
+      Type 'unknown' is not assignable to type 'KeyPairType<ArrayBuffer> | undefined'.
+src/lib/crypto/WebSignalStore.ts(151,9): error TS2416: Property 'loadSession' in type 'WebSignalStore' is not assignable to the same property in base type 'StorageType'.
+  Type '(identifier: string) => Promise<unknown>' is not assignable to type '(encodedAddress: string) => Promise<string | undefined>'.
+    Type 'Promise<unknown>' is not assignable to type 'Promise<string | undefined>'.
+      Type 'unknown' is not assignable to type 'string | undefined'.
+../../packages/crypto/src/hkdf.ts(36,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'Uint8Array<ArrayBufferLike>' is not assignable to parameter of type 'BufferSource'.
+      Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+        Types of property 'buffer' are incompatible.
+          Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+            Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+../../packages/crypto/src/session.ts(6,3): error TS2614: Module '"@privacyresearch/libsignal-protocol-typescript"' has no exported member 'PreKeyBundle'. Did you mean to use 'import PreKeyBundle from "@privacyresearch/libsignal-protocol-typescript"' instead?
+../../packages/crypto/src/session.ts(7,3): error TS2614: Module '"@privacyresearch/libsignal-protocol-typescript"' has no exported member 'SignalProtocolStore'. Did you mean to use 'import SignalProtocolStore from "@privacyresearch/libsignal-protocol-typescript"' instead?
+../../packages/crypto/src/session.ts(79,16): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(data: string): string', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(data: string): string', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+      Type 'undefined' is not assignable to type 'string'.

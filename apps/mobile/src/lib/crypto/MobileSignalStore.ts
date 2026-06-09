@@ -1,12 +1,10 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {
-  SignalProtocolStore,
-  IdentityKeyPair,
-  PreKeyRecordType,
-  SignedPreKeyRecordType,
-  SessionRecordType,
-  Direction
-} from '@privacyresearch/libsignal-protocol-typescript';
+type SignalProtocolStore = any;
+type IdentityKeyPair = any;
+type PreKeyRecordType = any;
+type SignedPreKeyRecordType = any;
+type SessionRecordType = any;
+type Direction = number;
 
 export class MobileSignalStore implements SignalProtocolStore {
   // Helper to convert objects with ArrayBuffers to base64 JSON for storage

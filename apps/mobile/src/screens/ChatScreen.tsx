@@ -21,7 +21,7 @@ export default function ChatScreen() {
   const route = useRoute<ChatScreenRouteProp>();
   const navigation = useNavigation();
   const { id: activeContact, name } = route.params;
-  const [messages, setMessages] = useState<Record<string, unknown>[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [expiresIn, setExpiresIn] = useState<number>(0); // 0 = off, else seconds
@@ -49,7 +49,7 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!socket) return;
 
-    const handleMessage = async (data: Record<string, unknown>) => {
+    const handleMessage = async (data: any) => {
       let payload;
       try {
         payload = JSON.parse(data);
@@ -61,10 +61,10 @@ export default function ChatScreen() {
         if (!secretBase64) throw new Error("No shared secret");
         
         const sharedSecret = new Uint8Array(base64ToBuffer(secretBase64));
-        const plaintext = decryptMessage(sharedSecret, payload.ciphertext);
+        const plaintext = await (decryptMessage as any)(sharedSecret, payload.ciphertext);
         if (!plaintext) throw new Error("Decryption failed");
 
-        let messageObj: Record<string, unknown> = { type: 'text', content: plaintext };
+        let messageObj: any = { type: 'text', content: plaintext };
         try {
           messageObj = JSON.parse(plaintext);
         } catch (e) { }
@@ -110,19 +110,19 @@ export default function ChatScreen() {
       }
     };
 
-    const handleRead = (data: Record<string, unknown>) => {
+    const handleRead = (data: any) => {
       if (data.conversationId === activeContact) {
         setMessages(prev => prev.map(m => m.id === data.messageId ? { ...m, readAt: data.readAt } : m));
       }
     };
 
-    const handleTypingStart = (data: Record<string, unknown>) => {
+    const handleTypingStart = (data: any) => {
       if (data.fromUserId === activeContact) {
         setIsTyping(true);
       }
     };
 
-    const handleTypingStop = (data: Record<string, unknown>) => {
+    const handleTypingStop = (data: any) => {
       if (data.fromUserId === activeContact) {
         setIsTyping(false);
       }
@@ -145,7 +145,7 @@ export default function ChatScreen() {
 
   const loadMessages = async () => {
     const msgs = await getMessages(activeContact);
-    setMessages(msgs.sort((a: Record<string, unknown>, b: Record<string, unknown>) => (b.timestamp as number) - (a.timestamp as number)));
+    setMessages(msgs.sort((a: any, b: any) => (b.timestamp as number) - (a.timestamp as number)));
     
     // Attempt initial fetch from API
     try {
@@ -173,16 +173,16 @@ export default function ChatScreen() {
       const secretBase64 = await CryptoStore.getSharedSecret(activeContact);
       const sharedSecret = secretBase64 ? new Uint8Array(base64ToBuffer(secretBase64)) : null;
 
-      const newMsgs = [];
+      const newMsgs: any[] = [];
       for (const m of data.messages) {
         let plaintext = m.content || '[Encrypted]';
         try {
           if (sharedSecret && m.senderId === activeContact) {
-            plaintext = decryptMessage(sharedSecret, m.ciphertext);
+            plaintext = await (decryptMessage as any)(sharedSecret, m.ciphertext);
           }
         } catch(e) {}
         
-        let messageObj: Record<string, unknown> = { type: 'text', content: plaintext };
+        let messageObj: any = { type: 'text', content: plaintext };
         try { messageObj = JSON.parse(plaintext); } catch (e) { }
         
         const newMsg = {
@@ -200,7 +200,7 @@ export default function ChatScreen() {
       }
       
       if (newMsgs.length > 0) {
-        setMessages(prev => [...prev, ...newMsgs].sort((a: Record<string, unknown>, b: Record<string, unknown>) => (b.timestamp as number) - (a.timestamp as number)));
+        setMessages(prev => [...prev, ...newMsgs].sort((a: any, b: any) => (b.timestamp as number) - (a.timestamp as number)));
       }
       setNextCursor(data.nextCursor);
     } catch (err) {
@@ -317,7 +317,7 @@ export default function ChatScreen() {
       if (!secretBase64) throw new Error("No shared secret");
       const sharedSecret = new Uint8Array(base64ToBuffer(secretBase64));
 
-      const ciphertextMessage = encryptMessage(sharedSecret, payloadString);
+      const ciphertextMessage = await (encryptMessage as any)(sharedSecret, payloadString);
 
       socket.send(JSON.stringify({
         type: 'message:send',
@@ -338,7 +338,7 @@ export default function ChatScreen() {
     }
   };
 
-  const renderItem = useCallback(({ item, index }: { item: Record<string, unknown>, index: number }) => {
+  const renderItem = useCallback(({ item, index }: { item: any, index: number }) => {
     // Inverted list means index 0 is at the bottom, so previous visually is index+1
     const isFirstInGroup = index === messages.length - 1 || messages[index + 1]?.sent !== item.sent;
 
@@ -363,7 +363,7 @@ export default function ChatScreen() {
 
           {item.attachment?.type === 'voice' && (
             <View style={styles.voiceCard} accessible={true} accessibilityLabel="Voice Message">
-              <Mic size={20} color={item.sent ? colors.onPrimaryFixed : colors.onSurface} />
+              <Mic size={20} color={item.sent ? colors.onPrimary : colors.onSurface} />
               <Text style={item.sent ? styles.messageTextSent : styles.messageTextReceived}> Voice Message</Text>
             </View>
           )}
@@ -438,7 +438,7 @@ export default function ChatScreen() {
         <FlatList
           ref={flatListRef}
           data={messages}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.id as string}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}

@@ -6,7 +6,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { colors } from '../theme/colors';
 import { API_BASE } from '../lib/api';
 
-export default function ProfileSettingsScreen({ navigation }: { navigation: Record<string, unknown> }) {
+export default function ProfileSettingsScreen({ navigation }: { navigation: any }) {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -60,19 +60,19 @@ export default function ProfileSettingsScreen({ navigation }: { navigation: Reco
         <View style={styles.field}>
           <Text style={styles.label}>Username</Text>
           <TextInput style={styles.input} value={username} onChangeText={setUsername}
-            placeholder="your_username" placeholderTextColor={colors.textSecondary} autoCapitalize="none" />
+            placeholder="your_username" placeholderTextColor={colors.onSurfaceVariant} autoCapitalize="none" />
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>Display Name</Text>
           <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName}
-            placeholder="Your Name" placeholderTextColor={colors.textSecondary} />
+            placeholder="Your Name" placeholderTextColor={colors.onSurfaceVariant} />
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>Bio</Text>
           <TextInput style={[styles.input, styles.textArea]} value={bio} onChangeText={setBio}
-            placeholder="Tell others about yourself..." placeholderTextColor={colors.textSecondary}
+            placeholder="Tell others about yourself..." placeholderTextColor={colors.onSurfaceVariant}
             multiline numberOfLines={3} maxLength={500} />
           <Text style={styles.charCount}>{bio.length}/500</Text>
         </View>
@@ -89,13 +89,13 @@ export default function ProfileSettingsScreen({ navigation }: { navigation: Reco
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20 },
-  header: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 20 },
+  header: { fontSize: 24, fontWeight: '700', color: colors.onBackground, marginBottom: 20 },
   card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16 },
   field: { marginBottom: 20 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { backgroundColor: colors.background, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1, borderColor: colors.border },
+  label: { fontSize: 13, fontWeight: '600', color: colors.onSurfaceVariant, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  input: { backgroundColor: colors.background, borderRadius: 12, padding: 14, fontSize: 16, color: colors.onBackground, borderWidth: 1, borderColor: colors.outlineVariant },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
-  charCount: { fontSize: 11, color: colors.textSecondary, textAlign: 'right', marginTop: 4 },
+  charCount: { fontSize: 11, color: colors.onSurfaceVariant, textAlign: 'right', marginTop: 4 },
   saveBtn: { backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 20 },
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },

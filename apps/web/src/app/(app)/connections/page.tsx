@@ -9,8 +9,8 @@ import { Check, X, UserMinus, ShieldCheck } from "lucide-react";
 export default function ConnectionsPage() {
   const { userId } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'requests' | 'connections'>('requests');
-  const [requests, setRequests] = useState<Record<string, unknown>[]>([]);
-  const [connections, setConnections] = useState<Record<string, unknown>[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [connections, setConnections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function ConnectionsPage() {
         
       if (connData) {
         // Map to standard format
-        const formattedConns = connData.map((c: Record<string, unknown>) => {
+        const formattedConns = connData.map((c: any) => {
           const otherUser = c.sender_id === userId ? c.receiver : c.sender;
           return {
             id: c.id,

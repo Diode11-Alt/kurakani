@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import imageCompression from 'browser-image-compression';
 export function CreatePost({ userId, userProfile, onPostCreated }: {
   userId: string;
-  userProfile: Record<string, unknown>;
+  userProfile: any;
   onPostCreated: () => void;
 }) {
   const [content, setContent] = useState('');

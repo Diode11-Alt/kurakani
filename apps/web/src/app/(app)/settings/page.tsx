@@ -91,9 +91,9 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       if (section === 'profile') {
-        await updateProfile({ displayName, bio, username, pronouns, website, location, work, education } as unknown as Parameters<typeof updateProfile>[0]);
+        await updateProfile({ displayName, bio, username, pronouns, website, location, work, education } as any);
       } else if (section === 'privacy') {
-        await updateProfile({ isPublic, requireConnectionRequests } as unknown as Parameters<typeof updateProfile>[0]);
+        await updateProfile({ isPublic, requireConnectionRequests } as any);
         await updatePrivacySettings({ 
           lastSeen, 
           readReceipts, 
@@ -103,14 +103,14 @@ export default function SettingsPage() {
           tagPrivacy,
           connectionsVisibility,
           offPlatformActivity
-        } as unknown as Parameters<typeof updateProfile>[0]);
+        } as any);
       } else if (section === 'notifications') {
         await updateNotificationSettings({ pushNotifications: pushEnabled, notificationPreview: previewEnabled });
       }
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Failed to save settings", err);
       toast.error(err.message || "Failed to save changes. Please try again.");
     } finally {

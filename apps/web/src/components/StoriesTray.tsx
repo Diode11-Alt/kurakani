@@ -25,7 +25,7 @@ interface GroupedStory {
   stories: Story[];
 }
 
-export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: string; currentProfile: Record<string, unknown> }) {
+export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: string; currentProfile: any }) {
   const [groupedStories, setGroupedStories] = useState<GroupedStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -36,7 +36,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
   const [progress, setProgress] = useState<number>(0);
   
   const fileRef = useRef<HTMLInputElement>(null);
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressIntervalRef = useRef<any>(null);
 
   useEffect(() => {
     fetchStories();
@@ -100,7 +100,7 @@ export function StoriesTray({ currentUserId, currentProfile }: { currentUserId: 
       // Group stories by author
       const groups: { [key: string]: GroupedStory } = {};
       
-      data.forEach((story: Record<string, unknown>) => {
+      data.forEach((story: any) => {
         const authorId = story.author_id;
         if (!groups[authorId]) {
           groups[authorId] = {

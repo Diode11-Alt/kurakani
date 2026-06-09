@@ -10,9 +10,9 @@ import { useAuthStore } from '../store/authStore';
 
 export const BottomNavBar = () => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<Record<string, unknown>>();
+  const navigation = useNavigation<any>();
   const route = useRoute();
-  const { session } = useAuthStore();
+  const { session } = useAuthStore() as any;
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -52,9 +52,9 @@ export const BottomNavBar = () => {
     { name: 'Profile', icon: User, label: 'Profile' },
   ];
 
-  const renderTab = (tab: Record<string, unknown>) => {
+  const renderTab = (tab: any) => {
     const isActive = route.name === tab.name || (route.name === 'Chat' && tab.name === 'Messages');
-    const Icon = tab.icon;
+    const Icon: any = tab.icon;
     
     return (
       <TouchableOpacity 

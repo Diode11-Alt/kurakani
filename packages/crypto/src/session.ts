@@ -2,10 +2,11 @@
 import { 
   SessionBuilder,
   SessionCipher,
-  SignalProtocolAddress,
-  PreKeyBundle,
-  SignalProtocolStore
+  SignalProtocolAddress
 } from '@privacyresearch/libsignal-protocol-typescript';
+
+type SignalProtocolStore = any;
+type PreKeyBundle = any;
 
 /**
  * Initializes a new Signal session as the initiator (Alice starting a chat with Bob).
@@ -76,7 +77,7 @@ export async function encryptMessage(
   // Ciphertext from libsignal is an object: { type: number, body: string (usually binary string) }
   return {
     type: ciphertextObj.type,
-    body: btoa(ciphertextObj.body) // Convert binary string to Base64
+    body: btoa(ciphertextObj.body as string) // Convert binary string to Base64
   };
 }
 

@@ -7,8 +7,8 @@ import { BottomNavBar } from '../components/BottomNavBar';
 import { supabase } from '../lib/supabase';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
-export default function MessagesScreen({ navigation }: { navigation: Record<string, unknown> }) {
-  const [users, setUsers] = useState<Record<string, unknown>[]>([]);
+export default function MessagesScreen({ navigation }: { navigation: any }) {
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

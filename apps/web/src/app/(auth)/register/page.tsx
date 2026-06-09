@@ -89,7 +89,7 @@ export default function RegisterPage() {
       } else {
         router.replace("/feed");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
@@ -106,7 +106,7 @@ export default function RegisterPage() {
         },
       });
       if (error) throw error;
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message);
     }
   };

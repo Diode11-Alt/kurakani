@@ -17,7 +17,7 @@ import * as Notifications from 'expo-notifications';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
+  handleNotification: async (): Promise<any> => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,

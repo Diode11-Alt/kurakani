@@ -8,7 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 
 interface PostCardProps {
-  post: Record<string, unknown>;
+  post: any;
   currentUserId: string;
   isLiked?: boolean;
   isSaved?: boolean;
@@ -21,7 +21,7 @@ export function PostCard({ post, currentUserId, isLiked: isLikedProp, isSaved: i
   const [likesCount, setLikesCount] = useState(() => post.likes ? post.likes[0]?.count || 0 : 0);
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<Record<string, unknown>[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
   const [commentsCount, setCommentsCount] = useState(() => post.comments ? post.comments[0]?.count || 0 : 0);
   const [isLiking, setIsLiking] = useState(false);

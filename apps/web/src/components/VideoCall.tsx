@@ -23,10 +23,10 @@ import {
 interface VideoCallProps {
   conversationId: string;
   currentUserId: string;
-  currentUserProfile: Record<string, unknown>;
-  otherUser: Record<string, unknown>;
+  currentUserProfile: any;
+  otherUser: any;
   initialCallType?: 'video' | 'audio';
-  incomingOfferPayload?: Record<string, unknown>; // If triggered by incoming call
+  incomingOfferPayload?: any; // If triggered by incoming call
   onClose: () => void;
 }
 
@@ -75,7 +75,7 @@ export function VideoCall({
   // Synth Audio Ref
   const ringtoneRef = useRef<{
     ctx: AudioContext | null;
-    intervalId: number | null;
+    intervalId: any | null;
   } | null>(null);
 
   const localVideoRef = useCallback((el: HTMLVideoElement | null) => {
@@ -300,7 +300,7 @@ export function VideoCall({
         await pc.setLocalDescription(offer);
         
         if (signalChannelRef.current) {
-          signalChannelRef.current.send({
+          (signalChannelRef.current as any).send({
             type: 'broadcast',
             event: 'signal',
             payload: {
@@ -328,7 +328,7 @@ export function VideoCall({
         const isCallerWaiting = !incomingOfferPayload && callStateRef.current !== 'connected';
 
         if (!isCallerWaiting && isChannelSubscribedRef.current && signalChannelRef.current) {
-          signalChannelRef.current.send({
+          (signalChannelRef.current as any).send({
             type: 'broadcast',
             event: 'signal',
             payload: {
@@ -391,7 +391,7 @@ export function VideoCall({
         const cand = localCandidatesQueueRef.current.shift();
         if (cand) {
           try {
-            signalChannelRef.current.send({
+            (signalChannelRef.current as any).send({
               type: 'broadcast',
               event: 'signal',
               payload: {
@@ -468,7 +468,7 @@ export function VideoCall({
                 await peerConnectionRef.current.setLocalDescription(answer);
                 
                 if (signalChannelRef.current) {
-                  signalChannelRef.current.send({
+                  (signalChannelRef.current as any).send({
                     type: 'broadcast',
                     event: 'signal',
                     payload: {
@@ -615,7 +615,7 @@ export function VideoCall({
   // Broadcast state changes when local controls are toggled
   useEffect(() => {
     if (callState === 'connected' && signalChannelRef.current) {
-      signalChannelRef.current.send({
+      (signalChannelRef.current as any).send({
         type: 'broadcast',
         event: 'signal',
         payload: {
@@ -629,7 +629,7 @@ export function VideoCall({
 
   useEffect(() => {
     if (callState === 'connected' && signalChannelRef.current) {
-      signalChannelRef.current.send({
+      (signalChannelRef.current as any).send({
         type: 'broadcast',
         event: 'signal',
         payload: {
@@ -764,7 +764,7 @@ export function VideoCall({
       await pc.setLocalDescription(answer);
 
       if (signalChannelRef.current) {
-        signalChannelRef.current.send({
+        (signalChannelRef.current as any).send({
           type: 'broadcast',
           event: 'signal',
           payload: {
@@ -787,7 +787,7 @@ export function VideoCall({
 
   const declineCall = () => {
     if (signalChannelRef.current) {
-      signalChannelRef.current.send({
+      (signalChannelRef.current as any).send({
         type: 'broadcast',
         event: 'signal',
         payload: {
@@ -801,7 +801,7 @@ export function VideoCall({
 
   const hangUpCall = () => {
     if (signalChannelRef.current) {
-      signalChannelRef.current.send({
+      (signalChannelRef.current as any).send({
         type: 'broadcast',
         event: 'signal',
         payload: {

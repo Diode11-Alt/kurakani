@@ -63,7 +63,7 @@ export default function LoginPage() {
 
         router.replace("/feed");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ export default function LoginPage() {
         },
       });
       if (error) throw error;
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message);
     }
   };

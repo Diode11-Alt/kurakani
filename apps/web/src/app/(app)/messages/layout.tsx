@@ -22,7 +22,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const conversations = liveConversations || [];
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Record<string, unknown>[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   
   const { session: authSession, userId } = useAuthStore();
@@ -120,7 +120,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         // Continue anyway to show empty conversations
       }
       
-      const latestMessagesMap: Record<string, unknown> = {};
+      const latestMessagesMap: any = {};
       if (allMessages) {
         for (const msg of allMessages) {
           if (!latestMessagesMap[msg.conversation_id]) {
@@ -145,7 +145,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       }
 
       const enriched = myMemberships.map((membership) => {
-        const c = membership.conversations as Record<string, unknown>;
+        const c = membership.conversations as any;
         const members = allMembers.filter(m => m.conversation_id === c.id);
         const otherUserMember = members.find(m => m.user_id !== userId);
         const otherUser = otherUserMember?.users || { username: 'Unknown' };
@@ -171,7 +171,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
           avatarUrl: c.avatar_url,
           last_message_at: lastMsg?.sent_at || c.updated_at,
           unreadCount: unreadMap[c.id] || 0,
-          otherUser: otherUser as Record<string, unknown>,
+          otherUser: otherUser as any,
           lastMessage: decryptedLastMsg,
         };
       });
@@ -191,10 +191,10 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
           updatedAt: new Date(conv.last_message_at),
           unreadCount: conv.unreadCount,
           otherUser: {
-            id: (conv.otherUser as Record<string, unknown>).id || 'unknown',
-            username: (conv.otherUser as Record<string, unknown>).username || 'Unknown',
-            displayName: (conv.otherUser as Record<string, unknown>).display_name || null,
-            avatarUrl: (conv.otherUser as Record<string, unknown>).avatar_url || null,
+            id: (conv.otherUser as any).id || 'unknown',
+            username: (conv.otherUser as any).username || 'Unknown',
+            displayName: (conv.otherUser as any).display_name || null,
+            avatarUrl: (conv.otherUser as any).avatar_url || null,
           },
           lastMessage: conv.lastMessage
         }));
@@ -234,7 +234,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         }));
         
         setSearchResults(mappedData);
-      } catch (err: unknown) {
+      } catch (err: any) {
         if (err.name === 'AbortError') return;
         console.error('Error searching profiles:', err);
       } finally {
@@ -402,7 +402,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               const hasUnread = c.unreadCount && c.unreadCount > 0;
 
               const timeDisplay = c.lastMessage
-                ? formatDistanceToNowStrict(new Date((c.lastMessage as Record<string, unknown>).sentAt as string), { addSuffix: false })
+                ? formatDistanceToNowStrict(new Date((c.lastMessage as any).sentAt as string), { addSuffix: false })
                     .replace(' seconds', 's')
                     .replace(' second', 's')
                     .replace(' minutes', 'm')
@@ -424,13 +424,13 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 >
                   <div className="relative flex-shrink-0">
                     <div className="w-12 h-12 squircle bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
-                      {(c.otherUser as Record<string, unknown>)?.avatarUrl ? (
-                        <img src={(c.otherUser as Record<string, unknown>).avatarUrl as string} alt="" className="w-full h-full object-cover" />
+                      {(c.otherUser as any)?.avatarUrl ? (
+                        <img src={(c.otherUser as any).avatarUrl as string} alt="" className="w-full h-full object-cover" />
                       ) : (
                         c.otherUser?.username?.[0]?.toUpperCase() || '?'
                       )}
                     </div>
-                    {onlineUsers[(c.otherUser as Record<string, unknown>)?.id as string] && (
+                    {onlineUsers[(c.otherUser as any)?.id as string] && (
                       <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[var(--color-surface)] rounded-full z-10 shadow-sm"></div>
                     )}
                   </div>
@@ -440,7 +440,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                       <span className={`text-sm truncate max-w-[150px]
                         ${hasUnread ? 'font-bold text-[var(--color-on-surface)]' : 'font-semibold text-[var(--color-on-surface)]'}`}
                       >
-                        {(c.otherUser as Record<string, unknown>)?.displayName as string || c.otherUser?.username || 'Unknown User'}
+                        {(c.otherUser as any)?.displayName as string || c.otherUser?.username || 'Unknown User'}
                       </span>
                       <span className={`text-[10px] flex-shrink-0 ${hasUnread ? 'text-[var(--color-primary)] font-bold' : 'text-[var(--color-on-surface-variant)]'}`}>
                         {timeDisplay}
@@ -451,7 +451,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                       ${hasUnread ? 'font-bold text-[var(--color-on-surface)]' : 'text-[var(--color-on-surface-variant)]'}`}
                     >
                       {c.lastMessage
-                        ? `${(c.lastMessage as Record<string, unknown>).senderId === userId ? 'You: ' : ''}${(c.lastMessage as Record<string, unknown>).content}`
+                        ? `${(c.lastMessage as any).senderId === userId ? 'You: ' : ''}${(c.lastMessage as any).content}`
                         : 'No messages yet'}
                     </p>
                   </div>

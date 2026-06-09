@@ -39,7 +39,7 @@ export default function PrivacySettingsScreen() {
     }
   }
 
-  const OptionRow = ({ label, options, value, settingKey }: Record<string, unknown>) => (
+  const OptionRow = ({ label, options, value, settingKey }: any) => (
     <View style={styles.optionGroup}>
       <Text style={styles.optionLabel}>{label}</Text>
       <View style={styles.optionButtons}>
@@ -90,16 +90,16 @@ export default function PrivacySettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20 },
-  header: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 20 },
+  header: { fontSize: 24, fontWeight: '700', color: colors.onBackground, marginBottom: 20 },
   card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16 },
   optionGroup: { marginBottom: 24 },
-  optionLabel: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 10 },
+  optionLabel: { fontSize: 14, fontWeight: '600', color: colors.onBackground, marginBottom: 10 },
   optionButtons: { flexDirection: 'row', gap: 8 },
-  optionBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  optionBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', borderWidth: 1, borderColor: colors.outlineVariant },
   optionBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  optionBtnText: { fontSize: 13, fontWeight: '500', color: colors.textSecondary },
+  optionBtnText: { fontSize: 13, fontWeight: '500', color: colors.onSurfaceVariant },
   optionBtnTextActive: { color: '#fff' },
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 },
-  switchLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
-  switchSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 2, maxWidth: 240 },
+  switchLabel: { fontSize: 14, fontWeight: '600', color: colors.onBackground },
+  switchSubtitle: { fontSize: 12, color: colors.onSurfaceVariant, marginTop: 2, maxWidth: 240 },
 });

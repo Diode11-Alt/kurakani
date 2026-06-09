@@ -33,7 +33,7 @@ export async function hkdf(
     try {
       const key = await globalThis.crypto.subtle.importKey(
         'raw',
-        inputKeyMaterial,
+        inputKeyMaterial as any,
         'HKDF',
         false,
         ['deriveBits']

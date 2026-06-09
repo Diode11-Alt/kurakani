@@ -4,7 +4,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { colors } from '../theme/colors';
 import { API_BASE } from '../lib/api';
 
-export default function AccountScreen({ navigation }: { navigation: Record<string, unknown> }) {
+export default function AccountScreen({ navigation }: { navigation: any }) {
   async function handleLogout() {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -76,10 +76,10 @@ export default function AccountScreen({ navigation }: { navigation: Record<strin
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: 20 },
-  header: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 24 },
+  header: { fontSize: 28, fontWeight: '700', color: colors.onBackground, marginBottom: 24 },
   card: { backgroundColor: colors.surface, borderRadius: 16, overflow: 'hidden' },
   row: { padding: 16 },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  rowLabel: { fontSize: 16, fontWeight: '500', color: colors.text },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.outlineVariant },
+  rowLabel: { fontSize: 16, fontWeight: '500', color: colors.onBackground },
   dangerText: { color: '#EF4444' },
 });

@@ -2,9 +2,9 @@ import { openDB, IDBPDatabase } from 'idb';
 import { StorageType } from '@privacyresearch/libsignal-protocol-typescript';
 
 type IdentityKeyPair = { pubKey: ArrayBuffer; privKey: ArrayBuffer };
-type PreKeyRecordType = unknown;
-type SignedPreKeyRecordType = unknown;
-type SessionRecordType = unknown;
+type PreKeyRecordType = any;
+type SignedPreKeyRecordType = any;
+type SessionRecordType = any;
 type Direction = number;
 
 export class WebSignalStore implements StorageType {

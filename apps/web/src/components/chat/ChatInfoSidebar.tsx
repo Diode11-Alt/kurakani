@@ -16,7 +16,7 @@ interface AttachmentItem {
 
 interface ChatInfoSidebarProps {
   conversationId: string;
-  otherUser: User;
+  otherUser: any;
   onClose: () => void;
 }
 
@@ -116,15 +116,13 @@ export default function ChatInfoSidebar({
         {/* Profile Info */}
         <div className="p-6 flex flex-col items-center border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)]">
           <div className="w-24 h-24 squircle bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold mb-4 shadow-lg overflow-hidden">
-            {(otherUser as Record<string, unknown>)?.avatarUrl ? (
-              <img src={(otherUser as Record<string, unknown>).avatarUrl as string} alt="" className="w-full h-full object-cover" />
+            {otherUser?.avatarUrl ? (
+              <img src={otherUser.avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
-              (otherUser as Record<string, unknown>)?.displayName?.[0] ? ((otherUser as Record<string, unknown>).displayName as string)[0]?.toUpperCase() : (otherUser?.username?.[0]?.toUpperCase() || "?")
+              otherUser?.displayName?.[0] ? otherUser.displayName[0]?.toUpperCase() : (otherUser?.username?.[0]?.toUpperCase() || "?")
             )}
           </div>
-          <h2 className="text-xl font-bold mb-1">
-            {(otherUser as Record<string, unknown>)?.displayName || otherUser?.username}
-          </h2>
+            {otherUser?.displayName || otherUser?.username}
           <p className="text-sm text-[var(--color-on-surface-variant)]">@{otherUser?.username}</p>
         </div>
 

@@ -82,12 +82,12 @@ export default function NotificationSettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20 },
-  header: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 20 },
+  header: { fontSize: 24, fontWeight: '700', color: colors.onBackground, marginBottom: 20 },
   card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16 },
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
   switchInfo: { flex: 1, marginRight: 16 },
-  switchLabel: { fontSize: 15, fontWeight: '600', color: colors.text },
-  switchSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 3 },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: 12 },
-  note: { fontSize: 12, color: colors.textSecondary, lineHeight: 18, marginTop: 16, paddingHorizontal: 4 },
+  switchLabel: { fontSize: 15, fontWeight: '600', color: colors.onBackground },
+  switchSubtitle: { fontSize: 12, color: colors.onSurfaceVariant, marginTop: 3 },
+  divider: { height: 1, backgroundColor: colors.outlineVariant, marginVertical: 12 },
+  note: { fontSize: 12, color: colors.onSurfaceVariant, lineHeight: 18, marginTop: 16, paddingHorizontal: 4 },
 });

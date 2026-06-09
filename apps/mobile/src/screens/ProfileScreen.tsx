@@ -112,7 +112,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.surfaceBright,
+    backgroundColor: colors.surfaceVariant,
   },
   header: {
     flexDirection: 'row',

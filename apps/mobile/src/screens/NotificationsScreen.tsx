@@ -9,19 +9,19 @@ import { Bell, Heart, MessageCircle, UserPlus, Check } from 'lucide-react-native
 import { useNavigation } from '@react-navigation/native';
 
 export default function NotificationsScreen() {
-  const { session } = useAuthStore();
-  const [notifications, setNotifications] = useState<Record<string, unknown>[]>([]);
+  const { userId } = useAuthStore();
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const navigation = useNavigation<Record<string, unknown>>();
+  const navigation = useNavigation<any>();
 
   const fetchNotifications = async () => {
-    if (!session?.user?.id) return;
+    if (!userId) return;
     try {
       const { data } = await supabase
         .from('notifications')
         .select('*, actor:actor_id(id, username, display_name, avatar_url)')
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(30);
 
@@ -43,17 +43,17 @@ export default function NotificationsScreen() {
 
   useEffect(() => {
     fetchNotifications();
-  }, [session?.user?.id]);
+  }, [userId]);
 
   const onRefresh = () => {
     setRefreshing(true);
     fetchNotifications();
   };
 
-  const handleNotificationPress = (notif: Record<string, unknown>) => {
+  const handleNotificationPress = (notif: any) => {
     if (notif.type === 'like' || notif.type === 'comment') {
       // Navigate to post or profile
-      navigation.navigate('Profile', { userId: session?.user?.id });
+      navigation.navigate('Profile', { userId: userId });
     } else {
       navigation.navigate('Profile', { userId: notif.actor_id });
     }
@@ -69,7 +69,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const getMessage = (notif: Record<string, unknown>) => {
+  const getMessage = (notif: any) => {
     const name = notif.actor?.display_name || notif.actor?.username || 'Someone';
     switch (notif.type) {
       case 'like': return <Text style={styles.messageText}><Text style={styles.boldText}>{name}</Text> liked your post.</Text>;
@@ -81,7 +81,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: Record<string, unknown> }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
       style={[styles.notificationItem, !item.is_read && styles.unreadItem]} 
       onPress={() => handleNotificationPress(item)}
@@ -103,7 +103,7 @@ export default function NotificationsScreen() {
       <View style={styles.textContainer}>
         {getMessage(item)}
         <Text style={styles.timeText}>
-          {new Date(item.created_at).toLocaleDateString()}
+          {new Date(item.created_at as string).toLocaleDateString()}
         </Text>
       </View>
       
@@ -147,12 +147,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.outlineVariant,
   },
   headerTitle: {
-    fontFamily: typography.fonts.headingBold,
+    fontFamily: typography.fonts.headline,
     fontSize: 24,
-    color: colors.text,
+    color: colors.onBackground,
   },
   listContent: {
     paddingBottom: 100,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border + '50',
+    borderBottomColor: colors.outlineVariant + '50',
     alignItems: 'center',
   },
   unreadItem: {
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarPlaceholderText: {
-    fontFamily: typography.fonts.headingBold,
+    fontFamily: typography.fonts.headline,
     fontSize: 20,
     color: colors.secondary,
   },
@@ -206,16 +206,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   messageText: {
-    fontFamily: typography.fonts.bodyRegular,
+    fontFamily: typography.fonts.body,
     fontSize: 15,
-    color: colors.text,
+    color: colors.onBackground,
     lineHeight: 20,
   },
   boldText: {
-    fontFamily: typography.fonts.bodyBold,
+    fontFamily: typography.fonts.bodySemiBold,
   },
   timeText: {
-    fontFamily: typography.fonts.labelRegular,
+    fontFamily: typography.fonts.label,
     fontSize: 12,
     color: colors.secondary,
     marginTop: 4,
